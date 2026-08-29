@@ -1,0 +1,2614 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLPR Task Tracker - Local Teams</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <style>
+
+/* ซ่อน Scrollbar ด้านข้างแต่ยังสามารถเลื่อนดูข้อมูลได้ปกติ */
+.table-wrapper, body, div {
+    scrollbar-width: none; /* สำหรับ Firefox */
+    -ms-overflow-style: none;  /* สำหรับ IE และ Edge */
+}
+.table-wrapper::-webkit-scrollbar,
+body::-webkit-scrollbar,
+div::-webkit-scrollbar {
+    display: none; /* สำหรับ Chrome, Safari และ Opera */
+}
+
+        body { 
+            font-family: 'Sarabun', sans-serif; 
+            background-color: #f8fafc;
+            background-image: 
+                radial-gradient(at 10% 20%, hsla(28,100%,74%,0.15) 0px, transparent 50%),
+                radial-gradient(at 80% 10%, hsla(189,100%,56%,0.15) 0px, transparent 50%),
+                radial-gradient(at 10% 80%, hsla(242,100%,70%,0.15) 0px, transparent 50%),
+                radial-gradient(at 90% 90%, hsla(340,100%,76%,0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: #1e293b; 
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.06);
+        }
+        
+        .btn-pop { transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .btn-pop:hover { transform: translateY(-2px); box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.2); }
+        .btn-pop:active { transform: translateY(1px); box-shadow: 0 2px 5px -2px rgba(0, 0, 0, 0.2); }
+
+        .team-btn-active {
+            background: linear-gradient(to right, #f97316, #e11d48);
+            color: white;
+            box-shadow: 0 4px 14px 0 rgba(225, 29, 72, 0.39);
+            border-color: transparent;
+        }
+        .team-btn-inactive {
+            background: white;
+            color: #475569;
+            border-color: #cbd5e1;
+        }
+
+        .summary-card { padding: 1.5rem; border-radius: 24px; }
+        .table-wrapper { overflow-x: auto; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.5); }
+        .monthly-table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 13px; }
+        .monthly-table th { background: #1e293b; color: white; padding: 12px 8px; font-weight: 600; border-right: 1px solid #334155; border-bottom: 1px solid #334155; }
+        .monthly-table td { border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; padding: 8px; text-align: center; transition: background 0.2s;}
+
+        .sticky-col-1 { position: sticky; left: 0; z-index: 10; width: 180px; min-width: 180px; text-align: left !important; border-right: 2px solid #cbd5e1 !important; }
+        .sticky-col-2 { position: sticky; left: 180px; z-index: 10; width: 120px; min-width: 120px; text-align: left !important; background: white; }
+        .sticky-col-3 { position: sticky; left: 300px; z-index: 10; width: 90px; min-width: 90px; border-right: 3px solid #94a3b8 !important; }
+        
+        td.sticky-col-3 { background-color: #fffbeb !important; font-weight: 800; color: #92400e; }
+        .staff-divider td { border-bottom: 4px solid #cbd5e1 !important; }
+        .monthly-table tbody tr:hover td { background-color: #f8fafc !important; }
+        
+        .day-cell { min-width: 50px !important; padding: 0 !important; position: relative; } 
+        .qc-text { color: #e11d48; font-weight: bold; }
+
+        .holiday-text { color: #ef4444; font-weight: bold; font-size: 10px; }
+        .input-cell { width: 100%; height: 100%; min-height: 30px; text-align: center; font-size: 11px; outline: none; border: none; background: transparent;}
+        .input-cell:focus { background-color: #e0e7ff; box-shadow: inset 0 0 0 2px #6366f1; }
+
+        @media print {
+            .no-print { display: none !important; }
+            .glass-card { background: white !important; backdrop-filter: none; box-shadow: none; border: 1px solid black; }
+            .sticky-col-1, .sticky-col-2, .sticky-col-3 { position: static !important; border: 1px solid black !important; }
+            body { background: white; padding: 0; }
+        }
+
+        .toast-show { transform: translate(-50%, 0) scale(1) !important; opacity: 1 !important; }
+        .toast-hide { transform: translate(-50%, 20px) scale(0.95) !important; opacity: 0 !important; }
+        
+        .member-card { transition: all 0.3s ease; }
+        .member-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.05); transform: scale(1.01); border-color: #cbd5e1; }
+    </style>
+</head>
+<body class="p-3 lg:p-8 min-h-screen">
+
+    <div class="max-w-[1700px] mx-auto">
+        
+        <!-- Header Section -->
+        <div class="glass-card flex flex-col md:flex-row justify-between items-center mb-6 gap-4 p-5 lg:px-8 lg:py-6 rounded-3xl no-print">
+            <div>
+                <h1 class="text-4xl lg:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-slate-800 to-indigo-900 drop-shadow-sm pb-1">
+                    MLPR <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-rose-500">DASHBOARD</span> 
+                </h1>
+                <p id="dashboard-subtitle" class="text-slate-500 font-medium mt-1 pl-1 text-sm">ระบบบันทึกและสรุปยอดงานประจำเดือน</p>
+            </div>
+            <div class="flex gap-3">
+<button onclick="exportDataJson()" class="btn-pop bg-white text-emerald-700 border border-emerald-200 px-4 py-2.5 rounded-2xl font-bold flex items-center gap-2 text-sm shadow-sm hover:bg-emerald-50">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+        สำรองข้อมูล
+    </button>
+    <button onclick="triggerRestoreJson()" class="btn-pop bg-white text-blue-700 border border-blue-200 px-4 py-2.5 rounded-2xl font-bold flex items-center gap-2 text-sm shadow-sm hover:bg-blue-50">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+        กู้คืนข้อมูล
+    </button>
+                <button onclick="openTeamConfig()" class="btn-pop bg-white text-slate-700 border border-slate-200 px-5 py-2.5 rounded-2xl font-bold flex items-center gap-2 text-sm shadow-sm hover:text-indigo-600 hover:border-indigo-200">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    ตั้งค่าทีม
+                </button>
+                <button onclick="openSummaryPage()" class="btn-pop bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-5 py-2.5 rounded-2xl shadow-md hover:shadow-indigo-500/30 font-bold text-sm transition-all flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    หน้าสรุปผล
+                </button>
+            </div>
+        </div>
+
+        <div class="mb-6 flex flex-col md:flex-row items-start md:items-center justify-between no-print gap-4 glass-card p-4 rounded-3xl">
+            <div class="flex items-center gap-3">
+                <svg class="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                <h2 class="text-lg font-extrabold text-slate-700 tracking-wide">เลือกทีมที่ต้องการจัดการ:</h2>
+            </div>
+            <div id="main-team-buttons" class="flex flex-wrap gap-2"></div>
+        </div>
+        
+        <div class="mb-4 flex items-center justify-between no-print px-1">
+            <div class="glass-card px-5 py-2 rounded-2xl flex items-center gap-3 border-orange-100 shadow-sm ml-auto">
+                <span class="font-bold text-slate-500 text-sm">เลือกเดือน/ปี:</span>
+                <input type="month" id="entry-month" class="border-b-2 border-orange-300 focus:border-orange-500 bg-transparent transition-colors focus:outline-none font-bold text-orange-600 mr-1 cursor-pointer text-sm py-1">
+            </div>
+        </div>
+
+        <div class="glass-card summary-card" id="summary-section">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-4 no-print gap-3">
+                <div>
+                    <h3 class="text-slate-800 font-black text-xl tracking-wide flex items-center gap-2">
+                        <span class="bg-indigo-500 w-1.5 h-6 rounded-full"></span>
+                        ตารางสรุปผลรายเดือน <span id="display-team-name" class="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-rose-500 ml-1">ทีม 1</span>
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-1 font-medium">* สามารถคัดลอกข้อมูลจาก Google Sheet มาวางในตารางได้โดยตรง (สำหรับทีม Temp สามารถวางข้อมูล วันทำงาน, ยอดอนุมัติ และยอด QC พร้อมกันได้)</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button id="temp-qc-map-btn" onclick="openTempQcModal()" class="btn-pop bg-gradient-to-r from-orange-500 to-rose-500 text-white px-3 py-1.5 rounded-xl shadow-sm font-bold text-xs flex items-center gap-1.5 transition-all hidden">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                        กรอกยอดอนุมัติผิด (Map ชื่อ)
+                    </button>
+                    <button onclick="clearCurrentMonthData()" class="btn-pop bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 px-3 py-1.5 rounded-xl shadow-sm font-bold text-xs flex items-center gap-1.5 transition-all">
+                        <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        ล้างข้อมูลเดือนนี้
+                    </button>
+                    <button onclick="copySummaryTableData()" class="btn-pop bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-3 py-1.5 rounded-xl shadow-sm font-bold text-xs flex items-center gap-1.5 transition-all">
+                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        คัดลอกตาราง
+                    </button>
+                    <button onclick="captureSummary()" class="btn-pop bg-slate-800 text-white hover:bg-slate-700 px-3 py-1.5 rounded-xl shadow-sm font-bold text-xs flex items-center gap-1.5 transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        บันทึกภาพ
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-wrapper border-none">
+                <table class="monthly-table" id="summaryTable">
+                    <thead id="summary-thead"></thead>
+                    <tbody id="summary-tbody" class="bg-white/60"></tbody>
+                </table>
+            </div>
+            
+            <div id="empty-team-state" class="hidden flex-col items-center justify-center py-20 text-slate-400 bg-white/50 rounded-xl mt-4 border border-dashed border-slate-300">
+                <svg class="w-16 h-16 mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                <p class="font-medium">ยังไม่มีสมาชิกในทีมนี้</p>
+                <p class="text-sm mt-1">คลิก "ตั้งค่าทีม" ด้านบนเพื่อเพิ่มสมาชิก</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal กรอกยอดอนุมัติผิดทีม Temp -->
+    <div id="temp-qc-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-[110] p-4 overflow-y-auto">
+        <div class="glass-card bg-white/95 p-6 md:p-8 rounded-[2rem] shadow-2xl w-full max-w-2xl my-auto">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-200 pb-3">
+                <h2 class="text-xl font-black text-slate-800 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    นำเข้าและ Map ยอดอนุมัติผิด (ทีม Temp)[cite: 12]
+                </h2>
+                <button onclick="closeTempQcModal()" class="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500 hover:text-rose-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <p class="text-xs text-slate-500 mb-3 font-medium">
+                วางข้อมูลชื่อและยอดผิดที่คัดลอกมา (ระบบจะทำการค้นหาชื่อและ Map ใส่ช่องยอดอนุมัติผิดให้อัตโนมัติ แม้ลำดับจะไม่ตรงกัน)[cite: 12]
+            </p>
+            <textarea id="temp-qc-textarea" rows="8" placeholder="วางข้อมูลที่นี่ (รูปแบบ: ชื่อ  ยอดผิด)" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-200 outline-none text-sm font-medium mb-4"></textarea>
+            <div class="flex justify-end gap-2">
+                <button onclick="closeTempQcModal()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-300 transition-all">ยกเลิก</button>
+                <button onclick="processTempQcMapping()" class="px-5 py-2 bg-gradient-to-r from-orange-500 to-rose-500 text-white rounded-xl font-bold text-sm shadow-md hover:shadow-orange-500/30 transition-all">ประมวลผลและ Map ข้อมูล[cite: 12]</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- หน้าสรุปผล (Dashboard) -->
+    <div id="new-summary-page" class="hidden fixed inset-0 z-[100] overflow-y-auto no-print transition-all duration-300" style="background-color: #f8fafc; background-image: radial-gradient(at 10% 20%, hsla(28,100%,74%,0.15) 0px, transparent 50%), radial-gradient(at 80% 10%, hsla(189,100%,56%,0.15) 0px, transparent 50%), radial-gradient(at 10% 80%, hsla(242,100%,70%,0.15) 0px, transparent 50%), radial-gradient(at 90% 90%, hsla(343,100%,76%,0.15) 0px, transparent 50%);">
+        <div class="max-w-7xl mx-auto p-4 md:p-8 mt-4">
+            
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 glass-card p-5 rounded-3xl border border-white/60 shadow-sm bg-white/70 backdrop-blur-md">
+                <h1 class="text-2xl font-extrabold flex items-center gap-3 text-slate-800 tracking-wide">
+                    <span class="bg-gradient-to-b from-indigo-400 to-purple-500 w-3 h-8 rounded-full shadow-sm"></span>
+                    สรุปผลการปฏิบัติงาน
+                </h1>
+                <button onclick="closeSummaryPage()" class="btn-pop bg-slate-200 hover:bg-rose-500 hover:text-white text-slate-700 px-5 py-2 rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    กลับหน้าหลัก
+                </button>
+            </div>
+
+            <div class="glass-card p-6 rounded-3xl mb-6 border border-indigo-100/50 shadow-sm bg-white/50 backdrop-blur-md flex flex-wrap items-center gap-4">
+                <div class="w-full mb-2">
+                    <h3 class="text-sm font-bold text-slate-600 mb-2">เลือกทีมเพื่อดูสรุปผล:</h3>
+                    <div id="summary-team-buttons" class="flex flex-wrap gap-2"></div>
+                </div>
+                <div class="flex items-center gap-3 mt-2">
+                    <span class="font-bold text-slate-600 text-sm">ตั้งแต่วันที่:</span>
+                    <input type="date" id="new-range-start" class="border-b-2 border-indigo-300 bg-transparent px-2 py-1 focus:border-indigo-500 focus:outline-none font-bold text-indigo-600 cursor-pointer transition-colors text-sm">
+                </div>
+                <div class="flex items-center gap-3 mt-2">
+                    <span class="font-bold text-slate-600 text-sm">ถึงวันที่:</span>
+                    <input type="date" id="new-range-end" class="border-b-2 border-indigo-300 bg-transparent px-2 py-1 focus:border-indigo-500 focus:outline-none font-bold text-indigo-600 cursor-pointer transition-colors text-sm">
+                </div>
+                <button onclick="fetchSummaryData()" class="btn-pop mt-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-6 py-2.5 rounded-xl shadow-md hover:shadow-indigo-500/30 font-bold text-sm transition-all flex items-center gap-2 sm:ml-auto">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    ดึงข้อมูลและรวมยอด
+                </button>
+            </div>
+
+            <div class="glass-card rounded-3xl overflow-hidden border border-slate-200 shadow-sm bg-white/90 hidden transition-all duration-500" id="new-summary-table-container">
+                <div class="bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-800 font-bold px-6 py-3.5 flex justify-between items-center text-sm border-b border-indigo-100/50">
+                    <span class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 002-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        ผลรวมยอดระหว่างวันที่: <span id="new-display-range" class="text-indigo-600 font-extrabold underline decoration-2 underline-offset-2">-</span>
+                    </span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse text-[11px] text-center">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-700 shadow-sm relative z-10 border-b border-slate-200">
+                                <th class="p-2 border-r border-slate-200 text-left pl-4">ชื่อ</th>
+                                <th class="p-2 border-r border-slate-200 text-green-700">ML</th>
+                                <th class="p-2 border-r border-slate-200 text-red-700">MN</th>
+                                <th class="p-2 border-r border-slate-200 text-orange-700">RCF</th>
+                                <th class="p-2 border-r border-slate-200 text-blue-700">LOG</th>
+                                <th class="p-2 border-r border-slate-200 text-purple-700">TXN Manual</th>
+                                <th class="p-2 border-r border-slate-200 text-amber-700">CCTV (Audit)</th>
+                                <th class="p-2 border-r border-slate-200 text-red-700">Temp สอบถาม</th>
+                                <th class="p-2 border-r border-slate-200 text-red-700">รถขบวนเสด็จ</th>
+                                <th class="p-2 text-rose-700">QC</th>
+                            </tr>
+                        </thead>
+                        <tbody id="new-summary-tbody" class="bg-white/80"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="summary-dashboard-container" class="hidden transition-all duration-500 mt-6 space-y-6">
+    <!-- แสดงเฉพาะปุ่มกดเปิด Popup ตามฟังก์ชันที่มีอยู่ -->
+    <div id="popup-trigger-section" class="flex flex-wrap gap-3 mb-6">
+        <button id="btn-popup-perf" onclick="openPopupPerf()" class="btn-pop bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-5 py-2.5 rounded-2xl shadow-md font-bold text-sm flex items-center gap-2">
+            🏆 <span id="btn-perf-label">Top Performance</span>
+        </button>
+        <button id="btn-popup-qc" onclick="openPopupQc()" class="btn-pop bg-gradient-to-r from-rose-500 to-orange-500 text-white px-5 py-2.5 rounded-2xl shadow-md font-bold text-sm flex items-center gap-2">
+            🚨 Top การอนุมัติผิด (QC)
+        </button>
+        <button id="btn-popup-charts" onclick="openPopupCharts()" class="btn-pop bg-gradient-to-r from-slate-700 to-slate-900 text-white px-5 py-2.5 rounded-2xl shadow-md font-bold text-sm flex items-center gap-2">
+            📊 กราฟผลการปฏิบัติงานแต่ละด้าน
+        </button>
+    </div>
+</div>
+</div>
+</div>
+
+    <!-- Modal ตั้งค่าทีม -->
+    <div id="team-config-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-[110] p-4 overflow-y-auto">
+        <div class="glass-card bg-white/95 p-6 md:p-8 rounded-[2rem] shadow-2xl w-full max-w-4xl my-auto">
+            <div class="flex justify-between items-center mb-6 border-b border-slate-200 pb-4">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-800 flex items-center gap-2">
+                        <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                        ตั้งค่าและจัดการสมาชิกทีม
+                    </h2>
+                    <p class="text-sm text-slate-500 font-medium mt-1">กำหนดรายชื่อพนักงานสำหรับแต่ละทีม</p>
+                </div>
+                <button onclick="closeTeamConfig()" class="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500 hover:text-rose-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="font-bold text-slate-700 mb-3 text-sm">เลือกทีมที่ต้องการแก้ไข:</h3>
+                <div id="config-team-buttons" class="flex flex-wrap gap-2"></div>
+            </div>
+
+            <!-- ส่วนเพิ่มสมาชิกเดี่ยว (เดิม) -->
+            <div class="bg-indigo-50/50 p-4 md:p-5 rounded-2xl border border-indigo-100 mb-6">
+                <h4 class="font-bold text-indigo-900 mb-3 text-sm">เพิ่มสมาชิกใหม่ เข้า <span id="config-current-team-label" class="text-orange-500">ทีม 1</span></h4>
+                <div class="flex flex-col md:flex-row gap-3">
+                    <input type="text" id="new-fullname" placeholder="ชื่อ-นามสกุล" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all text-sm font-medium" onkeypress="if(event.key === 'Enter') addMember()">
+                    <input type="text" id="new-nickname" placeholder="ชื่อเล่น" class="w-full md:w-1/3 px-4 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all text-sm font-medium" onkeypress="if(event.key === 'Enter') addMember()">
+                    <button onclick="addMember()" class="btn-pop bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md shadow-indigo-200 text-sm whitespace-nowrap flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        เพิ่ม
+                    </button>
+                </div>
+            </div>
+
+            <!-- เพิ่มส่วนกล่องข้อความนำเข้า (Bulk Import) และปุ่มจัดการลบหลายคนสำหรับทีม Temp -->
+            <div id="temp-bulk-section" class="bg-orange-50/50 p-4 md:p-5 rounded-2xl border border-orange-200 mb-6 hidden">
+                <h4 class="font-bold text-orange-900 mb-2 text-sm flex items-center gap-2">
+                    <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    นำเข้ารายชื่อหลายคน (สำหรับทีม Temp - คัดลอกชื่อจริงและชื่อเล่นจาก Excel มาวางได้ทันที)
+                </h4>
+                <p class="text-xs text-slate-500 mb-2">รูปแบบ: คอลัมน์ที่ 1 = ชื่อ-นามสกุล, คอลัมน์ที่ 2 = ชื่อเล่น (คั่นด้วย Tab หรือ Copy จาก Excel มาวาง)</p>
+                <textarea id="temp-bulk-textarea" rows="3" placeholder="วางข้อมูลรายชื่อที่นี่..." class="w-full p-3 border border-orange-300 rounded-xl focus:ring-2 focus:ring-orange-200 outline-none text-sm font-medium mb-3 bg-white"></textarea>
+                <div class="flex flex-wrap justify-between items-center gap-2">
+                    <div class="flex gap-2">
+                        <button onclick="deleteSelectedTempMembers()" class="btn-pop bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-md transition-all flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            ลบรายชื่อที่เลือก
+                        </button>
+                        <button onclick="clearAllTempMembers()" class="btn-pop bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-md transition-all flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            เคลียร์รายชื่อทั้งหมด
+                        </button>
+                    </div>
+                    <button onclick="addBulkTempMembers()" class="btn-pop bg-gradient-to-r from-orange-500 to-rose-500 text-white px-5 py-2 rounded-xl font-bold text-sm shadow-md hover:shadow-orange-500/30 transition-all flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        นำเข้ารายชื่อทั้งหมด
+                    </button>
+                </div>
+            </div>
+
+            <div id="config-members-list" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[40vh] overflow-y-auto pr-2"></div>
+            <div id="config-empty-state" class="hidden flex-col items-center justify-center py-10 text-slate-400">
+                <p class="font-medium">ยังไม่มีสมาชิก</p>
+            </div>
+        </div>
+    </div>
+
+<!-- Custom Popup -->
+    <div id="custom-popup" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-[300] p-4 transition-all duration-300">
+        <div class="glass-card bg-white p-6 md:p-8 rounded-[2rem] shadow-2xl w-full max-w-sm text-center transform transition-all duration-300">
+            <div id="custom-popup-icon" class="mx-auto w-16 h-16 mb-4 flex items-center justify-center rounded-full bg-slate-100"></div>
+            <h3 id="custom-popup-title" class="text-xl font-black text-slate-800 mb-2"></h3>
+            <p id="custom-popup-message" class="text-sm text-slate-500 font-medium mb-6"></p>
+            <div id="custom-popup-actions" class="flex justify-center gap-3"></div>
+        </div>
+    </div>
+
+    <!-- Toast UI -->
+    <div id="toast" class="toast-hide fixed bottom-6 left-1/2 bg-slate-800/95 backdrop-blur-md text-white px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 z-[200] pointer-events-none border border-slate-700/50">
+        <svg id="toast-icon" class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+        <span id="toast-msg" class="text-sm font-medium tracking-wide">ดำเนินการสำเร็จ</span>
+    </div>
+
+<!-- Modal สำหรับแสดงตารางกลุ่มทีม Temp -->
+    <div id="temp-group-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-[120] p-4 overflow-y-auto">
+        <div class="glass-card bg-white p-6 md:p-8 rounded-[2rem] shadow-2xl w-full max-w-6xl my-auto transition-all transform scale-95 opacity-0 duration-300" id="temp-group-modal-content">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-200 pb-3">
+                <h2 id="temp-group-modal-title" class="text-2xl font-black text-indigo-800 flex items-center gap-3">
+                    <!-- จะถูกเติมด้วย Javascript -->
+                </h2>
+                <button onclick="closeTempGroupModal()" class="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500 hover:text-rose-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="overflow-x-auto rounded-xl border border-slate-200">
+                <table class="w-full border-collapse text-sm text-center"> <!-- ปรับขนาดตัวอักษรเป็น text-sm -->
+                    <thead id="temp-group-modal-thead"></thead>
+                    <tbody id="temp-group-modal-tbody" class="bg-white"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+async function backupDataToDrive() {
+    showToast("กำลังสำรองข้อมูลขึ้น Google Drive...", "blue");
+    try {
+        const payload = {
+            teamsConfig: TEAMS_CONFIG,
+            masterData: masterData
+        };
+
+        const response = await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" }, // ป้องกันปัญหา CORS
+            body: JSON.stringify(payload)
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === "success") {
+            hasUnsavedChanges = false;
+            showToast("สำรองข้อมูลขึ้น Google Drive สำเร็จ", "success");
+        } else {
+            showToast("สำรองข้อมูลไม่สำเร็จ: " + (result.message || "Unknown error"), "error");
+        }
+    } catch (err) {
+        console.error("Backup error:", err);
+        showToast("เกิดข้อผิดพลาดในการเชื่อมต่อเพื่อสำรองข้อมูล", "error");
+    }
+}
+
+let tempGroupDataStore = {}; // เก็บข้อมูลตารางเพื่อส่งไปแสดงใน Popup
+
+        function openTempGroupModal(groupId) {
+            const data = tempGroupDataStore[groupId];
+            if(!data) return;
+
+            document.getElementById('temp-group-modal-title').innerHTML = data.title;
+            document.getElementById('temp-group-modal-thead').innerHTML = data.thead;
+            document.getElementById('temp-group-modal-tbody').innerHTML = data.tbody;
+
+            const modal = document.getElementById('temp-group-modal');
+            const content = document.getElementById('temp-group-modal-content');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Animation effect
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeTempGroupModal() {
+            const modal = document.getElementById('temp-group-modal');
+            const content = document.getElementById('temp-group-modal-content');
+            
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        const PRODUCT_MAP = [
+            { id: 0, label: "MLPR", short: "ML", class: "col-ml" },
+    	    { id: 1, label: "MNPR", short: "MN", class: "col-mn" },
+            { id: 2, label: "Reconfirm", short: "RCF", class: "col-rcf" },
+            { id: 5, label: "LOG", short: "LOG", class: "col-log" },
+            { id: 3, label: "TXN Manual", short: "TXN", class: "col-txn" },
+            { id: 8, label: "CCTV (Audit)", short: "CCTV", class: "col-audit" },
+            { id: 4, label: "Temp สอบถาม", short: "สอบถาม", class: "col-inq" },
+            { id: 6, label: "รถขบวนเสด็จ", short: "ขบวน", class: "col-conv" },
+            { id: 7, label: "QC", short: "QC Temp", class: "col-qc" }
+        ];
+
+        const DEFAULT_TEAMS_CONFIG = {
+            1: [
+                { id: 101, fullName: "นายพงศกร วัดเซ่ง", nickName: "ปอร์" },
+                { id: 102, fullName: "นายกฤตภัค อยู่เป็นสุข", nickName: "ภีม" },
+                { id: 103, fullName: "นางสาวฮารุมิ อุตตะรี", nickName: "มิ" },
+                { id: 104, fullName: "นายเพชรนรินทร์ แย้มสาย", nickName: "เป๋าเป้" }
+            ],
+            2: [], 3: [], 4: [], 5: [],
+            temp: []
+        };
+
+        let TEAMS_CONFIG = {};
+        let masterData = {};
+        let currentTeam = 1;
+        let configTeam = 1;
+        let summaryCurrentTeam = 1;
+        
+        const today = new Date();
+        let currentYear = today.getFullYear();
+        let currentMonth = today.getMonth();
+        let daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+        
+        const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkb-fcFnbrN0p7dimux_ZO6-z482gMwDCxV0yXd501PYymCSF-4-txjSUNySZd0keQ/exec";
+        let hasUnsavedChanges = false;
+        let cancelAutoBackup = false;
+
+        // ดักจับการแก้ไขข้อมูลเพื่อแจ้งเตือน
+        const originalSaveData = saveDataLocally;
+        saveDataLocally = function() {
+            hasUnsavedChanges = true;
+            cancelAutoBackup = false;
+            originalSaveData();
+        };
+        const originalSaveTeams = saveTeamsConfig;
+        saveTeamsConfig = function() {
+            hasUnsavedChanges = true;
+            cancelAutoBackup = false;
+            originalSaveTeams();
+        };
+
+        function getKey(sId, pId, day) { 
+            return `${currentYear}-${currentMonth}-${sId}-${pId}-${day}`; 
+        }
+
+        function getTempKey(staffId, field) {
+            return `${currentYear}-${currentMonth}-${staffId}-temp-${field}`;
+        }
+
+        window.onload = function() { 
+            loadLocalData();
+            setupMonthPicker();
+            updateLabels();
+            renderTeamButtons('main');
+            renderSummaryTable();
+        };
+// ระบบ Custom Popup
+        function showCustomPopup(title, message, type, onConfirm, onCancel) {
+            const popup = document.getElementById('custom-popup');
+            document.getElementById('custom-popup-title').textContent = title;
+            document.getElementById('custom-popup-message').textContent = message;
+            
+            const icon = document.getElementById('custom-popup-icon');
+            const actions = document.getElementById('custom-popup-actions');
+            actions.innerHTML = '';
+
+            if (type === 'confirm') {
+                icon.innerHTML = '<svg class="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>';
+                icon.className = "mx-auto w-16 h-16 mb-4 flex items-center justify-center rounded-full bg-orange-100";
+                
+                const btnCancel = document.createElement('button');
+                btnCancel.className = "px-4 py-2 bg-slate-200 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-300";
+                btnCancel.textContent = "ยกเลิก";
+                btnCancel.onclick = () => { popup.classList.replace('flex', 'hidden'); if(onCancel) onCancel(); };
+                
+                const btnConfirm = document.createElement('button');
+                btnConfirm.className = "px-4 py-2 bg-gradient-to-r from-orange-500 to-rose-500 text-white rounded-xl font-bold text-sm shadow-md";
+                btnConfirm.textContent = "ยืนยัน";
+                btnConfirm.onclick = () => { popup.classList.replace('flex', 'hidden'); if(onConfirm) onConfirm(); };
+                
+                actions.append(btnCancel, btnConfirm);
+            } else {
+                icon.innerHTML = '<svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+                icon.className = "mx-auto w-16 h-16 mb-4 flex items-center justify-center rounded-full bg-blue-100";
+                
+                const btnOk = document.createElement('button');
+                btnOk.className = "px-6 py-2 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-md";
+                btnOk.textContent = "ตกลง";
+                btnOk.onclick = () => { popup.classList.replace('flex', 'hidden'); if(onConfirm) onConfirm(); };
+                actions.append(btnOk);
+            }
+            popup.classList.replace('hidden', 'flex');
+        }
+
+        // ระบบสำรองข้อมูลขึ้น Google Drive
+        async function exportDataJson(isAuto = false, bypassCooldown = false) {
+            const now = new Date().getTime();
+            const lastBackup = parseInt(localStorage.getItem('mlpr_last_backup_time')) || 0;
+            const timeDiffMin = (now - lastBackup) / (1000 * 60);
+
+            // ตรวจสอบเงื่อนไข 5 นาที
+            if (!isAuto && !bypassCooldown && timeDiffMin < 5) {
+                showCustomPopup("แจ้งเตือนการบันทึกซ้ำ", "เพิ่งมีการสำรองข้อมูลไปเมื่อไม่ถึง 5 นาทีที่ผ่านมา คุณต้องการสำรองข้อมูลซ้ำลงไปหรือไม่?", "confirm", 
+                    () => { exportDataJson(false, true); }, 
+                    () => { cancelAutoBackup = true; showToast("ยกเลิกการสำรองข้อมูลแล้ว", "info"); }
+                );
+                return;
+            }
+
+            if (!isAuto) showToast("กำลังสำรองข้อมูลขึ้น Google Drive...", "blue");
+
+            const backupData = {
+                timestamp: new Date().toISOString(),
+                teamsConfig: TEAMS_CONFIG,
+                masterData: masterData
+            };
+
+            try {
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(backupData),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    localStorage.setItem('mlpr_last_backup_time', now.toString());
+                    hasUnsavedChanges = false;
+                    if (!isAuto) showToast("สำรองข้อมูลขึ้น Google Drive สำเร็จ", "success");
+                }
+            } catch (err) {
+                if (!isAuto) showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error");
+            }
+        }
+
+        // ระบบกู้คืนข้อมูลจาก Google Drive
+        function triggerRestoreJson() {
+    showCustomPopup("ยืนยันการกู้คืนระบบ", "ระบบจะดึงไฟล์ล่าสุดจาก Google Drive มาทับข้อมูลปัจจุบันทั้งหมด แน่ใจหรือไม่?", "confirm", 
+        async () => {
+            showToast("กำลังดึงข้อมูลจาก Google Drive...", "blue");
+            try {
+                const response = await fetch(APPS_SCRIPT_URL);
+                const rawText = await response.text();
+                
+                let result;
+                try {
+                    result = JSON.parse(rawText);
+                } catch (parseErr) {
+                    console.error("Invalid JSON response:", rawText);
+                    showToast("ไม่สามารถอ่านข้อมูลจาก Google Drive ได้", "error");
+                    return;
+                }
+                
+                if (result.status === 'not_found') {
+                    showToast("ไม่พบไฟล์สำรองบน Google Drive", "error");
+                    return;
+                }
+                if (result.status === 'error') {
+                    showToast("กู้คืนไม่สำเร็จ: " + (result.message || "Unknown error"), "error");
+                    return;
+                }
+                
+                // ตรวจสอบว่ามี result.masterData ที่เป็น Object จริงๆ เท่านั้น ห้ามใช้ || result
+                if (result && result.masterData && typeof result.masterData === 'object' && !result.masterData.status) {
+                    TEAMS_CONFIG = result.teamsConfig || {};
+                    masterData = result.masterData;
+                    
+                    saveTeamsConfig();
+                    saveDataLocally();
+                    hasUnsavedChanges = false;
+                    
+                    renderTeamButtons('main');
+                    renderSummaryTable();
+                    
+                    showToast("กู้คืนข้อมูลสำเร็จ ระบบเป็นปัจจุบันแล้ว", "success");
+                } else {
+                    showToast("โครงสร้างข้อมูลในไฟล์สำรองไม่ถูกต้อง (ไฟล์บน Drive เสียหาย)", "error");
+                }
+            } catch (err) {
+                console.error("Restore error:", err);
+                showToast("เกิดข้อผิดพลาดในการเชื่อมต่อเพื่อกู้คืนข้อมูล", "error");
+            }
+        }
+    );
+}
+
+        // แจ้งเตือนก่อนปิดแท็บ และ Auto Backup หากลืมสำรองข้อมูล
+        window.addEventListener('beforeunload', function (e) {
+            if (hasUnsavedChanges && !cancelAutoBackup) {
+                // เบราว์เซอร์จะแสดงข้อความ Default เสมอ สำหรับการปิดแท็บ (ไม่สามารถใช้ Custom Popup ดักการปิดแท็บได้ด้วยเหตุผลด้านความปลอดภัยของ Browser)
+                e.preventDefault();
+                e.returnValue = ''; 
+            }
+        });
+
+        window.addEventListener('unload', function () {
+            if (hasUnsavedChanges && !cancelAutoBackup) {
+                const backupData = { timestamp: new Date().toISOString(), teamsConfig: TEAMS_CONFIG, masterData: masterData };
+                // keepalive: true สำคัญมาก ทำให้เบราว์เซอร์ส่งข้อมูลให้เสร็จแม้แท็บจะถูกปิดไปแล้ว
+                fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(backupData),
+                    keepalive: true,
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+            }
+        });
+
+function getTempMembers(year, month) {
+    if (!TEAMS_CONFIG['temp_monthly']) TEAMS_CONFIG['temp_monthly'] = {};
+    const key = `${year}-${month}`;
+    if (!TEAMS_CONFIG['temp_monthly'][key]) {
+        let prevYear = year;
+        let prevMonth = month - 1;
+        if (prevMonth < 0) { prevMonth = 11; prevYear--; }
+        const prevKey = `${prevYear}-${prevMonth}`;
+        
+        if (TEAMS_CONFIG['temp_monthly'][prevKey]) {
+            TEAMS_CONFIG['temp_monthly'][key] = JSON.parse(JSON.stringify(TEAMS_CONFIG['temp_monthly'][prevKey]));
+        } else if (TEAMS_CONFIG['temp'] && TEAMS_CONFIG['temp'].length > 0) {
+            TEAMS_CONFIG['temp_monthly'][key] = JSON.parse(JSON.stringify(TEAMS_CONFIG['temp']));
+        } else {
+            TEAMS_CONFIG['temp_monthly'][key] = [];
+        }
+    }
+    return TEAMS_CONFIG['temp_monthly'][key];
+}
+
+        function loadLocalData() {
+            try {
+                const storedTeams = localStorage.getItem('mlpr_teams_config_v3');
+                if (storedTeams) {
+                    TEAMS_CONFIG = JSON.parse(storedTeams);
+                    for (let i = 1; i <= 5; i++) {
+                        if (!TEAMS_CONFIG[i]) TEAMS_CONFIG[i] = [];
+                    }
+                    if (!TEAMS_CONFIG['temp_monthly']) TEAMS_CONFIG['temp_monthly'] = {};
+                } else {
+                    TEAMS_CONFIG = JSON.parse(JSON.stringify(DEFAULT_TEAMS_CONFIG));
+                    saveTeamsConfig();
+                }
+            } catch(e) {
+                TEAMS_CONFIG = JSON.parse(JSON.stringify(DEFAULT_TEAMS_CONFIG));
+            }
+
+            try {
+                const storedData = localStorage.getItem('mlpr_v5_final');
+                masterData = storedData ? JSON.parse(storedData) : {};
+            } catch(e) {
+                masterData = {};
+            }
+        }
+
+        function saveTeamsConfig() {
+            localStorage.setItem('mlpr_teams_config_v3', JSON.stringify(TEAMS_CONFIG));
+        }
+
+        function saveDataLocally() {
+            localStorage.setItem('mlpr_v5_final', JSON.stringify(masterData));
+        }
+
+        function setupMonthPicker() {
+            const picker = document.getElementById('entry-month');
+            picker.value = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+            picker.addEventListener('change', (e) => {
+                if(!e.target.value) return;
+                const [year, month] = e.target.value.split('-');
+                currentYear = parseInt(year);
+                currentMonth = parseInt(month) - 1;
+                daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate(); 
+                
+                updateLabels(); 
+                renderSummaryTable();
+            });
+        }
+
+        function updateLabels() {
+            document.getElementById('dashboard-subtitle').textContent = `ระบบบันทึกและสรุปยอดงานประจำเดือน ${thaiMonths[currentMonth]} ${currentYear}`;
+            document.getElementById('display-team-name').textContent = currentTeam === 'temp' ? `ทีม Temp` : `ทีม ${currentTeam}`;
+            
+            const tempMapBtn = document.getElementById('temp-qc-map-btn');
+            if (tempMapBtn) {
+                if (currentTeam === 'temp') {
+                    tempMapBtn.classList.remove('hidden');
+                } else {
+                    tempMapBtn.classList.add('hidden');
+                }
+            }
+        }
+
+        function showToast(msg, type = 'success') { 
+            const t = document.getElementById('toast'); 
+            const icon = document.getElementById('toast-icon');
+            
+            document.getElementById('toast-msg').textContent = msg; 
+            
+            if(type === 'error' || type === 'red') {
+                icon.className = "w-5 h-5 text-rose-400";
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>';
+            } else if (type === 'blue' || type === 'info') {
+                icon.className = "w-5 h-5 text-blue-400";
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+            } else {
+                icon.className = "w-5 h-5 text-emerald-400";
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>';
+            }
+
+            t.classList.replace('toast-hide', 'toast-show'); 
+            setTimeout(() => t.classList.replace('toast-show', 'toast-hide'), 3000); 
+        }
+
+        function clearCurrentMonthData() {
+            const monthName = thaiMonths[currentMonth];
+            const teamName = currentTeam === 'temp' ? 'ทีม Temp' : `ทีม ${currentTeam}`;
+            showCustomPopup("ล้างข้อมูล", `คุณต้องการล้างข้อมูลการปฏิบัติงานของ${teamName} ประจำเดือน ${monthName} ${currentYear} ใช่หรือไม่?`, "confirm", 
+                () => {
+                    const currentMembers = currentTeam === 'temp' ? getTempMembers(currentYear, currentMonth) : (TEAMS_CONFIG[currentTeam] || []);
+                    const memberIds = new Set(currentMembers.map(m => String(m.id)));
+                    
+                    Object.keys(masterData).forEach(key => {
+                        const parts = key.split('-');
+                        if (parts.length >= 3) {
+                            const [year, month, staffId] = parts;
+                            if (parseInt(year) === currentYear && parseInt(month) === currentMonth && memberIds.has(staffId)) {
+                                delete masterData[key];
+                            }
+                        }
+                    });
+                    saveDataLocally();
+                    renderSummaryTable();
+                    showToast(`ล้างข้อมูลประจำเดือนนี้ของ${teamName}เรียบร้อยแล้ว`, "error");
+                }
+            );
+        }
+
+        function renderTeamButtons(context = 'main') {
+            let containerId, activeTeam, onClickFn;
+            
+            if (context === 'main') {
+                containerId = 'main-team-buttons';
+                activeTeam = currentTeam;
+                onClickFn = 'selectMainTeam';
+            } else if (context === 'config') {
+                containerId = 'config-team-buttons';
+                activeTeam = configTeam;
+                onClickFn = 'selectConfigTeam';
+            } else if (context === 'summary') {
+                containerId = 'summary-team-buttons';
+                activeTeam = summaryCurrentTeam;
+                onClickFn = 'selectSummaryTeam';
+            }
+
+            const container = document.getElementById(containerId);
+            if(!container) return;
+            
+            container.innerHTML = '';
+
+            if (context === 'summary') {
+                const btnAll = document.createElement('button');
+                btnAll.textContent = `สรุปผลรวม`;
+                let btnClassAll = `btn-pop px-5 py-2 rounded-xl text-sm font-bold border-2 transition-all shadow-sm`;
+                if (activeTeam === 'all') {
+                    btnClassAll += ` team-btn-active`;
+                } else {
+                    btnClassAll += ` team-btn-inactive`;
+                }
+                btnAll.className = btnClassAll;
+                btnAll.onclick = () => window[onClickFn]('all');
+                container.appendChild(btnAll);
+            }
+
+            for (let i = 1; i <= 5; i++) {
+                const btn = document.createElement('button');
+                btn.textContent = `ทีม ${i}`;
+                
+                let btnClass = `btn-pop px-5 py-2 rounded-xl text-sm font-bold border-2 transition-all shadow-sm`;
+                if (activeTeam === i) {
+                    btnClass += ` team-btn-active`;
+                } else {
+                    btnClass += ` team-btn-inactive`;
+                }
+                
+                btn.className = btnClass;
+                btn.onclick = () => window[onClickFn](i);
+                container.appendChild(btn);
+            }
+
+            const btnTemp = document.createElement('button');
+            btnTemp.textContent = `ทีม Temp`;
+            let btnClassTemp = `btn-pop px-5 py-2 rounded-xl text-sm font-bold border-2 transition-all shadow-sm`;
+            if (activeTeam === 'temp') {
+                btnClassTemp += ` team-btn-active`;
+            } else {
+                btnClassTemp += ` team-btn-inactive`;
+            }
+            btnTemp.className = btnClassTemp;
+            btnTemp.onclick = () => window[onClickFn]('temp');
+            container.appendChild(btnTemp);
+        }
+
+        function selectMainTeam(teamId) {
+            currentTeam = teamId;
+            renderTeamButtons('main');
+            updateLabels();
+            renderSummaryTable();
+        }
+
+        function selectConfigTeam(teamId) {
+    configTeam = teamId;
+    renderTeamButtons('config');
+    document.getElementById('config-current-team-label').textContent = configTeam === 'temp' ? `ทีม Temp` : `ทีม ${configTeam}`;
+    
+    // เพิ่มการจัดการเปิด/ปิดกล่อง Bulk Import เฉพาะเมื่อเลือกทีม Temp เท่านั้น
+    const tempBulkSection = document.getElementById('temp-bulk-section');
+    if (tempBulkSection) {
+        if (configTeam === 'temp') {
+            tempBulkSection.classList.remove('hidden');
+        } else {
+            tempBulkSection.classList.add('hidden');
+        }
+    }
+
+    renderConfigMembersList();
+    document.getElementById('new-fullname').value = '';
+    document.getElementById('new-nickname').value = '';
+}
+
+function addBulkTempMembers() {
+    const textarea = document.getElementById('temp-bulk-textarea');
+    const text = textarea.value.trim();
+    if (!text) {
+        showToast("กรุณาวางข้อมูลรายชื่อก่อนนำเข้า", "error");
+        return;
+    }
+
+    const rows = text.split(/\r?\n/);
+    const membersList = getTempMembers(currentYear, currentMonth);
+    let addedCount = 0;
+
+    rows.forEach(row => {
+        const cols = row.split('\t').map(c => c.trim()).filter(c => c !== '');
+        if (cols.length > 0) {
+            const fullName = cols[0];
+            const nickName = cols.length > 1 ? cols[1] : '';
+            
+            if (fullName) {
+                const newId = new Date().getTime() + Math.floor(Math.random() * 1000);
+                membersList.push({
+                    id: newId,
+                    fullName: fullName,
+                    nickName: nickName
+                });
+                addedCount++;
+            }
+        }
+    });
+
+    if (addedCount > 0) {
+        saveTeamsConfig();
+        renderConfigMembersList();
+        textarea.value = '';
+        showToast(`นำเข้ารายชื่อทีม Temp สำเร็จ ${addedCount} คน`, "success");
+    } else {
+        showToast("ไม่พบข้อมูลรายชื่อที่ถูกต้อง", "error");
+    }
+}
+        
+        function selectSummaryTeam(teamId) {
+            summaryCurrentTeam = teamId;
+            renderTeamButtons('summary');
+        }
+
+        function renderSummaryTable() {
+            const thead = document.getElementById('summary-thead');
+            const tbody = document.getElementById('summary-tbody');
+            const emptyState = document.getElementById('empty-team-state');
+            const tableWrapper = document.querySelector('.table-wrapper');
+            
+            if (!thead || !tbody) return;
+
+            const currentMembers = currentTeam === 'temp' ? getTempMembers(currentYear, currentMonth) : (TEAMS_CONFIG[currentTeam] || []);
+            
+            if (currentMembers.length === 0) {
+                tableWrapper.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+                return;
+            } else {
+                tableWrapper.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+            }
+
+            if (currentTeam === 'temp') {
+                thead.innerHTML = `
+                    <tr class="bg-slate-800 text-white text-[12px]">
+                        <th class="p-3 text-center min-w-[200px] border-r border-slate-700">เจ้าหน้าที่</th>
+                        <th class="p-3 text-center min-w-[120px] border-r border-slate-700">วันทำงาน</th>
+                        <th class="p-3 text-center min-w-[150px] border-r border-slate-700">ยอดรวมอนุมติ</th>
+                        <th class="p-3 text-center min-w-[160px] border-r border-slate-700 text-blue-300">ยอดรวมอนุมติเฉลี่ยต่อวัน</th>
+                        <th class="p-3 text-center min-w-[150px] border-r border-slate-700 text-rose-300">ยอดอนุมัติผิด</th>
+                        <th class="p-3 text-center min-w-[160px] text-rose-300">ยอดอนุมัติผิดเฉลี่ยต่อวัน</th>
+                    </tr>
+                `;
+
+                tbody.innerHTML = '';
+                currentMembers.forEach((staff, sIdx) => {
+                    const rowBgClass = sIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
+                    
+                    const workDaysVal = masterData[getTempKey(staff.id, 'workDays')] || '';
+                    const totalApproveVal = masterData[getTempKey(staff.id, 'totalApprove')] || '';
+                    const totalQcVal = masterData[getTempKey(staff.id, 'totalQc')] || '';
+
+                    const wNum = parseFloat(workDaysVal) || 0;
+                    const aNum = parseFloat(totalApproveVal) || 0;
+                    const qNum = parseFloat(totalQcVal) || 0;
+
+                    const avgApp = wNum > 0 ? (aNum / wNum).toFixed(2) : '0';
+                    const avgQc = wNum > 0 ? (qNum / wNum).toFixed(2) : '0';
+
+                    const tr = document.createElement('tr');
+                    tr.className = rowBgClass;
+                    tr.innerHTML = `
+                        <td class="p-3 text-left pl-6 border-r border-slate-200">
+                            <strong class="text-slate-800">${staff.fullName}</strong><br>
+                            <span class="text-xs text-slate-500 font-medium">(${staff.nickName || '-'})</span>
+                        </td>
+                        <td class="p-2 border-r border-slate-200">
+                            <input type="number" class="input-cell font-bold text-slate-700 text-center py-2" value="${workDaysVal}" onwheel="event.preventDefault()" oninput="handleTempInput(${staff.id}, 'workDays', this)">
+                        </td>
+                        <td class="p-2 border-r border-slate-200">
+                            <input type="number" class="input-cell font-bold text-indigo-700 text-center py-2" value="${totalApproveVal}" onwheel="event.preventDefault()" oninput="handleTempInput(${staff.id}, 'totalApprove', this)">
+                        </td>
+                        <td class="p-3 font-bold text-blue-600 text-center border-r border-slate-200" id="temp-avg-app-${staff.id}">${avgApp}</td>
+                        <td class="p-2 border-r border-slate-200">
+                            <input type="number" class="input-cell font-bold text-rose-600 text-center py-2" value="${totalQcVal}" id="temp-qc-input-${staff.id}" onwheel="event.preventDefault()" oninput="handleTempInput(${staff.id}, 'totalQc', this)">
+                        </td>
+                        <td class="p-3 font-bold text-rose-600 text-center" id="temp-avg-qc-${staff.id}">${avgQc}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                return;
+            }
+
+            let thDays = '';
+            for (let d = 1; d <= daysInMonth; d++) {
+                thDays += `
+                    <th class="p-1 text-center min-w-[45px] border-r border-slate-200">
+                        <div class="text-[11px] text-slate-500 font-bold">${d}</div>
+                    </th>`;
+            }
+            
+            const monthName = thaiMonths[currentMonth];
+            const headerTitle = `บันทึกข้อมูลประจำเดือน ${monthName} ${currentYear}`;
+            
+            thead.innerHTML = `
+                <tr class="bg-slate-800 text-white text-[11px]">
+                    <th rowspan="2" class="p-2 text-center min-w-[120px] sticky-col-1 bg-slate-800 border-r-2 border-slate-700">เจ้าหน้าที่</th>
+                    <th rowspan="2" class="p-2 text-center min-w-[70px] sticky-col-2 bg-slate-800 border-r border-slate-700">Product</th>
+                    <th rowspan="2" class="p-2 text-center min-w-[65px] sticky-col-3 bg-slate-800 text-blue-300 border-r-2 border-slate-700">รวมงาน</th>
+                    <th colspan="${daysInMonth}" class="p-1 text-center bg-slate-700/50 font-medium tracking-wider text-[11px] text-slate-300 border-b border-slate-700">
+                        ${headerTitle}
+                    </th>
+                </tr>
+                <tr class="bg-slate-100 text-slate-700 border-b border-slate-300 shadow-sm">
+                    ${thDays}
+                </tr>
+            `;
+
+            tbody.innerHTML = '';
+            
+            currentMembers.forEach((staff, sIdx) => {
+                const rowBgClass = sIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
+                
+                PRODUCT_MAP.forEach((prod, pIdx) => {
+                    const tr = document.createElement('tr');
+                    if (pIdx === PRODUCT_MAP.length - 1) tr.className = "staff-divider";
+                    
+                    let rowHTML = "";
+                    if (pIdx === 0) {
+                        rowHTML += `
+                            <td rowspan="${PRODUCT_MAP.length}" class="sticky-col-1 border-r-2 bg-white">
+                                <div class="p-2">
+                                    <strong class="text-slate-800">${staff.fullName}</strong><br>
+                                    <span class="text-xs text-slate-500 font-medium">(${staff.nickName || '-'})</span>
+                                </div>
+                            </td>`;
+                    }
+
+                    rowHTML += `
+                        <td class="sticky-col-2 ${prod.label === 'QC' ? 'qc-text' : 'font-medium text-slate-700'} ${rowBgClass}">${prod.label}</td>
+                        <td class="sticky-col-3 font-bold text-blue-600 text-center" id="sum-${staff.id}-${prod.id}">${calculateSum(staff.id, prod.id)}</td>`;
+
+                    for (let d = 1; d <= daysInMonth; d++) {
+                        const key = getKey(staff.id, prod.id, d);
+                        const val = masterData[key] || '';
+                        
+                        let textColorClass = "text-slate-700";
+                        if(val === 'วันหยุด') textColorClass = "holiday-text";
+                        else if(val !== '' && val !== '0' && val !== '-') textColorClass = "font-bold text-indigo-700";
+
+                        const inputId = `summary-${staff.id}-${prod.id}-${d}`;
+                        
+                        rowHTML += `
+                            <td class="day-cell p-0 border-r border-slate-200 ${rowBgClass}">
+                                <input type="text" id="${inputId}" 
+                                    class="input-cell ${textColorClass}"
+                                    value="${val}"
+                                    oninput="handleInputFromSummary(${staff.id}, ${prod.id}, ${d}, this)">
+                            </td>`;
+                    }
+
+                    tr.innerHTML = rowHTML;
+                    tbody.appendChild(tr);
+                });
+            });
+        }
+
+        function openTempQcModal() {
+            document.getElementById('temp-qc-modal').classList.remove('hidden');
+            document.getElementById('temp-qc-modal').classList.add('flex');
+            document.getElementById('temp-qc-textarea').value = '';
+        }
+
+        function closeTempQcModal() {
+            document.getElementById('temp-qc-modal').classList.add('hidden');
+            document.getElementById('temp-qc-modal').classList.remove('flex');
+        }
+
+        function processTempQcMapping() {
+            const text = document.getElementById('temp-qc-textarea').value.trim();
+            if (!text) {
+                showToast("กรุณาวางข้อมูลก่อนประมวลผล", "error");
+                return;
+            }
+            const rows = text.split(/\r?\n/);
+            const currentMembers = getTempMembers(currentYear, currentMonth);
+            let matchCount = 0;
+            let unmappedRows = [];
+
+            // ฟังก์ชันช่วยบันทึกค่าและคำนวณค่าเฉลี่ยอัตโนมัติ
+            const applyMapping = (matchedStaff, val) => {
+                const totalQcKey = getTempKey(matchedStaff.id, 'totalQc');
+                const workDaysKey = getTempKey(matchedStaff.id, 'workDays');
+                
+                masterData[totalQcKey] = val.toString();
+                matchCount++;
+            };
+
+            // รอบที่ 1: Map ตามปกติก่อน
+            rows.forEach(row => {
+                const cols = row.split('\t').map(c => c.trim()).filter(c => c !== '');
+                if (cols.length >= 2) {
+                    const nameStr = cols[0].toLowerCase();
+                    const valStr = cols[cols.length - 1].replace(/,/g, '');
+                    const val = parseFloat(valStr);
+
+                    if (!isNaN(val)) {
+                        const matchedStaff = currentMembers.find(m => 
+                            m.fullName.toLowerCase().includes(nameStr) || 
+                            nameStr.includes(m.fullName.toLowerCase()) ||
+                            (m.nickName && (m.nickName.toLowerCase() === nameStr || nameStr.includes(m.nickName.toLowerCase())))
+                        );
+
+                        if (matchedStaff) {
+                            applyMapping(matchedStaff, val);
+                        } else {
+                            unmappedRows.push({ nameStr, val });
+                        }
+                    }
+                }
+            });
+
+            // รอบที่ 2: กวาดรายชื่อที่ยังไม่เจอ โดยตัดคำนำหน้าออกแล้ว Map ใหม่
+            if (unmappedRows.length > 0) {
+                unmappedRows.forEach(item => {
+                    const cleanNameStr = item.nameStr
+                        .replace(/^นาย\s*/, '')
+                        .replace(/^นางสาว\s*/, '')
+                        .replace(/^นาง\s*/, '')
+                        .trim();
+
+                    if (cleanNameStr) {
+                        const matchedStaff = currentMembers.find(m => {
+                            const staffCleanName = m.fullName.toLowerCase()
+                                .replace(/^นาย\s*/, '')
+                                .replace(/^นางสาว\s*/, '')
+                                .replace(/^นาง\s*/, '')
+                                .trim();
+                            return staffCleanName.includes(cleanNameStr) || cleanNameStr.includes(staffCleanName);
+                        });
+
+                        if (matchedStaff) {
+                            applyMapping(matchedStaff, item.val);
+                        }
+                    }
+                });
+            }
+
+            saveDataLocally();
+            renderSummaryTable();
+            closeTempQcModal();
+            showToast(`Map ยอดอนุมัติผิดสำเร็จ ${matchCount} รายการ`, "success");
+        }
+
+        function handleTempInput(staffId, field, inputEl) {
+            let val = inputEl.value.trim();
+            const key = getTempKey(staffId, field);
+            masterData[key] = val;
+            saveDataLocally();
+            
+            const workDaysVal = parseFloat(masterData[getTempKey(staffId, 'workDays')]) || 0;
+            const totalApproveVal = parseFloat(masterData[getTempKey(staffId, 'totalApprove')]) || 0;
+            const totalQcVal = parseFloat(masterData[getTempKey(staffId, 'totalQc')]) || 0;
+
+            const avgApprove = workDaysVal > 0 ? (totalApproveVal / workDaysVal).toFixed(2) : '0';
+            const avgQc = workDaysVal > 0 ? (totalQcVal / workDaysVal).toFixed(2) : '0';
+
+            const avgAppEl = document.getElementById(`temp-avg-app-${staffId}`);
+            const avgQcEl = document.getElementById(`temp-avg-qc-${staffId}`);
+            if (avgAppEl) avgAppEl.textContent = avgApprove;
+            if (avgQcEl) avgQcEl.textContent = avgQc;
+        }
+
+        function handleInputFromSummary(staffId, prodId, day, inputEl) {
+            let val = inputEl.value.trim();
+            const key = getKey(staffId, prodId, day);
+            masterData[key] = val;
+            
+            inputEl.className = "input-cell ";
+            if(val === 'วันหยุด') inputEl.className += "holiday-text";
+            else if(val !== '' && val !== '0' && val !== '-' && !isNaN(val)) inputEl.className += "font-bold text-indigo-700";
+            else inputEl.className += "text-slate-700";
+
+            saveDataLocally();
+            
+            const sumEl = document.getElementById(`sum-${staffId}-${prodId}`);
+            if(sumEl) sumEl.textContent = calculateSum(staffId, prodId);
+        }
+
+        function calculateSum(sId, pId) { 
+            let t = 0; 
+            for (let d = 1; d <= daysInMonth; d++) {
+                let val = masterData[getKey(sId, pId, d)];
+                if (val && !isNaN(val) && val.trim() !== '' && val !== '-') {
+                    t += parseFloat(val);
+                }
+            } 
+            return t === 0 ? '0' : t; 
+        }
+
+        document.addEventListener('paste', function(e) {
+            const target = e.target;
+            const targetInput = target.tagName === 'INPUT' ? target : target.querySelector('input');
+
+            if (currentTeam === 'temp') {
+                if (!targetInput) return;
+                e.preventDefault();
+                const text = (e.clipboardData || window.clipboardData).getData('text');
+                if (!text) return;
+
+                const rows = text.split(/\r?\n/);
+                const startTr = targetInput.closest('tr');
+                const tbody = startTr.closest('tbody');
+                const startRowIdx = Array.from(tbody.children).indexOf(startTr);
+                
+                const inputsInRow = Array.from(startTr.querySelectorAll('input'));
+                const startInputIdx = inputsInRow.indexOf(targetInput);
+                if (startInputIdx === -1) return;
+
+                const fieldsOrder = ['workDays', 'totalApprove', 'totalQc'];
+                const currentMembers = getTempMembers(currentYear, currentMonth); 
+                let dataChanged = false;
+
+                rows.forEach((row, rIdx) => {
+                    if (!row.trim() && rIdx === rows.length - 1) return;
+                    const cleanRow = row.replace(/[\t\r ]+$/, '');
+                    let cols = cleanRow.split('\t');
+                    while (cols.length > 0 && cols[cols.length - 1].trim() === '') {
+                        cols.pop();
+                    }
+                    if (cols.length === 0) return;
+
+                    const targetRowIdx = startRowIdx + rIdx;
+                    const targetStaff = currentMembers[targetRowIdx];
+                    if (!targetStaff) return;
+
+                    const targetTr = tbody.children[targetRowIdx];
+                    const targetInputs = Array.from(targetTr.querySelectorAll('input'));
+
+                    cols.forEach((val, cIdx) => {
+                        const inputIdx = startInputIdx + cIdx;
+                        if (inputIdx < fieldsOrder.length) {
+                            const field = fieldsOrder[inputIdx];
+                            const inputEl = targetInputs[inputIdx];
+                            if (inputEl) {
+                                let cleanVal = val.trim().replace(/,/g, '');
+                                if (cleanVal === '' || isNaN(cleanVal)) {
+                                    cleanVal = '';
+                                }
+                                inputEl.value = cleanVal;
+                                handleTempInput(targetStaff.id, field, inputEl);
+                                dataChanged = true;
+                            }
+                        }
+                    });
+                });
+
+                if (dataChanged) {
+                    showToast("วางข้อมูลและบันทึกสำเร็จ", "blue");
+                }
+                return;
+            }
+
+            const cellTd = target.closest('td.day-cell') || target.closest('td');
+            const inputTarget = target.tagName === 'INPUT' && target.id && target.id.startsWith('summary-') 
+                ? target 
+                : cellTd ? cellTd.querySelector('input[id^="summary-"]') : null;
+
+            if (!inputTarget) return;
+
+            e.preventDefault();
+            const text = (e.clipboardData || window.clipboardData).getData('text');
+            if (!text) return;
+            
+            const rows = text.split(/\r?\n/);
+            const startTd = inputTarget.closest('td');
+            const startTr = startTd.closest('tr');
+            const tbody = startTr.closest('tbody');
+            
+            const startRowIdx = Array.from(tbody.children).indexOf(startTr);
+            const hasNameCell = !!startTr.querySelector('.sticky-col-1');
+            const dayColOffset = hasNameCell ? 3 : 2;
+            
+            const clickedCellIndex = Array.from(startTr.children).indexOf(startTd);
+            const startDayIndex = clickedCellIndex - dayColOffset + 1; 
+
+            let dataChanged = false;
+
+            rows.forEach((row, rIdx) => {
+                if (!row.trim() && rIdx === rows.length - 1) return;
+                
+                const cleanRow = row.replace(/[\t\r ]+$/, '');
+                let cols = cleanRow.split('\t');
+                
+                while (cols.length > 0 && cols[cols.length - 1].trim() === '') {
+                    cols.pop();
+                }
+                if (cols.length === 0) return;
+                
+                const targetTr = tbody.children[startRowIdx + rIdx];
+                if (!targetTr) return;
+
+                const targetHasName = !!targetTr.querySelector('.sticky-col-1');
+                const targetDayOffset = targetHasName ? 3 : 2;
+
+                cols.forEach((value, cIdx) => {
+                    const targetDay = startDayIndex + cIdx;
+                    if (targetDay >= 1 && targetDay <= daysInMonth) {
+                        const targetCell = targetTr.children[targetDayOffset + targetDay - 1];
+                        if (targetCell) {
+                            const input = targetCell.querySelector('input');
+                            if (input) {
+                                let cleanVal = value.trim().replace(/,/g, '');
+                                
+                                const parts = input.id.split('-');
+                                const sId = parseInt(parts[1]);
+                                const pId = parseInt(parts[2]);
+                                const day = parseInt(parts[3]);
+                                
+                                if (pId === 7) {
+                                    if (cleanVal === '' || cleanVal === '0' || cleanVal === '-') {
+                                        // Keep as is
+                                    } else if (isNaN(cleanVal)) {
+                                        cleanVal = '';
+                                    }
+                                } else {
+                                    if (cleanVal === '' || (isNaN(cleanVal) && cleanVal !== '0' && cleanVal !== '-')) {
+                                        cleanVal = 'วันหยุด';
+                                    } else if (cleanVal === '-') {
+                                        cleanVal = '-';
+                                    } else if (cleanVal === '0') {
+                                        cleanVal = '0';
+                                    }
+                                }
+                                
+                                input.value = cleanVal;
+                                masterData[getKey(sId, pId, day)] = cleanVal;
+                                dataChanged = true;
+                            }
+                        }
+                    }
+                });
+            });
+
+            if (dataChanged) {
+                saveDataLocally();
+                renderSummaryTable();
+                showToast("วางข้อมูลและบันทึกสำเร็จ", "blue");
+            }
+        });
+
+        function openTeamConfig() {
+            document.getElementById('team-config-modal').classList.remove('hidden');
+            document.getElementById('team-config-modal').classList.add('flex');
+            
+            configTeam = currentTeam;
+            renderTeamButtons('config');
+            document.getElementById('config-current-team-label').textContent = configTeam === 'temp' ? `ทีม Temp` : `ทีม ${configTeam}`;
+            
+            // เพิ่มการจัดการเปิด/ปิดกล่อง Bulk Import ตรงนี้เพื่อให้แสดงผลทันทีเมื่อเปิดหน้าตั้งค่า
+            const tempBulkSection = document.getElementById('temp-bulk-section');
+            if (tempBulkSection) {
+                if (configTeam === 'temp') {
+                    tempBulkSection.classList.remove('hidden');
+                } else {
+                    tempBulkSection.classList.add('hidden');
+                }
+            }
+
+            renderConfigMembersList();
+        }
+
+        function closeTeamConfig() {
+            document.getElementById('team-config-modal').classList.add('hidden');
+            document.getElementById('team-config-modal').classList.remove('flex');
+            renderSummaryTable();
+        }
+
+        function renderConfigMembersList() {
+            const listContainer = document.getElementById('config-members-list');
+            const emptyState = document.getElementById('config-empty-state');
+            const members = configTeam === 'temp' ? getTempMembers(currentYear, currentMonth) : (TEAMS_CONFIG[configTeam] || []);
+            
+            listContainer.innerHTML = '';
+            
+            if (members.length === 0) {
+                listContainer.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+                return;
+            }
+            
+            listContainer.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            emptyState.classList.remove('flex');
+
+            members.forEach((member, index) => {
+                const card = document.createElement('div');
+                card.className = "member-card bg-white p-3 rounded-2xl border border-slate-200 flex justify-between items-center";
+                
+                let checkboxHtml = '';
+                if (configTeam === 'temp') {
+                    checkboxHtml = `<input type="checkbox" class="temp-member-checkbox w-4 h-4 text-orange-600 rounded border-slate-300 focus:ring-orange-500 cursor-pointer" data-id="${member.id}">`;
+                }
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        ${checkboxHtml}
+                        <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-xs">
+                            ${index + 1}
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-800 text-sm">${member.fullName}</div>
+                            <div class="text-[11px] text-slate-500 font-medium mt-0.5">ชื่อเล่น: ${member.nickName || '-'}</div>
+                        </div>
+                    </div>
+                    <button onclick="deleteMember(${member.id})" class="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors" title="ลบพนักงาน">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                `;
+                listContainer.appendChild(card);
+            });
+        }
+
+        function addMember() {
+    const fullNameInput = document.getElementById('new-fullname');
+    const nickNameInput = document.getElementById('new-nickname');
+    
+    const fullName = fullNameInput.value.trim();
+    const nickName = nickNameInput.value.trim();
+    
+    if (!fullName) {
+        showToast("กรุณากรอก ชื่อ-นามสกุล", "error");
+        fullNameInput.focus();
+        return;
+    }
+
+    const newId = new Date().getTime();
+    
+    if (configTeam === 'temp') {
+        const membersList = getTempMembers(currentYear, currentMonth);
+        membersList.push({
+            id: newId,
+            fullName: fullName,
+            nickName: nickName
+        });
+    } else {
+        if (!TEAMS_CONFIG[configTeam]) {
+            TEAMS_CONFIG[configTeam] = [];
+        }
+        TEAMS_CONFIG[configTeam].push({
+            id: newId,
+            fullName: fullName,
+            nickName: nickName
+        });
+    }
+    
+    saveTeamsConfig();
+    renderConfigMembersList();
+    
+    fullNameInput.value = '';
+    nickNameInput.value = '';
+    fullNameInput.focus();
+    
+    showToast("เพิ่มรายชื่อสำเร็จ");
+}
+
+        function deleteMember(memberId) {
+            showCustomPopup("ลบพนักงาน", "คุณต้องการลบรายชื่อพนักงานนี้ออกจากทีม ใช่หรือไม่?", "confirm", 
+                () => {
+                    if (configTeam === 'temp') {
+                        const members = getTempMembers(currentYear, currentMonth);
+                        TEAMS_CONFIG['temp_monthly'][`${currentYear}-${currentMonth}`] = members.filter(m => m.id !== memberId);
+                    } else {
+                        const members = TEAMS_CONFIG[configTeam] || [];
+                        TEAMS_CONFIG[configTeam] = members.filter(m => m.id !== memberId);
+                    }
+                    
+                    saveTeamsConfig();
+                    renderConfigMembersList();
+                    showToast("ลบรายชื่อสำเร็จ", "info");
+                }
+            );
+        }
+
+function deleteSelectedTempMembers() {
+            if (configTeam !== 'temp') return;
+            const checkboxes = document.querySelectorAll('.temp-member-checkbox:checked');
+            if (checkboxes.length === 0) {
+                showToast("กรุณาเลือกรายชื่อที่ต้องการลบอย่างน้อย 1 คน", "error");
+                return;
+            }
+
+            showCustomPopup("ลบพนักงาน", `คุณต้องการลบรายชื่อพนักงานที่เลือกจำนวน ${checkboxes.length} คน ใช่หรือไม่?`, "confirm", 
+                () => {
+                    const selectedIds = Array.from(checkboxes).map(cb => parseInt(cb.getAttribute('data-id')));
+                    const members = getTempMembers(currentYear, currentMonth);
+                    TEAMS_CONFIG['temp_monthly'][`${currentYear}-${currentMonth}`] = members.filter(m => !selectedIds.includes(m.id));
+                    
+                    saveTeamsConfig();
+                    renderConfigMembersList();
+                    showToast("ลบรายชื่อที่เลือกสำเร็จ", "info");
+                }
+            );
+        }
+
+        function clearAllTempMembers() {
+            if (configTeam !== 'temp') return;
+            const members = getTempMembers(currentYear, currentMonth);
+            if (members.length === 0) {
+                showToast("ไม่มีรายชื่อในทีม Temp ของเดือนนี้", "error");
+                return;
+            }
+
+            if (confirm("คุณต้องการเคลียร์ (ลบ) รายชื่อพนักงานทีม Temp ทั้งหมดในเดือนนี้ เพื่อเตรียมเพิ่มใหม่ ใช่หรือไม่?")) {
+                TEAMS_CONFIG['temp_monthly'][`${currentYear}-${currentMonth}`] = [];
+                saveTeamsConfig();
+                renderConfigMembersList();
+                showToast("เคลียร์รายชื่อทีม Temp ทั้งหมดเรียบร้อยแล้ว", "error");
+            }
+        }
+
+function updateTempTarget(val) {
+    let targetKey = `temp_target_${currentYear}_${currentMonth}`;
+    localStorage.setItem(targetKey, val);
+    fetchSummaryData();
+    showToast("อัปเดต Target และคำนวณเปอร์เซ็นต์ใหม่แล้ว", "success");
+}
+
+        async function captureSummary() {
+            const target = document.getElementById('summary-section');
+            showToast("กำลังประมวลผลรูปภาพ...", "blue");
+            try {
+                const canvas = await html2canvas(target, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+                const link = document.createElement('a'); 
+                link.download = `MLPR_Summary_Team${currentTeam}_${currentYear}_${currentMonth+1}.png`;
+                link.href = canvas.toDataURL('image/png'); 
+                link.click();
+                showToast("บันทึกภาพสำเร็จ", "green");
+            } catch (err) { 
+                showToast("เกิดข้อผิดพลาดในการบันทึกภาพ", "error"); 
+            }
+        }
+
+        function copySummaryTableData() {
+            const elTable = document.getElementById('summaryTable');
+            let text = "";
+            
+            const getCellText = (cell) => {
+                const input = cell.querySelector('input');
+                if (input) return input.value;
+                return cell.innerText.replace(/(\r\n|\n|\r)/gm, " ").trim();
+            };
+
+            for (let i = 0; i < elTable.rows.length; i++) {
+                for (let j = 0; j < elTable.rows[i].cells.length; j++) {
+                    text += getCellText(elTable.rows[i].cells[j]) + "\t";
+                }
+                text += "\n";
+            }
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showToast("คัดลอกตารางแล้ว สามารถนำไปวางใน Excel/Sheet ได้", "blue");
+            }).catch(err => {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand("Copy");
+                textArea.remove();
+                showToast("คัดลอกตารางแล้ว", "blue");
+            });
+        }
+
+        let chartsInstance = {};
+
+        function openSummaryPage() {
+            document.getElementById('new-summary-page').classList.remove('hidden');
+            
+            if (!document.getElementById('new-range-start').value) {
+                const firstDay = new Date(currentYear, currentMonth, 1);
+                document.getElementById('new-range-start').value = firstDay.toISOString().split('T')[0];
+                
+                const lastDay = new Date(currentYear, currentMonth + 1, 0);
+                document.getElementById('new-range-end').value = lastDay.toISOString().split('T')[0];
+            }
+            
+            summaryCurrentTeam = currentTeam;
+            renderTeamButtons('summary');
+        }
+
+        function closeSummaryPage() {
+            document.getElementById('new-summary-page').classList.add('hidden');
+            document.getElementById('new-summary-table-container').classList.add('hidden');
+            document.getElementById('summary-dashboard-container').classList.add('hidden');
+        }
+
+        function fetchSummaryData() {
+    const startDateStr = document.getElementById('new-range-start').value;
+    const endDateStr = document.getElementById('new-range-end').value;
+
+    if (!startDateStr || !endDateStr) {
+        showToast("กรุณาระบุวันที่เริ่มต้นและสิ้นสุด", "error");
+        return;
+    }
+
+    const startDate = new Date(startDateStr);
+    const endDate = new Date(endDateStr);
+
+    if (startDate > endDate) {
+        showToast("วันที่เริ่มต้นต้องน้อยกว่าหรือเท่ากับวันที่สิ้นสุด", "error");
+        return;
+    }
+
+    const teamLabel = summaryCurrentTeam === 'all' ? 'สรุปผลรวมทุกทีม' : (summaryCurrentTeam === 'temp' ? 'ทีม Temp' : `ทีม ${summaryCurrentTeam}`);
+    document.getElementById('new-display-range').textContent = 
+        `${startDate.toLocaleDateString('th-TH')} - ${endDate.toLocaleDateString('th-TH')} (${teamLabel})`;
+    
+    document.getElementById('new-summary-table-container').classList.remove('hidden');
+    document.getElementById('summary-dashboard-container').classList.remove('hidden');
+
+    // แสดงแถบปุ่มกด Popup
+    const popupTriggerSection = document.getElementById('popup-trigger-section');
+    if (popupTriggerSection) {
+        popupTriggerSection.classList.remove('hidden');
+        popupTriggerSection.classList.add('flex');
+    }
+
+    // ---------------------------------------------------------
+    // 📍 ควบคุมการแสดงผลปุ่มและหัวข้อตามทีมที่เลือก (แก้ปัญหา 1, 2, 3)
+    // ---------------------------------------------------------
+    const btnPopupPerf = document.getElementById('btn-popup-perf');
+    const btnPopupQc = document.getElementById('btn-popup-qc');
+    const btnPopupCharts = document.getElementById('btn-popup-charts');
+    const btnPerfLabel = document.getElementById('btn-perf-label');
+    const modalPerfTitle = document.getElementById('modal-perf-title');
+
+    // ค่าเริ่มต้น: เปิดแสดงทุกปุ่ม
+    if (btnPopupPerf) btnPopupPerf.classList.remove('hidden');
+    if (btnPopupQc) btnPopupQc.classList.remove('hidden');
+    if (btnPopupCharts) btnPopupCharts.classList.remove('hidden');
+
+    if (summaryCurrentTeam === 'all') {
+        // 1. ปุ่มสรุปผลรวม: ต้องไม่มี "กราฟผลการปฏิบัติงานแต่ละด้าน"
+        if (btnPopupCharts) btnPopupCharts.classList.add('hidden');
+    } else if (summaryCurrentTeam === 'temp') {
+        // 3. ทีม Temp: ไม่มี "กราฟผลการปฏิบัติงานแต่ละด้าน" แต่ **ต้องแสดงปุ่ม Top QC (ยอดอนุมัติผิด)** และเปลี่ยนชื่อ Top Performance เป็น "Top Performance"
+        if (btnPopupCharts) btnPopupCharts.classList.add('hidden');
+        if (btnPerfLabel) btnPerfLabel.textContent = "Top Performance";
+        if (modalPerfTitle) modalPerfTitle.textContent = "🏆 Top Performance ";
+        if (btnPopupQc) btnPopupQc.classList.remove('hidden'); // ให้แสดง Top QC เสมอ
+    } else {
+        // 2. ทีม 1 - 5: มีครบทุกปุ่ม (Top Performance, Top QC, กราฟผลการปฏิบัติงานแต่ละด้าน)
+        if (btnPerfLabel) btnPerfLabel.textContent = "Top Performance";
+        if (modalPerfTitle) modalPerfTitle.textContent = "🏆 Top Performance";
+    }
+
+    renderNewSummaryTable(startDate, endDate);
+}
+
+// --- ฟังก์ชันควบคุม Popup Top Performance ---
+function openPopupPerf() {
+    const modal = document.getElementById('modal-top-perf');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+}
+
+function closePopupPerf() {
+    const modal = document.getElementById('modal-top-perf');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+// --- ฟังก์ชันควบคุม Popup Top QC (อนุมัติผิด) ---
+function openPopupQc() {
+    const modal = document.getElementById('modal-top-qc');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        // แทรกฟังก์ชันเรนเดอร์ข้อมูล Top QC ของคุณที่นี่ (ถ้ามี)
+    } else {
+        console.error("ไม่พบ Element ID 'modal-top-qc' ในหน้า HTML กรุณาตรวจสอบชื่อ ID อีกครั้ง");
+    }
+}
+
+function closePopupQc() {
+    const modal = document.getElementById('modal-top-qc');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
+
+// --- ฟังก์ชันควบคุม Popup กราฟผลการปฏิบัติงาน ---
+function openPopupCharts() {
+    const modal = document.getElementById('modal-charts');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        
+        // หน่วงเวลา 100ms เพื่อให้ Modal แสดงผลและมีขนาดความกว้าง/สูงที่แน่นอน ก่อนสั่ง Render กราฟ
+        setTimeout(() => {
+            if (window.lastDashboardParams) {
+                renderDashboards(...window.lastDashboardParams);
+            }
+        }, 80);
+    }
+}
+
+function closePopupCharts() {
+    const modal = document.getElementById('modal-charts');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
+
+        function renderNewSummaryTable(startDate, endDate) {
+    const tbody = document.getElementById('new-summary-tbody');
+    const theadContainer = document.querySelector('#new-summary-table-container thead tr');
+    tbody.innerHTML = '';
+    
+    let summaryMembers = [];
+    let isAllTeams = (summaryCurrentTeam === 'all');
+    let isTempTeam = (summaryCurrentTeam === 'temp');
+    
+    // [จุดที่ 1] กำหนดรายชื่อสมาชิกให้ครบทุกกรณีการเลือกทีม
+    if (isAllTeams) {
+        for (let i = 1; i <= 5; i++) {
+            if (TEAMS_CONFIG[i]) {
+                summaryMembers = summaryMembers.concat(TEAMS_CONFIG[i]);
+            }
+        }
+    } else if (isTempTeam) {
+        const startY = startDate.getFullYear();
+        const startM = startDate.getMonth();
+        summaryMembers = getTempMembers(startY, startM);
+    } else {
+        summaryMembers = TEAMS_CONFIG[summaryCurrentTeam] || [];
+    }
+    
+    // [จุดที่ 2] ตรวจสอบความถูกต้องถัดมาหลังดึงข้อมูลสมาชิกแล้ว
+    if (summaryMembers.length === 0) {
+        let colSpanCount = isTempTeam ? 7 : 10;
+        tbody.innerHTML = `<tr><td colspan="${colSpanCount}" class="p-6 text-slate-400 font-medium">ไม่มีสมาชิกในข้อมูลที่เลือก</td></tr>`;
+        document.getElementById('top-performance-list').innerHTML = '<div class="text-sm text-slate-400">ไม่มีข้อมูล</div>';
+        document.getElementById('top-qc-list').innerHTML = '<div class="text-sm text-slate-400">ไม่มีข้อมูล</div>';
+        return;
+    }
+
+    // หากเป็นทีม Temp ให้ทำงานส่วนนี้ (สร้างปุ่มและนำข้อมูลไปแสดงใน Popup)
+    if (isTempTeam) {
+        if (theadContainer) {
+            theadContainer.innerHTML = `
+                <th class="p-4 border-b border-slate-200 text-center text-slate-500 font-medium">รายละเอียดกลุ่มทีม Temp และตั้งค่า Target</th>
+            `;
+        }
+
+        // [เพิ่มใหม่] คำนวณอันดับเดือนก่อนหน้าสำหรับทีม Temp
+        let prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+        let prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+        
+        let prevTotalTeamQcSum = 0;
+        summaryMembers.forEach(staff => {
+            let q = parseFloat(masterData[`${prevYear}-${prevMonth}-${staff.id}-temp-totalQc`]) || 0;
+            prevTotalTeamQcSum += q;
+        });
+
+        let prevTempValidData = [];
+        summaryMembers.forEach(staff => {
+            let w = parseFloat(masterData[`${prevYear}-${prevMonth}-${staff.id}-temp-workDays`]) || 0;
+            let a = parseFloat(masterData[`${prevYear}-${prevMonth}-${staff.id}-temp-totalApprove`]) || 0;
+            let q = parseFloat(masterData[`${prevYear}-${prevMonth}-${staff.id}-temp-totalQc`]) || 0;
+            
+            let prevTargetKey = `temp_target_${prevYear}_${prevMonth}`;
+            let prevTarget = parseFloat(localStorage.getItem(prevTargetKey)) || 3600;
+
+            let avgApp = w > 0 ? (a / w) : 0;
+            let avgQc = w > 0 ? (q / w) : 0;
+            let pWork = (w / 31) * 10;
+            let pAvgApp = prevTarget > 0 ? (avgApp / prevTarget) * 25 : 0;
+            let pAvgQc = prevTotalTeamQcSum > 0 ? (1 - (avgQc / prevTotalTeamQcSum)) * 65 : 65;
+            let score = pWork + pAvgApp + pAvgQc;
+            
+            prevTempValidData.push({ id: staff.id, score: score, qcScore: q });
+        });
+
+        let sortedPrevPerf = [...prevTempValidData].sort((a, b) => b.score - a.score);
+        let prevPerfRanks = {};
+        sortedPrevPerf.forEach((item, idx) => { prevPerfRanks[item.id] = idx + 1; });
+
+        let sortedPrevQC = [...prevTempValidData].sort((a, b) => b.qcScore - a.qcScore);
+        let prevQCRanks = {};
+        sortedPrevQC.forEach((item, idx) => { prevQCRanks[item.id] = idx + 1; });
+
+        // โค้ดเดิมของคุณต่อจากนี้
+        let targetKey = `temp_target_${currentYear}_${currentMonth}`;
+        let currentTarget = parseFloat(localStorage.getItem(targetKey)) || 3600;
+
+        let totalTeamQcSum = 0;
+        let tempValidData = [];
+
+        // 1. คำนวณหายอดรวม QC ของทีม Temp
+        summaryMembers.forEach(staff => {
+            let totalWorkDays = 0;
+            let totalApprove = 0;
+            let totalQc = 0;
+
+            let curr = new Date(startDate);
+            while (curr <= endDate) {
+                let y = curr.getFullYear();
+                let m = curr.getMonth();
+                let w = parseFloat(masterData[`${y}-${m}-${staff.id}-temp-workDays`]) || 0;
+                let a = parseFloat(masterData[`${y}-${m}-${staff.id}-temp-totalApprove`]) || 0;
+                let q = parseFloat(masterData[`${y}-${m}-${staff.id}-temp-totalQc`]) || 0;
+                totalWorkDays += w;
+                totalApprove += a;
+                totalQc += q;
+                
+                curr.setMonth(curr.getMonth() + 1);
+                curr.setDate(1);
+            }
+            totalTeamQcSum += totalQc;
+        });
+
+        // 2. คำนวณเวทเปอร์เซ็นต์แต่ละคน
+        let totalDaysInPeriod = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
+        summaryMembers.forEach(staff => {
+            let totalWorkDays = 0;
+            let totalApprove = 0;
+            let totalQc = 0;
+
+            let curr = new Date(startDate);
+            while (curr <= endDate) {
+                let y = curr.getFullYear();
+                let m = curr.getMonth();
+                let w = parseFloat(masterData[`${y}-${m}-${staff.id}-temp-workDays`]) || 0;
+                let a = parseFloat(masterData[`${y}-${m}-${staff.id}-temp-totalApprove`]) || 0;
+                let q = parseFloat(masterData[`${y}-${m}-${staff.id}-temp-totalQc`]) || 0;
+                totalWorkDays += w;
+                totalApprove += a;
+                totalQc += q;
+                
+                curr.setMonth(curr.getMonth() + 1);
+                curr.setDate(1);
+            }
+
+            let avgApp = totalWorkDays > 0 ? (totalApprove / totalWorkDays) : 0;
+            let avgQc = totalWorkDays > 0 ? (totalQc / totalWorkDays) : 0;
+
+            let pWork = (totalWorkDays / (totalDaysInPeriod > 0 ? totalDaysInPeriod : 31)) * 10;
+            let pAvgApp = currentTarget > 0 ? (avgApp / currentTarget) * 25 : 0;
+            let pAvgQc = totalTeamQcSum > 0 ? (1 - (avgQc / totalTeamQcSum)) * 65 : 65;
+            let totalPercent = pWork + pAvgApp + pAvgQc;
+
+            tempValidData.push({
+                staff: staff,
+                workDays: totalWorkDays,
+                totalApprove: totalApprove,
+                avgApp: avgApp,
+                totalQc: totalQc,
+                avgQc: avgQc,
+                pWork: pWork,
+                pAvgApp: pAvgApp,
+                pAvgQc: pAvgQc,
+                score: totalPercent,
+                qcScore: totalQc
+            });
+        });
+
+        // จัดกลุ่ม
+        let group20_31 = tempValidData.filter(m => m.workDays >= 20 && m.workDays <= 31).sort((a, b) => b.score - a.score);
+        let group10_19 = tempValidData.filter(m => m.workDays >= 10 && m.workDays <= 19).sort((a, b) => b.score - a.score);
+        let group1_9   = tempValidData.filter(m => m.workDays >= 1 && m.workDays <= 9).sort((a, b) => b.score - a.score);
+
+// 1. จัดเรียงข้อมูลปัจจุบันเพื่อหาอันดับของเดือนที่เลือก
+        let currentSortedPerf = [...tempValidData].sort((a, b) => b.score - a.score);
+        let currentSortedQC = [...tempValidData].filter(m => m.qcScore > 0).sort((a, b) => b.qcScore - a.qcScore);
+
+        // 2. สร้าง HTML สำหรับ 🏆 Top Performance (อันดับดีขึ้น = เขียวชี้ขึ้น, แย่ลง = แดงชี้ลง)
+        let topPerfHTML = '';
+        currentSortedPerf.slice(0, 5).forEach((item, index) => {
+            let currentRank = index + 1;
+            // เพิ่มการตรวจสอบป้องกัน Error กรณีไม่มีข้อมูล prevPerfRanks
+            let prevRank = (typeof prevPerfRanks !== 'undefined' && prevPerfRanks) ? prevPerfRanks[item.staff.id] : undefined;
+            let compareHTML = '';
+
+            if (prevRank) {
+                if (currentRank < prevRank) { // เลขอันดับน้อยลง = ดีขึ้น
+                    compareHTML = `<span class="text-emerald-500 text-[11px] ml-2 font-medium">▲ (เดือนที่แล้วอันดับ ${prevRank})</span>`;
+                } else if (currentRank > prevRank) { // เลขอันดับมากขึ้น = แย่ลง
+                    compareHTML = `<span class="text-rose-500 text-[11px] ml-2 font-medium">▼ (เดือนที่แล้วอันดับ ${prevRank})</span>`;
+                } else {
+                    compareHTML = `<span class="text-slate-400 text-[11px] ml-2 font-medium">- (คงที่)</span>`;
+                }
+            } else {
+                compareHTML = `<span class="text-slate-400 text-[11px] ml-2 font-medium">(New)</span>`;
+            }
+
+            topPerfHTML += `
+                <div class="flex justify-between items-center bg-indigo-50/50 p-2.5 rounded-xl border border-indigo-100/50">
+                    <div class="flex items-center gap-3">
+                        <span class="w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center text-xs font-bold">${currentRank}</span>
+                        <span class="font-bold text-slate-700 text-sm">${item.staff.fullName} ${compareHTML}</span>
+                    </div>
+                    <span class="font-black text-indigo-600">${item.score.toFixed(2)}%</span>
+                </div>
+            `;
+        });
+        document.getElementById('top-performance-list').innerHTML = topPerfHTML || '<div class="text-sm text-slate-400 text-center py-2">ไม่มีข้อมูล</div>';
+
+        // 3. สร้าง HTML สำหรับ 🚨 Top QC (อันดับดีขึ้น/เลขน้อยลง = แดงชี้ขึ้น, แย่ลง/เลขมากขึ้น = เขียวชี้ลง)
+        let topQcHTML = '';
+        currentSortedQC.slice(0, 5).forEach((item, index) => {
+            let currentRank = index + 1;
+            // เพิ่มการตรวจสอบป้องกัน Error กรณีไม่มีข้อมูล prevQCRanks
+            let prevRank = (typeof prevQCRanks !== 'undefined' && prevQCRanks) ? prevQCRanks[item.staff.id] : undefined;
+            let compareHTML = '';
+
+            if (prevRank) {
+                if (currentRank < prevRank) { // ติดอันดับท็อปมากขึ้น (ยอดผิดเยอะขึ้น)
+                    compareHTML = `<span class="text-rose-500 text-[11px] ml-2 font-medium">▲ (เดือนที่แล้วอันดับ ${prevRank})</span>`;
+                } else if (currentRank > prevRank) { // อันดับตกลง (ยอดผิดน้อยลง)
+                    compareHTML = `<span class="text-emerald-500 text-[11px] ml-2 font-medium">▼ (เดือนที่แล้วอันดับ ${prevRank})</span>`;
+                } else {
+                    compareHTML = `<span class="text-slate-400 text-[11px] ml-2 font-medium">- (คงที่)</span>`;
+                }
+            } else {
+                compareHTML = `<span class="text-slate-400 text-[11px] ml-2 font-medium">(New)</span>`;
+            }
+
+            topQcHTML += `
+                <div class="flex justify-between items-center bg-rose-50/50 p-2.5 rounded-xl border border-rose-100/50">
+                    <div class="flex items-center gap-3">
+                        <span class="w-6 h-6 rounded-full bg-rose-500 text-white flex items-center justify-center text-xs font-bold">${currentRank}</span>
+                        <span class="font-bold text-slate-700 text-sm">${item.staff.fullName} ${compareHTML}</span>
+                    </div>
+                    <span class="font-black text-rose-600">${item.qcScore} รายการ</span>
+                </div>
+            `;
+        });
+        document.getElementById('top-qc-list').innerHTML = topQcHTML || '<div class="text-sm text-slate-400 text-center py-2">ไม่มีข้อมูล</div>';
+
+        // ล้างข้อมูลตารางหลักเพื่อใส่ช่อง Target และปุ่มแทน
+        tbody.innerHTML = '';
+        tempGroupDataStore = {}; // เคลียร์ข้อมูลเก่า
+        
+        let buttonsContainerTr = document.createElement('tr');
+        buttonsContainerTr.innerHTML = `
+            <td class="p-6 text-center bg-slate-50/50">
+                <div class="mb-6 flex justify-center items-center gap-3 bg-white p-4 rounded-2xl shadow-sm border border-slate-200 max-w-md mx-auto">
+                    <label class="font-bold text-slate-700 text-sm">Target อนุมัติเฉลี่ยต่อวัน:</label>
+                    <input type="number" id="temp-target-input" value="${currentTarget}" class="border-2 border-indigo-300 rounded-xl px-3 py-1.5 font-bold text-indigo-600 w-32 text-center outline-none focus:border-indigo-500" onchange="updateTempTarget(this.value)">
+                </div>
+                <h3 class="text-lg font-extrabold text-slate-700 mb-6 tracking-wide">คลิกที่ปุ่มเพื่อดูรายละเอียดการประเมินแต่ละกลุ่ม (ทีม Temp)</h3>
+                <div class="flex flex-col sm:flex-row justify-center gap-6" id="temp-group-buttons-container"></div>
+            </td>
+        `;
+        tbody.appendChild(buttonsContainerTr);
+
+        const btnContainer = document.getElementById('temp-group-buttons-container');
+
+        // ฟังก์ชันสร้างปุ่มและเตรียมข้อมูลลง Modal
+        const renderGroupButton = (title, groupArray, groupId, colorClass, icon) => {
+            if (groupArray.length === 0) return;
+            
+            let theadHTML = `
+                <tr class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200 text-center text-sm">
+                    <td class="p-3.5 border-r border-slate-200">ลำดับ</td>
+                    <td class="p-3.5 border-r border-slate-200 text-left pl-4">ชื่อจริง</td>
+                    <td class="p-3.5 border-r border-slate-200">วันทำงาน (%)</td>
+                    <td class="p-3.5 border-r border-slate-200 text-indigo-700">ยอดรวมอนุมัติ</td>
+                    <td class="p-3.5 border-r border-slate-200 text-indigo-600">ค่าเฉลี่ย/วัน</td>
+                    <td class="p-3.5 border-r border-slate-200 text-blue-700">อนุมัติ (%)</td>
+                    <td class="p-3.5 border-r border-slate-200 text-rose-700">ยอดรวมผิด</td>
+                    <td class="p-3.5 border-r border-slate-200 text-rose-600">ค่าเฉลี่ย/วัน</td>
+                    <td class="p-3.5 border-r border-slate-200 text-rose-700">QC (%)</td>
+                    <td class="p-3.5 text-emerald-700 font-extrabold">% รวม</td>
+                </tr>
+            `;
+
+            let tbodyHTML = '';
+            groupArray.forEach((item, idx) => {
+                tbodyHTML += `
+                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors text-center text-sm">
+                        <td class="p-3.5 font-bold text-slate-500 border-r border-slate-100">${idx + 1}</td>
+                        <td class="p-3.5 font-bold text-left pl-4 text-slate-800 border-r border-slate-100">${item.staff.fullName}</td>
+                        <td class="p-3.5 text-slate-600 border-r border-slate-100">${item.workDays} วัน <span class="text-indigo-600 font-semibold">(${item.pWork.toFixed(1)}%)</span></td>
+                        <td class="p-3.5 font-bold text-indigo-700 border-r border-slate-100">${item.totalApprove.toLocaleString()}</td>
+                        <td class="p-3.5 font-bold text-indigo-600 border-r border-slate-100">${item.avgApp.toFixed(1)}</td>
+                        <td class="p-3.5 font-bold text-blue-600 border-r border-slate-100">${item.pAvgApp.toFixed(1)}%</td>
+                        <td class="p-3.5 font-bold text-rose-600 border-r border-slate-100">${item.totalQc}</td>
+                        <td class="p-3.5 font-bold text-rose-600 border-r border-slate-100">${item.avgQc.toFixed(2)}</td>
+                        <td class="p-3.5 font-bold text-rose-600 border-r border-slate-100">${item.pAvgQc.toFixed(1)}%</td>
+                        <td class="p-3.5 font-black text-emerald-600 text-base">${item.score.toFixed(2)}%</td>
+                    </tr>
+                `;
+            });
+
+            // บันทึกข้อมูลลง Store
+            tempGroupDataStore[groupId] = {
+                title: `${icon} ${title} <span class="text-slate-500 text-base font-medium ml-2">(${groupArray.length} คน)</span>`,
+                thead: theadHTML,
+                tbody: tbodyHTML
+            };
+
+            // สร้างปุ่ม
+            const btn = document.createElement('button');
+            btn.className = `btn-pop px-8 py-5 rounded-3xl text-white shadow-xl font-bold flex flex-col items-center gap-3 transition-all ${colorClass} hover:shadow-2xl hover:-translate-y-1 w-full sm:w-auto min-w-[200px] border border-white/20`;
+            btn.onclick = () => openTempGroupModal(groupId);
+            btn.innerHTML = `
+                <span class="text-4xl drop-shadow-md">${icon}</span>
+                <span class="text-lg tracking-wide">${title}</span>
+                <span class="bg-white/20 px-4 py-1.5 rounded-full text-sm mt-1 backdrop-blur-sm border border-white/30 shadow-sm">${groupArray.length} คน</span>
+            `;
+            btnContainer.appendChild(btn);
+        };
+
+        // เรียกฟังก์ชันสร้างปุ่ม 3 ปุ่ม
+        renderGroupButton("กลุ่ม 20 - 31 วัน", group20_31, "group_20_31", "bg-gradient-to-br from-emerald-400 to-teal-600", "🏆");
+        renderGroupButton("กลุ่ม 10 - 19 วัน", group10_19, "group_10_19", "bg-gradient-to-br from-blue-400 to-indigo-600", "⭐");
+        renderGroupButton("กลุ่ม 1 - 9 วัน", group1_9, "group_1_9", "bg-gradient-to-br from-orange-400 to-rose-500", "🚀");
+
+        let topPerfMembers = [...tempValidData].sort((a, b) => b.score - a.score);
+        let topQCMembers = [...tempValidData].filter(m => m.qcScore > 0).sort((a, b) => b.qcScore - a.qcScore);
+        
+        if (typeof renderDashboards === "function") {
+            renderDashboards(topPerfMembers, topQCMembers, {}, summaryMembers, false, prevPerfRanks, prevQCRanks);
+        }
+        return;
+    }
+
+    // ส่วนของทีมปกติ (1-5 หรือ all) ทำงานต่อตามโครงสร้างเดิมของคุณ
+    if (theadContainer && (isAllTeams || (summaryCurrentTeam >= 1 && summaryCurrentTeam <= 5))) {
+        theadContainer.innerHTML = `
+            <th class="p-2 border-r border-slate-200 text-left pl-4">ชื่อ</th>
+            <th class="p-2 border-r border-slate-200 text-green-700">ML</th>
+            <th class="p-2 border-r border-slate-200 text-red-700">MN</th>
+            <th class="p-2 border-r border-slate-200 text-orange-700">RCF</th>
+            <th class="p-2 border-r border-slate-200 text-blue-700">LOG</th>
+            <th class="p-2 border-r border-slate-200 text-purple-700">TXN Manual</th>
+            <th class="p-2 border-r border-slate-200 text-amber-700">CCTV (Audit)</th>
+            <th class="p-2 border-r border-slate-200 text-red-700">Temp สอบถาม</th>
+            <th class="p-2 border-r border-slate-200 text-red-700">รถขบวนเสด็จ</th>
+            <th class="p-2 text-rose-700">QC</th>
+        `;
+    }
+
+    let aggData = {};
+    let validMembersData = []; 
+    
+    summaryMembers.forEach(staff => {
+        aggData[staff.id] = { totalMainTask: 0, workingDays: 0, holidayDays: 0 };
+        PRODUCT_MAP.forEach(p => { aggData[staff.id][p.id] = 0; });
+    });
+
+    let datesInRange = [];
+    let curr = new Date(startDate);
+    while (curr <= endDate) {
+        datesInRange.push(new Date(curr));
+        curr.setDate(curr.getDate() + 1);
+    }
+
+    summaryMembers.forEach(staff => {
+        datesInRange.forEach(dateObj => {
+            const year = dateObj.getFullYear();
+            const month = dateObj.getMonth();
+            const day = dateObj.getDate();
+
+            let isHoliday = true;
+            const mainProductIds = [0, 1, 2, 5, 3, 8, 4, 6];
+            for (let pId of mainProductIds) {
+                const k = `${year}-${month}-${staff.id}-${pId}-${day}`;
+                const val = masterData[k];
+                if (val !== 'วันหยุด') {
+                    isHoliday = false;
+                    break;
+                }
+            }
+
+            if (isHoliday) {
+                aggData[staff.id].holidayDays++;
+            } else {
+                aggData[staff.id].workingDays++;
+            }
+
+            PRODUCT_MAP.forEach(prod => {
+                const k = `${year}-${month}-${staff.id}-${prod.id}-${day}`;
+                const val = masterData[k];
+                if (val && !isNaN(val) && val.trim() !== '' && val !== '-') {
+                    const num = parseFloat(val);
+                    aggData[staff.id][prod.id] += num;
+                    
+                    if (prod.label.includes('ML') || prod.label.includes('MN') || prod.label.includes('RCF') || prod.label.includes('LOG') || prod.label.includes('TXN')) {
+                        aggData[staff.id].totalMainTask += num;
+                    }
+                }
+            });
+        });
+
+        let staffTotalWork = 0;
+        PRODUCT_MAP.forEach(prod => {
+            staffTotalWork += aggData[staff.id][prod.id];
+        });
+
+        if (staffTotalWork > 0) {
+            const workingDays = aggData[staff.id].workingDays;
+            const totalTask = aggData[staff.id].totalMainTask;
+            const avgPerDay = workingDays > 0 ? (totalTask / workingDays) : 0;
+            aggData[staff.id].avgPerDay = avgPerDay;
+
+            validMembersData.push({ 
+                staff: staff,
+                score: avgPerDay, 
+                totalScore: totalTask, 
+                workingDays: workingDays,
+                qcScore: aggData[staff.id][7] || 0
+            });
+        } else if (!isAllTeams) {
+            const tr = document.createElement('tr');
+            tr.className = "border-b border-slate-100 hover:bg-slate-50 transition-colors";
+            tr.innerHTML = `
+                <td class="p-2.5 font-bold text-left pl-4 text-slate-800">${staff.nickName || staff.fullName.split(' ')[0]}</td>
+                <td colspan="9" class="p-2.5 text-slate-400 italic text-center font-medium">ไม่พบการทำงานในเดือนดังกล่าว</td>
+            `;
+            tbody.appendChild(tr);
+        }
+    });
+
+    let topPerfMembers = [...validMembersData].sort((a, b) => b.score - a.score);
+    let topQCMembers = [...validMembersData].filter(m => m.qcScore > 0).sort((a, b) => b.qcScore - a.qcScore);
+    
+    let displayTableMembers = isAllTeams ? topPerfMembers.slice(0, 10) : validMembersData;
+
+    displayTableMembers.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = "border-b border-slate-100 hover:bg-slate-50 transition-colors";
+
+        tr.innerHTML = `<td class="p-2.5 font-bold text-left pl-4 text-slate-800">${item.staff.nickName || item.staff.fullName.split(' ')[0]}</td>`;
+        
+        PRODUCT_MAP.forEach(prod => {
+            const total = aggData[item.staff.id][prod.id];
+            const isQC = prod.label === 'QC';
+            tr.innerHTML += `<td class="p-2.5 ${isQC ? 'font-bold text-rose-600' : 'text-slate-600'}">${total.toLocaleString() || '0'}</td>`;
+        });
+        
+        tbody.appendChild(tr);
+    });
+
+    let prevPerfRanks = {};
+    let prevQCRanks = {};
+    if (isAllTeams) {
+        let startYear = startDate.getFullYear();
+        let startMonth = startDate.getMonth();
+        let prevYear = startMonth === 0 ? startYear - 1 : startYear;
+        let prevMonth = startMonth === 0 ? 11 : startMonth - 1;
+        let prevDaysInMonth = new Date(prevYear, prevMonth + 1, 0).getDate();
+
+        let allMembers = [];
+        for (let i = 1; i <= 5; i++) {
+            if (TEAMS_CONFIG[i]) allMembers = allMembers.concat(TEAMS_CONFIG[i]);
+        }
+
+        let prevStaffData = [];
+        allMembers.forEach(staff => {
+            let pWorking = 0;
+            let pMainTasks = 0;
+            let pQc = 0;
+            for (let d = 1; d <= prevDaysInMonth; d++) {
+                let isHol = true;
+                [0, 1, 2, 5, 3, 8, 4, 6].forEach(pId => {
+                    if (masterData[`${prevYear}-${prevMonth}-${staff.id}-${pId}-${d}`] !== 'วันหยุด') isHol = false;
+                });
+                if (!isHol) pWorking++;
+                
+                PRODUCT_MAP.forEach(prod => {
+                    let val = masterData[`${prevYear}-${prevMonth}-${staff.id}-${prod.id}-${d}`];
+                    if (val && !isNaN(val) && val.trim() !== '' && val !== '-') {
+                        let num = parseFloat(val);
+                        if (prod.id === 7) pQc += num;
+                        if ([0, 1, 2, 5, 3].includes(prod.id)) pMainTasks += num;
+                    }
+                });
+            }
+            let pAvg = pWorking > 0 ? (pMainTasks / pWorking) : 0;
+            if (pAvg > 0 || pMainTasks > 0) {
+                prevStaffData.push({ id: staff.id, score: pAvg, qcScore: pQc });
+            }
+        });
+
+        let sortedPrevPerf = [...prevStaffData].sort((a, b) => b.score - a.score);
+        sortedPrevPerf.forEach((item, idx) => { prevPerfRanks[item.id] = idx + 1; });
+
+        let sortedPrevQC = [...prevStaffData].filter(m => m.qcScore > 0).sort((a, b) => b.qcScore - a.qcScore);
+        sortedPrevQC.forEach((item, idx) => { prevQCRanks[item.id] = idx + 1; });
+    }
+
+    renderDashboards(topPerfMembers, topQCMembers, aggData, summaryMembers, isAllTeams, prevPerfRanks, prevQCRanks);
+}
+
+        // [ส่วนเสริม] ฟังก์ชันช่วยคำนวณข้อความเปรียบเทียบอันดับ (สำหรับทีม Temp)
+function getCompareHTML(currentRank, prevRank) {
+    if (prevRank !== undefined) {
+        if (currentRank < prevRank) {
+            return `<span class="text-emerald-500 text-[11px] ml-2 font-medium">▲ (เดือนที่แล้วอันดับ ${prevRank})</span>`;
+        } else if (currentRank > prevRank) {
+            return `<span class="text-rose-500 text-[11px] ml-2 font-medium">▼ (เดือนที่แล้วอันดับ ${prevRank})</span>`;
+        } else {
+            return `<span class="text-slate-400 text-[11px] ml-2 font-medium">- (คงที่)</span>`;
+        }
+    }
+    return `<span class="text-slate-400 text-[11px] ml-2 font-medium">(New)</span>`;
+}
+
+// [ส่วนเสริม] ฟังก์ชันช่วยคำนวณข้อความเปรียบเทียบอันดับ (สำหรับทีม All)
+function getDiffHtml(isAllTeams, prevRanks, staffId, currentRank, mode) {
+    if (!isAllTeams || !prevRanks || !prevRanks[staffId]) return '';
+    let prevRank = prevRanks[staffId];
+    
+    if (mode === 'perf') {
+        if (currentRank < prevRank) {
+            return `<div class="text-[10px] text-emerald-600 font-bold flex items-center gap-1 mt-0.5">▲ เดือนที่แล้วอยู่อันดับที่ ${prevRank}</div>`;
+        } else if (currentRank > prevRank) {
+            return `<div class="text-[10px] text-rose-600 font-bold flex items-center gap-1 mt-0.5">▼ เดือนที่แล้วอยู่อันดับที่ ${prevRank}</div>`;
+        } else {
+            return `<div class="text-[10px] text-slate-400 font-medium mt-0.5">- เดือนที่แล้วอยู่อันดับที่ ${prevRank}</div>`;
+        }
+    } else {
+        if (currentRank < prevRank) {
+            return `<div class="text-[10px] text-rose-600 font-bold flex items-center gap-1 mt-0.5">▲ เดือนที่แล้วอยู่อันดับที่ ${prevRank}</div>`;
+        } else if (currentRank > prevRank) {
+            return `<div class="text-[10px] text-emerald-600 font-bold flex items-center gap-1 mt-0.5">▼ เดือนที่แล้วอยู่อันดับที่ ${prevRank}</div>`;
+        } else {
+            return `<div class="text-[10px] text-slate-400 font-medium mt-0.5">- เดือนที่แล้วอยู่อันดับที่ ${prevRank}</div>`;
+        }
+    }
+}
+
+// [ส่วนเสริม] ฟังก์ชันเรนเดอร์รายชื่อ Performance 
+function renderPerformanceList(perfMembers, prevPerfRanks, isTemp, isAllTeams) {
+    const perfList = document.getElementById('top-performance-list');
+    if (!perfList) return;
+
+    perfList.innerHTML = perfMembers.slice(0, 10).map((s, i) => {
+        let currentRank = i + 1;
+        if (isTemp) {
+            let prevRank = (typeof prevPerfRanks !== 'undefined' && prevPerfRanks) ? prevPerfRanks[s.staff.id] : undefined;
+            let compareHTML = getCompareHTML(currentRank, prevRank);
+            return `
+                <div class="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100/50">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-indigo-200 text-indigo-700 flex items-center justify-center text-[10px]">${currentRank}</span>
+                            ${s.staff.fullName} ${compareHTML}
+                        </span>
+                        <span class="font-black text-emerald-600 text-sm">${s.score.toFixed(2)}%</span>
+                    </div>
+                    <div class="text-[11px] text-slate-500 grid grid-cols-3 gap-1 mt-1 bg-white/60 p-1.5 rounded-lg border border-indigo-100/30 text-center">
+                        <div>วันทำงาน: <strong class="text-slate-700">${s.workDays} วัน</strong></div>
+                        <div>เฉลี่ยอนุมัติ: <strong class="text-indigo-600">${s.avgApp.toFixed(2)}</strong></div>
+                        <div>ยอดผิด: <strong class="text-rose-600">${s.totalQc}</strong></div>
+                    </div>
+                </div>
+            `;
+        } else {
+            let diffHtml = getDiffHtml(isAllTeams, prevPerfRanks, s.staff.id, currentRank, 'perf');
+            return `
+                <div class="flex justify-between items-center bg-indigo-50/50 p-2.5 rounded-xl border border-indigo-100/50">
+                    <div>
+                        <span class="font-bold text-sm text-slate-700 flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-indigo-200 text-indigo-700 flex items-center justify-center text-[10px]">${currentRank}</span>
+                            ${s.staff.nickName || s.staff.fullName}
+                        </span>
+                        ${diffHtml}
+                    </div>
+                    <div class="text-right">
+                        <span class="font-black text-indigo-600 text-sm">${s.score.toFixed(1)} งาน/วัน</span>
+                        <div class="text-[10px] text-slate-400 font-medium">รวม ${s.totalScore ? s.totalScore.toLocaleString() : s.totalApprove.toLocaleString()} งาน (${s.workingDays || s.workDays} วันทำงาน)</div>
+                    </div>
+                </div>
+            `;
+        }
+    }).join('') || '<div class="text-sm text-slate-400">ไม่มีข้อมูล</div>';
+}
+
+// [ส่วนเสริม] ฟังก์ชันเรนเดอร์รายชื่อ QC
+function renderQCList(qcMembers, prevQCRanks, isTemp, isAllTeams) {
+    const qcList = document.getElementById('top-qc-list');
+    if (!qcList) return;
+
+    qcList.innerHTML = qcMembers.slice(0, 10).map((s, i) => {
+        let currentRank = i + 1;
+        if (isTemp) {
+            let prevRank = (typeof prevQCRanks !== 'undefined' && prevQCRanks) ? prevQCRanks[s.staff.id] : undefined;
+            let compareHTML = getCompareHTML(currentRank, prevRank);
+            return `
+                <div class="bg-rose-50/50 p-3 rounded-xl border border-rose-100/50 flex justify-between items-center">
+                    <div>
+                        <span class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-rose-200 text-rose-700 flex items-center justify-center text-[10px]">${currentRank}</span>
+                            ${s.staff.fullName} ${compareHTML}
+                        </span>
+                        <div class="text-[11px] text-slate-500 mt-0.5">เฉลี่ยผิดต่อวัน: <strong class="text-rose-600">${s.avgQc.toFixed(2)}</strong></div>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-black text-rose-600 text-base">${s.totalQc.toLocaleString()} รายการ</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            let diffHtml = getDiffHtml(isAllTeams, prevQCRanks, s.staff.id, currentRank, 'qc');
+            return `
+                <div class="flex justify-between items-center bg-rose-50/50 p-2.5 rounded-xl border border-rose-100/50">
+                    <div>
+                        <span class="font-bold text-sm text-slate-700 flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-rose-200 text-rose-700 flex items-center justify-center text-[10px]">${currentRank}</span>
+                            ${s.staff.nickName || s.staff.fullName}
+                        </span>
+                        ${diffHtml}
+                    </div>
+                    <div class="text-right">
+                        <span class="font-black text-rose-600 text-sm">${s.qcScore.toLocaleString()} รายการ</span>
+                    </div>
+                </div>
+            `;
+        }
+    }).join('') || '<div class="text-sm text-emerald-600 font-bold bg-emerald-50 p-3 rounded-xl border border-emerald-100">🎉 ไม่มีประวัติการตีกลับ (QC) ในช่วงเวลานี้</div>';
+}
+
+// [ฟังก์ชันหลัก] ควบคุมการแสดงผลแดชบอร์ดทั้งหมด
+function renderDashboards(perfMembers, qcMembers, rawData, currentMembers, isAllTeams, prevPerfRanks, prevQCRanks) {
+    	window.lastDashboardParams = [perfMembers, qcMembers, rawData, currentMembers, isAllTeams, prevPerfRanks, prevQCRanks];
+	const isTemp = (summaryCurrentTeam === 'temp');
+
+    // 1. เรียกเรนเดอร์รายการจัดอันดับ
+    renderPerformanceList(perfMembers, prevPerfRanks, isTemp, isAllTeams);
+    renderQCList(qcMembers, prevQCRanks, isTemp, isAllTeams);
+
+    // 2. จัดการส่วนแสดงกราฟ ECharts
+    const chartsSection = document.getElementById('charts-section');
+    if (!chartsSection) return;
+
+    if (isAllTeams || isTemp) {
+        chartsSection.classList.add('hidden');
+    } else {
+        chartsSection.classList.remove('hidden');
+
+        const chartConfigs = [
+            { id: 'chart-ml', title: 'MLPR', prodId: 0, color: '#10b981' },
+            { id: 'chart-mn', title: 'MNPR', prodId: 1, color: '#ef4444' },
+            { id: 'chart-rcf', title: 'Reconfirm', prodId: 2, color: '#f59e0b' },
+            { id: 'chart-qc', title: 'ยอดอนุมัติผิด', prodId: 7, color: '#e11d48' },
+            { id: 'chart-others', title: 'งานอื่นๆ', prodIds: [5, 3, 4], color: '#6366f1' }
+        ];
+
+        chartConfigs.forEach(cfg => {
+            let dom = document.getElementById(cfg.id);
+            if (!dom) return;
+
+            if (chartsInstance[cfg.id]) chartsInstance[cfg.id].dispose();
+            chartsInstance[cfg.id] = echarts.init(dom);
+
+            let chartData = [];
+            currentMembers.forEach(staff => {
+                let val = 0;
+                if (cfg.prodIds) {
+                    cfg.prodIds.forEach(pid => val += (rawData[staff.id][pid] || 0));
+                } else {
+                    val = rawData[staff.id][cfg.prodId] || 0;
+                }
+                if (val > 0) {
+                    chartData.push({ name: staff.nickName || staff.fullName.split(' ')[0], value: val });
+                }
+            });
+
+            let maxVal = -1;
+            let maxIndex = -1;
+            chartData.forEach((item, idx) => {
+                if (item.value > maxVal) {
+                    maxVal = item.value;
+                    maxIndex = idx;
+                }
+            });
+
+            chartData.forEach((item, idx) => {
+                if (idx === maxIndex && maxVal > 0) {
+                    item.itemStyle = {
+                        borderColor: '#f97316',
+                        borderWidth: 4,
+                        shadowBlur: 15,
+                        shadowColor: 'rgba(249, 115, 22, 0.7)'
+                    };
+                    item.label = {
+                        show: true,
+                        formatter: '👑 {b}\n{c}',
+                        fontWeight: 'bold',
+                        color: '#c2410c',
+                        fontFamily: 'Sarabun',
+                        fontSize: 11
+                    };
+                }
+            });
+
+            let option = {
+                title: { 
+                    text: cfg.title, 
+                    left: 'center', 
+                    top: 8,
+                    textStyle: { fontSize: 14, color: '#475569', fontFamily: 'Sarabun', fontWeight: 'bold' } 
+                },
+                tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)', textStyle: { fontFamily: 'Sarabun' } },
+                series: [{
+                    type: 'pie', 
+                    radius: ['28%', '55%'], // ปรับลดขนาดรัศมีวงกลมลง เพื่อเว้นพื้นที่ขอบรอบนอกให้ป้ายชื่อแสดงได้เต็มที่
+                    center: ['50%', '58%'],
+                    avoidLabelOverlap: true,
+                    padAngle: 2, // เพิ่มช่องว่างเล็กน้อยระหว่างชิ้นกราฟ (ECharts 5+)
+                    itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+                    // เพิ่มการตั้งค่าเส้นโยงป้ายชื่อให้เป็นระเบียบ ไม่ชนกัน
+                    labelLine: {
+                        length: 10,
+                        length2: 8,
+                        smooth: true
+                    },
+                    label: { 
+                        show: true, 
+                        formatter: '{b}\n{c}', 
+                        fontFamily: 'Sarabun', 
+                        fontSize: 10, 
+                        color: '#475569' 
+                    },
+                    data: chartData.length > 0 ? chartData : [{name:'ไม่มีข้อมูล', value:0, itemStyle:{color:'#e2e8f0'}}]
+                }]
+            };
+            chartsInstance[cfg.id].setOption(option);
+        });
+    }
+}
+
+// อีเวนต์รีไซส์หน้าจอสำหรับกราฟ
+window.addEventListener('resize', function() {
+    for (let id in chartsInstance) {
+        if (chartsInstance[id]) {
+            chartsInstance[id].resize();
+        }
+    }
+});
+// ฟังก์ชันสำรองข้อมูลเป็นไฟล์ JSON (รวมข้อมูลการตั้งค่าและบันทึกงานทั้งหมดใน LocalStorage)
+async function exportDataJson(isAuto = false, bypassCooldown = false) {
+    const now = new Date().getTime();
+    const lastBackup = parseInt(localStorage.getItem('mlpr_last_backup_time')) || 0;
+    const timeDiffMin = (now - lastBackup) / (1000 * 60);
+
+    if (!isAuto && !bypassCooldown && timeDiffMin < 5) {
+        showCustomPopup("แจ้งเตือนการบันทึกซ้ำ", "เพิ่งมีการสำรองข้อมูลไปเมื่อไม่ถึง 5 นาทีที่ผ่านมา คุณต้องการสำรองข้อมูลซ้ำลงไปหรือไม่?", "confirm", 
+            () => { exportDataJson(false, true); }, 
+            () => { cancelAutoBackup = true; showToast("ยกเลิกการสำรองข้อมูลแล้ว", "info"); }
+        );
+        return;
+    }
+
+    if (!isAuto) showToast("กำลังสำรองข้อมูลขึ้น Google Drive...", "blue");
+
+    // โครงสร้างชัดเจน แยก masterData และ teamsConfig ออกจากกันอย่างเด็ดขาด
+    const backupData = {
+        timestamp: new Date().toISOString(),
+        teamsConfig: TEAMS_CONFIG,
+        masterData: masterData
+    };
+
+    try {
+        const response = await fetch(APPS_SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify(backupData),
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        
+        const result = await response.json();
+        if (result.status === 'success') {
+            localStorage.setItem('mlpr_last_backup_time', now.toString());
+            hasUnsavedChanges = false;
+            if (!isAuto) showToast("สำรองข้อมูลขึ้น Google Drive สำเร็จ", "success");
+        } else {
+            if (!isAuto) showToast("สำรองข้อมูลไม่สำเร็จ: " + (result.message || "Unknown error"), "error");
+        }
+    } catch (err) {
+        if (!isAuto) showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error");
+    }
+}
+
+// ฟังก์ชันอ่านไฟล์ JSON และเขียนทับข้อมูลลง LocalStorage เพื่อให้ข้อมูลเป็นปัจจุบัน
+function restoreDataJson(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const importedData = JSON.parse(e.target.result);
+            
+            if (!importedData || typeof importedData !== 'object') {
+                throw new Error("ไฟล์ JSON ไม่ถูกต้อง");
+            }
+
+            if (confirm("การกู้คืนข้อมูลจะเขียนทับข้อมูลปัจจุบันทั้งหมดบนเครื่องนี้ คุณต้องการดำเนินการต่อใช่หรือไม่?")) {
+                for (const key in importedData) {
+                    if (Object.prototype.hasOwnProperty.call(importedData, key)) {
+                        localStorage.setItem(key, importedData[key]);
+                    }
+                }
+                showToast("กู้คืนข้อมูลสำเร็จ กำลังรีเฟรชหน้าจอ...", "success");
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            }
+        } catch (err) {
+            showToast("เกิดข้อผิดพลาด: ไฟล์ JSON ไม่ถูกต้องหรือเสียหาย", "error");
+        } finally {
+            event.target.value = ''; // รีเซ็ตค่า Input เพื่อให้สามารถเลือกไฟล์เดิมซ้ำได้
+        }
+    };
+    reader.readAsText(file);
+}
+
+    </script>
+
+<!-- Modal Top Performance -->
+<div id="modal-top-perf" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-[130] p-4">
+    <div class="glass-card bg-white p-6 md:p-8 rounded-[2rem] shadow-2xl w-full max-w-lg my-auto">
+        <div class="flex justify-between items-center mb-4 border-b border-slate-200 pb-3">
+            <h2 id="modal-perf-title" class="text-xl font-black text-slate-800 flex items-center gap-2">🏆 Top Performance</h2>
+            <button onclick="closePopupPerf()" class="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500 hover:text-rose-500">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div id="top-performance-list" class="max-h-[60vh] overflow-y-auto pr-1">
+            <!-- ข้อมูลจะถูกดึงมาแสดงที่นี่อัตโนมัติ -->
+        </div>
+    </div>
+</div>
+
+<!-- Modal Top QC (ยอดอนุมัติผิด) -->
+<div id="modal-top-qc" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-[130] p-4 overflow-y-auto">
+    <div class="glass-card bg-white p-6 md:p-8 rounded-[2rem] shadow-2xl w-full max-w-2xl my-auto">
+        <div class="flex justify-between items-center mb-4 border-b border-slate-200 pb-3">
+            <h2 class="text-xl font-black text-rose-600 flex items-center gap-2">
+                🚨 Top การอนุมัติผิด (QC)
+            </h2>
+            <button onclick="closePopupQc()" class="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500 hover:text-rose-500">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div id="top-qc-list" class="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
+            <!-- รายการข้อมูล Top QC จะถูกแสดงที่นี่ -->
+        </div>
+    </div>
+</div>
+
+<!-- Popup 3: กราฟผลการปฏิบัติงาน -->
+<div id="modal-charts" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-[120] p-4 overflow-y-auto">
+    <div class="glass-card bg-white p-6 md:p-8 rounded-[2rem] shadow-2xl w-full max-w-6xl my-auto max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4 border-b border-slate-200 pb-3">
+            <h3 class="text-xl font-black text-slate-800">📊 กราฟผลการปฏิบัติงานแต่ละด้าน</h3>
+            <button onclick="closePopupCharts()" class="p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-rose-500">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        
+        <!-- พื้นที่แสดงกราฟ (ย้ายมาไว้ข้างใน Modal) -->
+        <div id="charts-section" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                <div id="chart-ml" style="width: 100%; height: 320px;"></div>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                <div id="chart-mn" style="width: 100%; height: 320px;"></div>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                <div id="chart-rcf" style="width: 100%; height: 320px;"></div>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                <div id="chart-qc" style="width: 100%; height: 320px;"></div>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 lg:col-span-2">
+                <div id="chart-others" style="width: 100%; height: 320px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
