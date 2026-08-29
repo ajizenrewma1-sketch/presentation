@@ -2548,6 +2548,30 @@ function restoreDataJson(event) {
     reader.readAsText(file);
 }
 
+// เพิ่มระบบคลิกพื้นที่ด้านนอก (Backdrop) เพื่อปิด Popup ทุกตัวอัตโนมัติ
+document.addEventListener('click', function(e) {
+    // ตรวจสอบว่าคลิกโดนพื้นหลังสีเทา/โปร่งแสงของ Popup (ที่มีคลาส fixed และ inset-0)
+    if (e.target.classList.contains('fixed') && e.target.classList.contains('inset-0')) {
+        const modalId = e.target.id;
+        
+        if (modalId === 'temp-qc-modal') {
+            closeTempQcModal();
+        } else if (modalId === 'team-config-modal') {
+            closeTeamConfig();
+        } else if (modalId === 'temp-group-modal') {
+            closeTempGroupModal();
+        } else if (modalId === 'custom-popup') {
+            e.target.classList.replace('flex', 'hidden');
+        } else if (modalId === 'new-summary-page') {
+            // หน้าหลักสรุปผลปล่อยไว้ ไม่ให้ปิดโดยบังเอิญจากการคลิกนอก
+            return;
+        } else {
+            // สำหรับ Popup หรือ Modal อื่นๆ ในระบบ (เช่น Top Performance, QC, กราฟ)
+            e.target.classList.add('hidden');
+            e.target.classList.remove('flex');
+        }
+    }
+});
     </script>
 
 <!-- Modal Top Performance -->
