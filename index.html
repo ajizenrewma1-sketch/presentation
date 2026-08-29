@@ -208,81 +208,96 @@ div::-webkit-scrollbar {
 
     <!-- หน้าสรุปผล (Dashboard) -->
     <div id="new-summary-page" class="hidden fixed inset-0 z-[100] overflow-y-auto no-print transition-all duration-300" style="background-color: #f8fafc; background-image: radial-gradient(at 10% 20%, hsla(28,100%,74%,0.15) 0px, transparent 50%), radial-gradient(at 80% 10%, hsla(189,100%,56%,0.15) 0px, transparent 50%), radial-gradient(at 10% 80%, hsla(242,100%,70%,0.15) 0px, transparent 50%), radial-gradient(at 90% 90%, hsla(343,100%,76%,0.15) 0px, transparent 50%);">
-        <div class="max-w-7xl mx-auto p-4 md:p-8 mt-4">
+    <div class="max-w-7xl mx-auto p-4 md:p-8 mt-4">
+        
+        <!-- ส่วน Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 glass-card p-5 rounded-3xl border border-white/60 shadow-sm bg-white/70 backdrop-blur-md">
+            <h1 class="text-2xl font-extrabold flex items-center gap-3 text-slate-800 tracking-wide">
+                <span class="bg-gradient-to-b from-indigo-400 to-purple-500 w-3 h-8 rounded-full shadow-sm"></span>
+                สรุปผลการปฏิบัติงาน
+            </h1>
+            <button onclick="closeSummaryPage()" class="btn-pop bg-slate-200 hover:bg-rose-500 hover:text-white text-slate-700 px-5 py-2 rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                กลับหน้าหลัก
+            </button>
+        </div>
+
+        <!-- แบ่งเลย์เอาต์ซ้าย-ขวา (1/4 และ 3/4) -->
+        <div class="flex flex-col lg:flex-row gap-6">
             
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 glass-card p-5 rounded-3xl border border-white/60 shadow-sm bg-white/70 backdrop-blur-md">
-                <h1 class="text-2xl font-extrabold flex items-center gap-3 text-slate-800 tracking-wide">
-                    <span class="bg-gradient-to-b from-indigo-400 to-purple-500 w-3 h-8 rounded-full shadow-sm"></span>
-                    สรุปผลการปฏิบัติงาน
-                </h1>
-                <button onclick="closeSummaryPage()" class="btn-pop bg-slate-200 hover:bg-rose-500 hover:text-white text-slate-700 px-5 py-2 rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-sm">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                    กลับหน้าหลัก
-                </button>
+            <!-- ด้านซ้าย (1/4): ตัวกรอง และปุ่ม Popup -->
+            <div class="w-full lg:w-1/4 flex flex-col gap-6">
+                
+                <!-- กล่องเลือกทีมและวันที่ -->
+                <div class="glass-card p-5 rounded-3xl border border-indigo-100/50 shadow-sm bg-white/50 backdrop-blur-md flex flex-col gap-4">
+                    <div class="w-full">
+                        <h3 class="text-sm font-bold text-slate-600 mb-2">เลือกทีมเพื่อดูสรุปผล:</h3>
+                        <div id="summary-team-buttons" class="flex flex-wrap gap-2"></div>
+                    </div>
+                    <div class="flex flex-col gap-1 mt-1">
+                        <span class="font-bold text-slate-600 text-sm">ตั้งแต่วันที่:</span>
+                        <input type="date" id="new-range-start" class="border-b-2 border-indigo-300 bg-transparent px-2 py-1.5 focus:border-indigo-500 focus:outline-none font-bold text-indigo-600 cursor-pointer transition-colors text-sm w-full">
+                    </div>
+                    <div class="flex flex-col gap-1 mt-1">
+                        <span class="font-bold text-slate-600 text-sm">ถึงวันที่:</span>
+                        <input type="date" id="new-range-end" class="border-b-2 border-indigo-300 bg-transparent px-2 py-1.5 focus:border-indigo-500 focus:outline-none font-bold text-indigo-600 cursor-pointer transition-colors text-sm w-full">
+                    </div>
+                    <button onclick="fetchSummaryData()" class="btn-pop mt-2 w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2.5 rounded-xl shadow-md hover:shadow-indigo-500/30 font-bold text-sm transition-all flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        ดึงข้อมูลและรวมยอด
+                    </button>
+                </div>
+
+                <!-- กล่องปุ่มเปิด Popup ต่างๆ -->
+                <div id="summary-dashboard-container" class="hidden transition-all duration-500">
+                    <div id="popup-trigger-section" class="flex flex-col gap-3">
+                        <button id="btn-popup-perf" onclick="openPopupPerf()" class="btn-pop w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-3 rounded-2xl shadow-md font-bold text-sm flex items-center justify-center gap-2">
+                            🏆 <span id="btn-perf-label">Top Performance</span>
+                        </button>
+                        <button id="btn-popup-qc" onclick="openPopupQc()" class="btn-pop w-full bg-gradient-to-r from-rose-500 to-orange-500 text-white px-4 py-3 rounded-2xl shadow-md font-bold text-sm flex items-center justify-center gap-2">
+                            🚨 Top การอนุมัติผิด (QC)
+                        </button>
+                        <button id="btn-popup-charts" onclick="openPopupCharts()" class="btn-pop w-full bg-gradient-to-r from-slate-700 to-slate-900 text-white px-4 py-3 rounded-2xl shadow-md font-bold text-sm flex items-center justify-center gap-2">
+                            📊 กราฟผลการปฏิบัติงาน
+                        </button>
+                    </div>
+                </div>
+
             </div>
 
-            <div class="glass-card p-6 rounded-3xl mb-6 border border-indigo-100/50 shadow-sm bg-white/50 backdrop-blur-md flex flex-wrap items-center gap-4">
-                <div class="w-full mb-2">
-                    <h3 class="text-sm font-bold text-slate-600 mb-2">เลือกทีมเพื่อดูสรุปผล:</h3>
-                    <div id="summary-team-buttons" class="flex flex-wrap gap-2"></div>
-                </div>
-                <div class="flex items-center gap-3 mt-2">
-                    <span class="font-bold text-slate-600 text-sm">ตั้งแต่วันที่:</span>
-                    <input type="date" id="new-range-start" class="border-b-2 border-indigo-300 bg-transparent px-2 py-1 focus:border-indigo-500 focus:outline-none font-bold text-indigo-600 cursor-pointer transition-colors text-sm">
-                </div>
-                <div class="flex items-center gap-3 mt-2">
-                    <span class="font-bold text-slate-600 text-sm">ถึงวันที่:</span>
-                    <input type="date" id="new-range-end" class="border-b-2 border-indigo-300 bg-transparent px-2 py-1 focus:border-indigo-500 focus:outline-none font-bold text-indigo-600 cursor-pointer transition-colors text-sm">
-                </div>
-                <button onclick="fetchSummaryData()" class="btn-pop mt-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-6 py-2.5 rounded-xl shadow-md hover:shadow-indigo-500/30 font-bold text-sm transition-all flex items-center gap-2 sm:ml-auto">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    ดึงข้อมูลและรวมยอด
-                </button>
-            </div>
-
-            <div class="glass-card rounded-3xl overflow-hidden border border-slate-200 shadow-sm bg-white/90 hidden transition-all duration-500" id="new-summary-table-container">
-                <div class="bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-800 font-bold px-6 py-3.5 flex justify-between items-center text-sm border-b border-indigo-100/50">
-                    <span class="flex items-center gap-2">
-                        <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 002-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        ผลรวมยอดระหว่างวันที่: <span id="new-display-range" class="text-indigo-600 font-extrabold underline decoration-2 underline-offset-2">-</span>
-                    </span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full border-collapse text-[11px] text-center">
-                        <thead>
-                            <tr class="bg-slate-100 text-slate-700 shadow-sm relative z-10 border-b border-slate-200">
-                                <th class="p-2 border-r border-slate-200 text-left pl-4">ชื่อ</th>
-                                <th class="p-2 border-r border-slate-200 text-green-700">ML</th>
-                                <th class="p-2 border-r border-slate-200 text-red-700">MN</th>
-                                <th class="p-2 border-r border-slate-200 text-orange-700">RCF</th>
-                                <th class="p-2 border-r border-slate-200 text-blue-700">LOG</th>
-                                <th class="p-2 border-r border-slate-200 text-purple-700">TXN Manual</th>
-                                <th class="p-2 border-r border-slate-200 text-amber-700">CCTV (Audit)</th>
-                                <th class="p-2 border-r border-slate-200 text-red-700">Temp สอบถาม</th>
-                                <th class="p-2 border-r border-slate-200 text-red-700">รถขบวนเสด็จ</th>
-                                <th class="p-2 text-rose-700">QC</th>
-                            </tr>
-                        </thead>
-                        <tbody id="new-summary-tbody" class="bg-white/80"></tbody>
-                    </table>
+            <!-- ด้านขวา (3/4): ตารางแสดงผลรวม -->
+            <div class="w-full lg:w-3/4">
+                <div class="glass-card rounded-3xl overflow-hidden border border-slate-200 shadow-sm bg-white/90 hidden transition-all duration-500 h-fit" id="new-summary-table-container">
+                    <div class="bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-800 font-bold px-6 py-3.5 flex justify-between items-center text-sm border-b border-indigo-100/50">
+                        <span class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 002-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            ผลรวมยอดระหว่างวันที่: <span id="new-display-range" class="text-indigo-600 font-extrabold underline decoration-2 underline-offset-2">-</span>
+                        </span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse text-[11px] text-center">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-700 shadow-sm relative z-10 border-b border-slate-200">
+                                    <th class="p-2 border-r border-slate-200 text-left pl-4">ชื่อ</th>
+                                    <th class="p-2 border-r border-slate-200 text-green-700">ML</th>
+                                    <th class="p-2 border-r border-slate-200 text-red-700">MN</th>
+                                    <th class="p-2 border-r border-slate-200 text-orange-700">RCF</th>
+                                    <th class="p-2 border-r border-slate-200 text-blue-700">LOG</th>
+                                    <th class="p-2 border-r border-slate-200 text-purple-700">TXN Manual</th>
+                                    <th class="p-2 border-r border-slate-200 text-amber-700">CCTV (Audit)</th>
+                                    <th class="p-2 border-r border-slate-200 text-red-700">Temp สอบถาม</th>
+                                    <th class="p-2 border-r border-slate-200 text-red-700">รถขบวนเสด็จ</th>
+                                    <th class="p-2 text-rose-700">QC</th>
+                                </tr>
+                            </thead>
+                            <tbody id="new-summary-tbody" class="bg-white/80"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
-            <div id="summary-dashboard-container" class="hidden transition-all duration-500 mt-6 space-y-6">
-    <!-- แสดงเฉพาะปุ่มกดเปิด Popup ตามฟังก์ชันที่มีอยู่ -->
-    <div id="popup-trigger-section" class="flex flex-wrap gap-3 mb-6">
-        <button id="btn-popup-perf" onclick="openPopupPerf()" class="btn-pop bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-5 py-2.5 rounded-2xl shadow-md font-bold text-sm flex items-center gap-2">
-            🏆 <span id="btn-perf-label">Top Performance</span>
-        </button>
-        <button id="btn-popup-qc" onclick="openPopupQc()" class="btn-pop bg-gradient-to-r from-rose-500 to-orange-500 text-white px-5 py-2.5 rounded-2xl shadow-md font-bold text-sm flex items-center gap-2">
-            🚨 Top การอนุมัติผิด (QC)
-        </button>
-        <button id="btn-popup-charts" onclick="openPopupCharts()" class="btn-pop bg-gradient-to-r from-slate-700 to-slate-900 text-white px-5 py-2.5 rounded-2xl shadow-md font-bold text-sm flex items-center gap-2">
-            📊 กราฟผลการปฏิบัติงานแต่ละด้าน
-        </button>
+        </div>
     </div>
-</div>
-</div>
 </div>
 
     <!-- Modal ตั้งค่าทีม -->
@@ -987,6 +1002,9 @@ function addBulkTempMembers() {
                     const aNum = parseFloat(totalApproveVal) || 0;
                     const qNum = parseFloat(totalQcVal) || 0;
 
+                    const formattedApprove = aNum >= 1000 ? aNum.toLocaleString() : aNum;
+                    const formattedQc = qNum >= 1000 ? qNum.toLocaleString() : qNum;
+
                     const avgApp = wNum > 0 ? (aNum / wNum).toFixed(2) : '0';
                     const avgQc = wNum > 0 ? (qNum / wNum).toFixed(2) : '0';
 
@@ -1001,7 +1019,9 @@ function addBulkTempMembers() {
                             <input type="number" class="input-cell font-bold text-slate-700 text-center py-2" value="${workDaysVal}" onwheel="event.preventDefault()" oninput="handleTempInput(${staff.id}, 'workDays', this)">
                         </td>
                         <td class="p-2 border-r border-slate-200">
-                            <input type="number" class="input-cell font-bold text-indigo-700 text-center py-2" value="${totalApproveVal}" onwheel="event.preventDefault()" oninput="handleTempInput(${staff.id}, 'totalApprove', this)">
+                            <input type="text" class="input-cell font-bold text-indigo-700 text-center py-2" 
+    value="${totalApproveVal >= 100 ? Number(totalApproveVal).toLocaleString() : totalApproveVal}" 
+    oninput="handleTempInput(${staff.id}, 'totalApprove', this)">
                         </td>
                         <td class="p-3 font-bold text-blue-600 text-center border-r border-slate-200" id="temp-avg-app-${staff.id}">${avgApp}</td>
                         <td class="p-2 border-r border-slate-200">
@@ -1176,23 +1196,23 @@ function addBulkTempMembers() {
         }
 
         function handleTempInput(staffId, field, inputEl) {
-            let val = inputEl.value.trim();
-            const key = getTempKey(staffId, field);
-            masterData[key] = val;
-            saveDataLocally();
-            
-            const workDaysVal = parseFloat(masterData[getTempKey(staffId, 'workDays')]) || 0;
-            const totalApproveVal = parseFloat(masterData[getTempKey(staffId, 'totalApprove')]) || 0;
-            const totalQcVal = parseFloat(masterData[getTempKey(staffId, 'totalQc')]) || 0;
+    // ลบเครื่องหมาย , ออกก่อนเก็บค่าจริงลง masterData
+    let val = inputEl.value.replace(/,/g, '').trim();
+    const key = getTempKey(staffId, field);
+    masterData[key] = val;
+    saveDataLocally();
+    
+    // คำนวณค่าเฉลี่ยตามปกติ
+    const workDaysVal = parseFloat(masterData[getTempKey(staffId, 'workDays')]) || 0;
+    const totalApproveVal = parseFloat(masterData[getTempKey(staffId, 'totalApprove')]) || 0;
+    const totalQcVal = parseFloat(masterData[getTempKey(staffId, 'totalQc')]) || 0;
 
-            const avgApprove = workDaysVal > 0 ? (totalApproveVal / workDaysVal).toFixed(2) : '0';
-            const avgQc = workDaysVal > 0 ? (totalQcVal / workDaysVal).toFixed(2) : '0';
+    const avgApprove = workDaysVal > 0 ? (totalApproveVal / workDaysVal).toFixed(2) : '0';
+    const avgQc = workDaysVal > 0 ? (totalQcVal / workDaysVal).toFixed(2) : '0';
 
-            const avgAppEl = document.getElementById(`temp-avg-app-${staffId}`);
-            const avgQcEl = document.getElementById(`temp-avg-qc-${staffId}`);
-            if (avgAppEl) avgAppEl.textContent = avgApprove;
-            if (avgQcEl) avgQcEl.textContent = avgQc;
-        }
+    document.getElementById(`temp-avg-app-${staffId}`).textContent = avgApprove;
+    document.getElementById(`temp-avg-qc-${staffId}`).textContent = avgQc;
+}
 
         function handleInputFromSummary(staffId, prodId, day, inputEl) {
             let val = inputEl.value.trim();
@@ -1211,15 +1231,15 @@ function addBulkTempMembers() {
         }
 
         function calculateSum(sId, pId) { 
-            let t = 0; 
-            for (let d = 1; d <= daysInMonth; d++) {
-                let val = masterData[getKey(sId, pId, d)];
-                if (val && !isNaN(val) && val.trim() !== '' && val !== '-') {
-                    t += parseFloat(val);
-                }
-            } 
-            return t === 0 ? '0' : t; 
+    let t = 0; 
+    for (let d = 1; d <= daysInMonth; d++) {
+        let val = masterData[getKey(sId, pId, d)];
+        if (val && !isNaN(val) && val.trim() !== '' && val !== '-') {
+            t += parseFloat(val);
         }
+    } 
+    return t === 0 ? '0' : (t >= 100 ? t.toLocaleString() : t); 
+}
 
         document.addEventListener('paste', function(e) {
             const target = e.target;
