@@ -696,6 +696,32 @@ function getTempMembers(year, month) {
 }
 
         function loadLocalData() {
+    try {
+        const storedTeams = localStorage.getItem('mlpr_teams_config_v3');
+        if (storedTeams) {
+            TEAMS_CONFIG = JSON.parse(storedTeams);
+            for (let i = 1; i <= 5; i++) {
+                if (!TEAMS_CONFIG[i]) TEAMS_CONFIG[i] = [];
+            }
+            if (!TEAMS_CONFIG['temp_monthly']) TEAMS_CONFIG['temp_monthly'] = {};
+        } else {
+            TEAMS_CONFIG = JSON.parse(JSON.stringify(DEFAULT_TEAMS_CONFIG));
+            saveTeamsConfig();
+        }
+    } catch(e) {
+        TEAMS_CONFIG = JSON.parse(JSON.stringify(DEFAULT_TEAMS_CONFIG));
+    }
+
+    try {
+        const storedData = localStorage.getItem('mlpr_v5_final');
+        masterData = storedData ? JSON.parse(storedData) : {};
+} catch(e) {
+        masterData = {};
+    }
+
+    // เพิ่มบรรทัดนี้เพื่อเคลียร์สถานะไม่ให้มองว่าเป็นการเปลี่ยนแปลงที่ต้องอัปโหลดทับ
+    hasUnsavedChanges = false;
+}
 
         function saveTeamsConfig() {
             localStorage.setItem('mlpr_teams_config_v3', JSON.stringify(TEAMS_CONFIG));
