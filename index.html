@@ -2592,6 +2592,45 @@ document.addEventListener('click', function(e) {
         }
     }
 });
+
+// เพิ่มฟังก์ชันกู้คืนข้อมูลอัตโนมัติเมื่อเปิดโปรแกรม[cite: 9]
+async function autoRestoreData() {
+    try {
+        const response = await fetch(APPS_SCRIPT_URL);
+        const rawText = await response.text();
+        let result;
+        try {
+            result = JSON.parse(rawText);
+        } catch (parseErr) {
+            return; // หากไม่สามารถแปลง JSON ได้ ให้ข้ามไปใช้ข้อมูล Local เดิม
+        }
+        
+        if (result && result.status !== 'not_found' && result.status !== 'error' && result.masterData && typeof result.masterData === 'object') {
+            TEAMS_CONFIG = result.teamsConfig || TEAMS_CONFIG;
+            masterData = result.masterData;
+            
+            saveTeamsConfig();
+            saveDataLocally();
+            hasUnsavedChanges = false;
+            
+            renderTeamButtons('main');
+            renderSummaryTable();
+            showToast("กู้คืนข้อมูลอัตโนมัติสำเร็จ ข้อมูลเป็นปัจจุบันแล้ว", "success");
+        }
+    } catch (err) {
+        console.error("Auto restore error:", err);
+    }
+}
+
+// ปรับปรุง window.onload ให้เรียกใช้งาน autoRestoreData ทุกครั้งที่เปิดโปรแกรม[cite: 9]
+window.onload = async function() { 
+    loadLocalData();
+    await autoRestoreData(); // ทำการกู้คืนข้อมูลอัตโนมัติทุกครั้งที่เปิดโปรแกรม[cite: 9]
+    setupMonthPicker();
+    updateLabels();
+    renderTeamButtons('main');
+    renderSummaryTable();
+};
     </script>
 
 <!-- Modal Top Performance -->
