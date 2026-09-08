@@ -6,6 +6,7 @@
     <title>MLPR Task Tracker - Local Teams</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
     <style>
@@ -90,6 +91,17 @@ div::-webkit-scrollbar {
         
         .member-card { transition: all 0.3s ease; }
         .member-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.05); transform: scale(1.01); border-color: #cbd5e1; }
+
+	@keyframes slideFadeIn {
+        0% { opacity: 0; transform: translateY(20px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+    .animate-slide {
+        animation: slideFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .delay-100 { animation-delay: 100ms; }
+    .delay-200 { animation-delay: 200ms; }
+
     </style>
 </head>
 <body class="p-3 lg:p-8 min-h-screen">
@@ -234,18 +246,18 @@ div::-webkit-scrollbar {
                         <h3 class="text-sm font-bold text-slate-600 mb-2">เลือกทีมเพื่อดูสรุปผล:</h3>
                         <div id="summary-team-buttons" class="flex flex-wrap gap-2"></div>
                     </div>
-                    <div class="flex flex-col gap-1 mt-1">
-                        <span class="font-bold text-slate-600 text-sm">ตั้งแต่วันที่:</span>
-                        <input type="date" id="new-range-start" class="border-b-2 border-indigo-300 bg-transparent px-2 py-1.5 focus:border-indigo-500 focus:outline-none font-bold text-indigo-600 cursor-pointer transition-colors text-sm w-full">
-                    </div>
-                    <div class="flex flex-col gap-1 mt-1">
-                        <span class="font-bold text-slate-600 text-sm">ถึงวันที่:</span>
-                        <input type="date" id="new-range-end" class="border-b-2 border-indigo-300 bg-transparent px-2 py-1.5 focus:border-indigo-500 focus:outline-none font-bold text-indigo-600 cursor-pointer transition-colors text-sm w-full">
-                    </div>
-                    <button onclick="fetchSummaryData()" class="btn-pop mt-2 w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2.5 rounded-xl shadow-md hover:shadow-indigo-500/30 font-bold text-sm transition-all flex items-center justify-center gap-2">
+                    <!-- แทนที่ส่วนเลือกตั้งแต่วันที่/ถึงวันที่ เดิม -->
+<div class="flex flex-col gap-1 mt-1">
+    <span class="font-bold text-slate-600 text-sm">เลือกเดือน/ปี:</span>
+    <input type="month" id="summary-month" class="border-b-2 border-indigo-300 bg-transparent px-2 py-1.5 focus:border-indigo-500 focus:outline-none font-bold text-indigo-600 cursor-pointer transition-colors text-sm w-full">
+</div>
+                    <button onclick="fetchSummaryData(); prepareAllPresentationData();" class="btn-pop mt-2 w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2.5 rounded-xl shadow-md hover:shadow-indigo-500/30 font-bold text-sm transition-all flex items-center justify-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                         ดึงข้อมูลและรวมยอด
                     </button>
+<button id="btn-popup-present" onclick="openPresentationSlide()" class="btn-pop w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-3 rounded-2xl shadow-md font-bold text-sm flex items-center justify-center gap-2 mt-2">
+                            📽️ นำเสนอ (Presentation)
+                        </button>
                 </div>
 
                 <!-- กล่องปุ่มเปิด Popup ต่างๆ -->
@@ -325,13 +337,15 @@ div::-webkit-scrollbar {
             <div class="bg-indigo-50/50 p-4 md:p-5 rounded-2xl border border-indigo-100 mb-6">
                 <h4 class="font-bold text-indigo-900 mb-3 text-sm">เพิ่มสมาชิกใหม่ เข้า <span id="config-current-team-label" class="text-orange-500">ทีม 1</span></h4>
                 <div class="flex flex-col md:flex-row gap-3">
-                    <input type="text" id="new-fullname" placeholder="ชื่อ-นามสกุล" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all text-sm font-medium" onkeypress="if(event.key === 'Enter') addMember()">
-                    <input type="text" id="new-nickname" placeholder="ชื่อเล่น" class="w-full md:w-1/3 px-4 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all text-sm font-medium" onkeypress="if(event.key === 'Enter') addMember()">
-                    <button onclick="addMember()" class="btn-pop bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md shadow-indigo-200 text-sm whitespace-nowrap flex items-center justify-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                        เพิ่ม
-                    </button>
-                </div>
+    <input type="text" id="new-fullname" placeholder="ชื่อ-นามสกุล" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all text-sm font-medium" onkeypress="if(event.key === 'Enter') addMember()">
+    <input type="text" id="new-nickname" placeholder="ชื่อเล่น" class="w-full md:w-1/4 px-4 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all text-sm font-medium" onkeypress="if(event.key === 'Enter') addMember()">
+    <!-- เพิ่มช่องกรอก User (ซ่อนไว้เป็นค่าเริ่มต้น จะแสดงเมื่อเลือกทีม Temp) -->
+    <input type="text" id="new-usercode" placeholder="User" class="w-full md:w-1/4 px-4 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all text-sm font-medium hidden" onkeypress="if(event.key === 'Enter') addMember()">
+    <button onclick="addMember()" class="btn-pop bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md shadow-indigo-200 text-sm whitespace-nowrap flex items-center justify-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        เพิ่ม
+    </button>
+</div>
             </div>
 
             <!-- เพิ่มส่วนกล่องข้อความนำเข้า (Bulk Import) และปุ่มจัดการลบหลายคนสำหรับทีม Temp -->
@@ -897,19 +911,22 @@ function getTempMembers(year, month) {
     renderTeamButtons('config');
     document.getElementById('config-current-team-label').textContent = configTeam === 'temp' ? `ทีม Temp` : `ทีม ${configTeam}`;
     
-    // เพิ่มการจัดการเปิด/ปิดกล่อง Bulk Import เฉพาะเมื่อเลือกทีม Temp เท่านั้น
     const tempBulkSection = document.getElementById('temp-bulk-section');
-    if (tempBulkSection) {
+    const newUsercodeInp = document.getElementById('new-usercode');
+    if (tempBulkSection && newUsercodeInp) {
         if (configTeam === 'temp') {
             tempBulkSection.classList.remove('hidden');
+            newUsercodeInp.classList.remove('hidden'); // แสดงช่องกรอก User เมื่ออยู่ทีม Temp
         } else {
             tempBulkSection.classList.add('hidden');
+            newUsercodeInp.classList.add('hidden'); // ซ่อนเมื่ออยู่ทีมอื่น
         }
     }
 
     renderConfigMembersList();
     document.getElementById('new-fullname').value = '';
     document.getElementById('new-nickname').value = '';
+    if(document.getElementById('new-usercode')) document.getElementById('new-usercode').value = '';
 }
 
 function addBulkTempMembers() {
@@ -928,13 +945,15 @@ function addBulkTempMembers() {
         const cols = row.split('\t').map(c => c.trim()).filter(c => c !== '');
         if (cols.length > 0) {
             const fullName = cols[0];
-            const nickName = cols.length > 1 ? cols[1] : '';
+            const userCode = cols.length > 1 ? cols[1] : '';
+            const nickName = cols.length > 2 ? cols[2] : '';
             
             if (fullName) {
                 const newId = new Date().getTime() + Math.floor(Math.random() * 1000);
                 membersList.push({
                     id: newId,
                     fullName: fullName,
+                    userCode: userCode,
                     nickName: nickName
                 });
                 addedCount++;
@@ -980,57 +999,62 @@ function addBulkTempMembers() {
 
             if (currentTeam === 'temp') {
                 thead.innerHTML = `
-                    <tr class="bg-slate-800 text-white text-[12px]">
-                        <th class="p-3 text-center min-w-[200px] border-r border-slate-700">เจ้าหน้าที่</th>
-                        <th class="p-3 text-center min-w-[120px] border-r border-slate-700">วันทำงาน</th>
-                        <th class="p-3 text-center min-w-[150px] border-r border-slate-700">ยอดรวมอนุมติ</th>
-                        <th class="p-3 text-center min-w-[160px] border-r border-slate-700 text-blue-300">ยอดรวมอนุมติเฉลี่ยต่อวัน</th>
-                        <th class="p-3 text-center min-w-[150px] border-r border-slate-700 text-rose-300">ยอดอนุมัติผิด</th>
-                        <th class="p-3 text-center min-w-[160px] text-rose-300">ยอดอนุมัติผิดเฉลี่ยต่อวัน</th>
-                    </tr>
-                `;
+    <tr class="bg-slate-800 text-white text-[12px]">
+        <th class="p-3 text-center min-w-[200px] border-r border-slate-700">เจ้าหน้าที่</th>
+        <th class="p-3 text-center min-w-[120px] border-r border-slate-700">User</th>
+        <th class="p-3 text-center min-w-[120px] border-r border-slate-700">วันทำงาน</th>
+        <th class="p-3 text-center min-w-[150px] border-r border-slate-700">ยอดรวมอนุมติ</th>
+        <th class="p-3 text-center min-w-[160px] border-r border-slate-700 text-blue-300">ยอดรวมอนุมติเฉลี่ยต่อวัน</th>
+        <th class="p-3 text-center min-w-[150px] border-r border-slate-700 text-rose-300">ยอดอนุมัติผิด</th>
+        <th class="p-3 text-center min-w-[160px] text-rose-300">ยอดอนุมัติผิดเฉลี่ยต่อวัน</th>
+    </tr>
+`;
 
                 tbody.innerHTML = '';
                 currentMembers.forEach((staff, sIdx) => {
-                    const rowBgClass = sIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
-                    
-                    const workDaysVal = masterData[getTempKey(staff.id, 'workDays')] || '';
-                    const totalApproveVal = masterData[getTempKey(staff.id, 'totalApprove')] || '';
-                    const totalQcVal = masterData[getTempKey(staff.id, 'totalQc')] || '';
+    const rowBgClass = sIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
+    
+    const userCodeVal = masterData[getTempKey(staff.id, 'userCode')] || staff.userCode || '';
+    const workDaysVal = masterData[getTempKey(staff.id, 'workDays')] || '';
+    const totalApproveVal = masterData[getTempKey(staff.id, 'totalApprove')] || '';
+    const totalQcVal = masterData[getTempKey(staff.id, 'totalQc')] || '';
 
-                    const wNum = parseFloat(workDaysVal) || 0;
-                    const aNum = parseFloat(totalApproveVal) || 0;
-                    const qNum = parseFloat(totalQcVal) || 0;
+    const wNum = parseFloat(workDaysVal) || 0;
+    const aNum = parseFloat(totalApproveVal) || 0;
+    const qNum = parseFloat(totalQcVal) || 0;
 
-                    const formattedApprove = aNum >= 1000 ? aNum.toLocaleString() : aNum;
-                    const formattedQc = qNum >= 1000 ? qNum.toLocaleString() : qNum;
+    const formattedApprove = aNum >= 1000 ? aNum.toLocaleString() : aNum;
+    const formattedQc = qNum >= 1000 ? qNum.toLocaleString() : qNum;
 
-                    const avgApp = wNum > 0 ? (aNum / wNum).toFixed(2) : '0';
-                    const avgQc = wNum > 0 ? (qNum / wNum).toFixed(2) : '0';
+    const avgApp = wNum > 0 ? (aNum / wNum).toFixed(2) : '0';
+    const avgQc = wNum > 0 ? (qNum / wNum).toFixed(2) : '0';
 
-                    const tr = document.createElement('tr');
-                    tr.className = rowBgClass;
-                    tr.innerHTML = `
-                        <td class="p-3 text-left pl-6 border-r border-slate-200">
-                            <strong class="text-slate-800">${staff.fullName}</strong><br>
-                            <span class="text-xs text-slate-500 font-medium">(${staff.nickName || '-'})</span>
-                        </td>
-                        <td class="p-2 border-r border-slate-200">
-                            <input type="number" class="input-cell font-bold text-slate-700 text-center py-2" value="${workDaysVal}" onwheel="event.preventDefault()" oninput="handleTempInput(${staff.id}, 'workDays', this)">
-                        </td>
-                        <td class="p-2 border-r border-slate-200">
-                            <input type="text" class="input-cell font-bold text-indigo-700 text-center py-2" 
-    value="${totalApproveVal >= 100 ? Number(totalApproveVal).toLocaleString() : totalApproveVal}" 
-    oninput="handleTempInput(${staff.id}, 'totalApprove', this)">
-                        </td>
-                        <td class="p-3 font-bold text-blue-600 text-center border-r border-slate-200" id="temp-avg-app-${staff.id}">${avgApp}</td>
-                        <td class="p-2 border-r border-slate-200">
-                            <input type="number" class="input-cell font-bold text-rose-600 text-center py-2" value="${totalQcVal}" id="temp-qc-input-${staff.id}" onwheel="event.preventDefault()" oninput="handleTempInput(${staff.id}, 'totalQc', this)">
-                        </td>
-                        <td class="p-3 font-bold text-rose-600 text-center" id="temp-avg-qc-${staff.id}">${avgQc}</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
+    const tr = document.createElement('tr');
+    tr.className = rowBgClass;
+    tr.innerHTML = `
+        <td class="p-3 text-left pl-6 border-r border-slate-200">
+            <strong class="text-slate-800">${staff.fullName}</strong><br>
+            <span class="text-xs text-slate-500 font-medium">(${staff.nickName || '-'})</span>
+        </td>
+        <td class="p-2 border-r border-slate-200">
+            <input type="text" class="input-cell font-bold text-slate-700 text-center py-2" value="${userCodeVal}" oninput="handleTempInput(${staff.id}, 'userCode', this)">
+        </td>
+        <td class="p-2 border-r border-slate-200">
+            <input type="number" class="input-cell font-bold text-slate-700 text-center py-2" value="${workDaysVal}" onwheel="event.preventDefault()" oninput="handleTempInput(${staff.id}, 'workDays', this)">
+        </td>
+        <td class="p-2 border-r border-slate-200">
+            <input type="text" class="input-cell font-bold text-indigo-700 text-center py-2" 
+                value="${totalApproveVal >= 100 ? Number(totalApproveVal).toLocaleString() : totalApproveVal}" 
+                oninput="handleTempInput(${staff.id}, 'totalApprove', this)">
+        </td>
+        <td class="p-3 font-bold text-blue-600 text-center border-r border-slate-200" id="temp-avg-app-${staff.id}">${avgApp}</td>
+        <td class="p-2 border-r border-slate-200">
+            <input type="number" class="input-cell font-bold text-rose-600 text-center py-2" value="${totalQcVal}" id="temp-qc-input-${staff.id}" onwheel="event.preventDefault()" oninput="handleTempInput(${staff.id}, 'totalQc', this)">
+        </td>
+        <td class="p-3 font-bold text-rose-600 text-center" id="temp-avg-qc-${staff.id}">${avgQc}</td>
+    `;
+    tbody.appendChild(tr);
+});
                 return;
             }
 
@@ -1120,80 +1144,70 @@ function addBulkTempMembers() {
         }
 
         function processTempQcMapping() {
-            const text = document.getElementById('temp-qc-textarea').value.trim();
-            if (!text) {
-                showToast("กรุณาวางข้อมูลก่อนประมวลผล", "error");
-                return;
-            }
-            const rows = text.split(/\r?\n/);
-            const currentMembers = getTempMembers(currentYear, currentMonth);
-            let matchCount = 0;
-            let unmappedRows = [];
+    const text = document.getElementById('temp-qc-textarea').value.trim();
+    if (!text) {
+        showToast("กรุณาวางข้อมูลก่อนประมวลผล", "error");
+        return;
+    }
+    const rows = text.split(/\r?\n/);
+    const currentMembers = getTempMembers(currentYear, currentMonth);
+    let matchCount = 0;
+    let unmappedRows = [];
 
-            // ฟังก์ชันช่วยบันทึกค่าและคำนวณค่าเฉลี่ยอัตโนมัติ
-            const applyMapping = (matchedStaff, val) => {
-                const totalQcKey = getTempKey(matchedStaff.id, 'totalQc');
-                const workDaysKey = getTempKey(matchedStaff.id, 'workDays');
-                
-                masterData[totalQcKey] = val.toString();
-                matchCount++;
-            };
+    const applyMapping = (matchedStaff, val) => {
+        const totalQcKey = getTempKey(matchedStaff.id, 'totalQc');
+        masterData[totalQcKey] = val.toString();
+        matchCount++;
+    };
 
-            // รอบที่ 1: Map ตามปกติก่อน
-            rows.forEach(row => {
-                const cols = row.split('\t').map(c => c.trim()).filter(c => c !== '');
-                if (cols.length >= 2) {
-                    const nameStr = cols[0].toLowerCase();
-                    const valStr = cols[cols.length - 1].replace(/,/g, '');
-                    const val = parseFloat(valStr);
+    rows.forEach(row => {
+        const cols = row.split('\t').map(c => c.trim()).filter(c => c !== '');
+        if (cols.length >= 2) {
+            const keyStr = cols[0].toLowerCase(); // ข้อมูล User หรือชื่อที่ก๊อปปี้มา
+            const valStr = cols[cols.length - 1].replace(/,/g, '');
+            const val = parseFloat(valStr);
 
-                    if (!isNaN(val)) {
-                        const matchedStaff = currentMembers.find(m => 
-                            m.fullName.toLowerCase().includes(nameStr) || 
-                            nameStr.includes(m.fullName.toLowerCase()) ||
-                            (m.nickName && (m.nickName.toLowerCase() === nameStr || nameStr.includes(m.nickName.toLowerCase())))
-                        );
+            if (!isNaN(val)) {
+                // 1. ค้นหาจาก User (userCode) ในตารางหลักก่อนเป็นอันดับแรก
+                const matchedStaff = currentMembers.find(m => {
+                    const staffUser = (masterData[getTempKey(m.id, 'userCode')] || m.userCode || '').toLowerCase().trim();
+                    return staffUser && staffUser === keyStr;
+                }) ||
+                // 2. ถ้าไม่เจอ User จึงค่อยเทียบกับ FullName / NickName
+                currentMembers.find(m =>
+                    m.fullName.toLowerCase().includes(keyStr) ||
+                    keyStr.includes(m.fullName.toLowerCase()) ||
+                    (m.nickName && m.nickName.toLowerCase() === keyStr)
+                );
 
-                        if (matchedStaff) {
-                            applyMapping(matchedStaff, val);
-                        } else {
-                            unmappedRows.push({ nameStr, val });
-                        }
-                    }
+                if (matchedStaff) {
+                    applyMapping(matchedStaff, val);
+                } else {
+                    unmappedRows.push({ keyStr, val });
                 }
-            });
-
-            // รอบที่ 2: กวาดรายชื่อที่ยังไม่เจอ โดยตัดคำนำหน้าออกแล้ว Map ใหม่
-            if (unmappedRows.length > 0) {
-                unmappedRows.forEach(item => {
-                    const cleanNameStr = item.nameStr
-                        .replace(/^นาย\s*/, '')
-                        .replace(/^นางสาว\s*/, '')
-                        .replace(/^นาง\s*/, '')
-                        .trim();
-
-                    if (cleanNameStr) {
-                        const matchedStaff = currentMembers.find(m => {
-                            const staffCleanName = m.fullName.toLowerCase()
-                                .replace(/^นาย\s*/, '')
-                                .replace(/^นางสาว\s*/, '')
-                                .replace(/^นาง\s*/, '')
-                                .trim();
-                            return staffCleanName.includes(cleanNameStr) || cleanNameStr.includes(staffCleanName);
-                        });
-
-                        if (matchedStaff) {
-                            applyMapping(matchedStaff, item.val);
-                        }
-                    }
-                });
             }
-
-            saveDataLocally();
-            renderSummaryTable();
-            closeTempQcModal();
-            showToast(`Map ยอดอนุมัติผิดสำเร็จ ${matchCount} รายการ`, "success");
         }
+    });
+
+    // รอบเก็บตก: ถ้านำเข้าเป็นชื่อแล้วติดคำนำหน้า
+    if (unmappedRows.length > 0) {
+        unmappedRows.forEach(item => {
+            const cleanKeyStr = item.keyStr.replace(/^(นาย|นางสาว|นาง)\s*/, '').trim();
+            if (cleanKeyStr) {
+                const matchedStaff = currentMembers.find(m => {
+                    const staffCleanName = m.fullName.toLowerCase().replace(/^(นาย|นางสาว|นาง)\s*/, '').trim();
+                    return staffCleanName.includes(cleanKeyStr) || cleanKeyStr.includes(staffCleanName);
+                });
+                if (matchedStaff) applyMapping(matchedStaff, item.val);
+            }
+        });
+    }
+
+    saveDataLocally();
+    renderSummaryTable();
+    closeTempQcModal();
+    showToast(`Map ยอดอนุมัติผิดสำเร็จ ${matchCount} รายการ`, "success");
+}
 
         function handleTempInput(staffId, field, inputEl) {
     // ลบเครื่องหมาย , ออกก่อนเก็บค่าจริงลง masterData
@@ -1233,9 +1247,12 @@ function addBulkTempMembers() {
         function calculateSum(sId, pId) { 
     let t = 0; 
     for (let d = 1; d <= daysInMonth; d++) {
-        let val = masterData[getKey(sId, pId, d)];
-        if (val && !isNaN(val) && val.trim() !== '' && val !== '-') {
-            t += parseFloat(val);
+        let rawVal = masterData[getKey(sId, pId, d)];
+        if (rawVal !== undefined && rawVal !== null) {
+            let val = String(rawVal).replace(/,/g, '').trim();
+            if (val !== '' && val !== '-' && val !== 'วันหยุด' && !isNaN(val)) {
+                t += parseFloat(val);
+            }
         }
     } 
     return t === 0 ? '0' : (t >= 100 ? t.toLocaleString() : t); 
@@ -1260,7 +1277,7 @@ function addBulkTempMembers() {
                 const startInputIdx = inputsInRow.indexOf(targetInput);
                 if (startInputIdx === -1) return;
 
-                const fieldsOrder = ['workDays', 'totalApprove', 'totalQc'];
+                const fieldsOrder = ['userCode', 'workDays', 'totalApprove', 'totalQc'];
                 const currentMembers = getTempMembers(currentYear, currentMonth); 
                 let dataChanged = false;
 
@@ -1420,57 +1437,62 @@ function addBulkTempMembers() {
         }
 
         function renderConfigMembersList() {
-            const listContainer = document.getElementById('config-members-list');
-            const emptyState = document.getElementById('config-empty-state');
-            const members = configTeam === 'temp' ? getTempMembers(currentYear, currentMonth) : (TEAMS_CONFIG[configTeam] || []);
-            
-            listContainer.innerHTML = '';
-            
-            if (members.length === 0) {
-                listContainer.classList.add('hidden');
-                emptyState.classList.remove('hidden');
-                emptyState.classList.add('flex');
-                return;
-            }
-            
-            listContainer.classList.remove('hidden');
-            emptyState.classList.add('hidden');
-            emptyState.classList.remove('flex');
+    const listContainer = document.getElementById('config-members-list');
+    const emptyState = document.getElementById('config-empty-state');
+    const members = configTeam === 'temp' ? getTempMembers(currentYear, currentMonth) : (TEAMS_CONFIG[configTeam] || []);
+    
+    listContainer.innerHTML = '';
+    
+    if (members.length === 0) {
+        listContainer.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        emptyState.classList.add('flex');
+        return;
+    }
+    
+    listContainer.classList.remove('hidden');
+    emptyState.classList.add('hidden');
+    emptyState.classList.remove('flex');
 
-            members.forEach((member, index) => {
-                const card = document.createElement('div');
-                card.className = "member-card bg-white p-3 rounded-2xl border border-slate-200 flex justify-between items-center";
-                
-                let checkboxHtml = '';
-                if (configTeam === 'temp') {
-                    checkboxHtml = `<input type="checkbox" class="temp-member-checkbox w-4 h-4 text-orange-600 rounded border-slate-300 focus:ring-orange-500 cursor-pointer" data-id="${member.id}">`;
-                }
-
-                card.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        ${checkboxHtml}
-                        <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-xs">
-                            ${index + 1}
-                        </div>
-                        <div>
-                            <div class="font-bold text-slate-800 text-sm">${member.fullName}</div>
-                            <div class="text-[11px] text-slate-500 font-medium mt-0.5">ชื่อเล่น: ${member.nickName || '-'}</div>
-                        </div>
-                    </div>
-                    <button onclick="deleteMember(${member.id})" class="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors" title="ลบพนักงาน">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    </button>
-                `;
-                listContainer.appendChild(card);
-            });
+    members.forEach((member, index) => {
+        const card = document.createElement('div');
+        card.className = "member-card bg-white p-3 rounded-2xl border border-slate-200 flex justify-between items-center";
+        
+        let checkboxHtml = '';
+        if (configTeam === 'temp') {
+            checkboxHtml = `<input type="checkbox" class="temp-member-checkbox w-4 h-4 text-orange-600 rounded border-slate-300 focus:ring-orange-500 cursor-pointer" data-id="${member.id}">`;
         }
+
+        card.innerHTML = `
+            <div class="flex items-center gap-3">
+                ${checkboxHtml}
+                <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-xs">
+                    ${index + 1}
+                </div>
+                <div>
+                    <div class="font-bold text-slate-800 text-sm">
+                        ${member.fullName} 
+                        ${member.userCode ? `<span class="text-xs text-indigo-600 font-semibold">(User: ${member.userCode})</span>` : ''}
+                    </div>
+                    <div class="text-[11px] text-slate-500 font-medium mt-0.5">ชื่อเล่น: ${member.nickName || '-'}</div>
+                </div>
+            </div>
+            <button onclick="deleteMember(${member.id})" class="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors" title="ลบพนักงาน">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+        `;
+        listContainer.appendChild(card);
+    });
+}
 
         function addMember() {
     const fullNameInput = document.getElementById('new-fullname');
     const nickNameInput = document.getElementById('new-nickname');
+    const userCodeInput = document.getElementById('new-usercode');
     
     const fullName = fullNameInput.value.trim();
     const nickName = nickNameInput.value.trim();
+    const userCode = userCodeInput ? userCodeInput.value.trim() : '';
     
     if (!fullName) {
         showToast("กรุณากรอก ชื่อ-นามสกุล", "error");
@@ -1485,7 +1507,8 @@ function addBulkTempMembers() {
         membersList.push({
             id: newId,
             fullName: fullName,
-            nickName: nickName
+            nickName: nickName,
+            userCode: userCode // บันทึกข้อมูล User
         });
     } else {
         if (!TEAMS_CONFIG[configTeam]) {
@@ -1503,6 +1526,7 @@ function addBulkTempMembers() {
     
     fullNameInput.value = '';
     nickNameInput.value = '';
+    if(userCodeInput) userCodeInput.value = '';
     fullNameInput.focus();
     
     showToast("เพิ่มรายชื่อสำเร็จ");
@@ -1618,19 +1642,17 @@ function updateTempTarget(val) {
         let chartsInstance = {};
 
         function openSummaryPage() {
-            document.getElementById('new-summary-page').classList.remove('hidden');
-            
-            if (!document.getElementById('new-range-start').value) {
-                const firstDay = new Date(currentYear, currentMonth, 1);
-                document.getElementById('new-range-start').value = firstDay.toISOString().split('T')[0];
-                
-                const lastDay = new Date(currentYear, currentMonth + 1, 0);
-                document.getElementById('new-range-end').value = lastDay.toISOString().split('T')[0];
-            }
-            
-            summaryCurrentTeam = currentTeam;
-            renderTeamButtons('summary');
-        }
+    document.getElementById('new-summary-page').classList.remove('hidden');
+
+    // กำหนดค่าเริ่มต้นเป็นเดือน/ปีปัจจุบัน
+    const summaryMonthInput = document.getElementById('summary-month');
+    if (summaryMonthInput && !summaryMonthInput.value) {
+        summaryMonthInput.value = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+    }
+
+    summaryCurrentTeam = currentTeam;
+    renderTeamButtons('summary');
+}
 
         function closeSummaryPage() {
             document.getElementById('new-summary-page').classList.add('hidden');
@@ -1639,25 +1661,27 @@ function updateTempTarget(val) {
         }
 
         function fetchSummaryData() {
-    const startDateStr = document.getElementById('new-range-start').value;
-    const endDateStr = document.getElementById('new-range-end').value;
+    const monthInputVal = document.getElementById('summary-month').value;
 
-    if (!startDateStr || !endDateStr) {
-        showToast("กรุณาระบุวันที่เริ่มต้นและสิ้นสุด", "error");
+    if (!monthInputVal) {
+        showToast("กรุณาเลือกเดือนและปี", "error");
         return;
     }
 
-    const startDate = new Date(startDateStr);
-    const endDate = new Date(endDateStr);
+    const [yearStr, monthStr] = monthInputVal.split('-');
+    const targetYear = parseInt(yearStr);
+    const targetMonth = parseInt(monthStr) - 1; // 0-11 สำหรับ JavaScript Date
 
-    if (startDate > endDate) {
-        showToast("วันที่เริ่มต้นต้องน้อยกว่าหรือเท่ากับวันที่สิ้นสุด", "error");
-        return;
-    }
+    // กำหนดวันเริ่มต้น (วันที่ 1) และวันสิ้นสุด (วันสุดท้ายของเดือน) โดยอัตโนมัติ
+    const startDate = new Date(targetYear, targetMonth, 1);
+    const endDate = new Date(targetYear, targetMonth + 1, 0);
 
     const teamLabel = summaryCurrentTeam === 'all' ? 'สรุปผลรวมทุกทีม' : (summaryCurrentTeam === 'temp' ? 'ทีม Temp' : `ทีม ${summaryCurrentTeam}`);
+    
+    // แปลงชื่อเดือนเป็นภาษาไทยสำหรับแสดงผล (เช่น ประจำเดือน มกราคม 2569)
+    const formattedMonthName = startDate.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
     document.getElementById('new-display-range').textContent = 
-        `${startDate.toLocaleDateString('th-TH')} - ${endDate.toLocaleDateString('th-TH')} (${teamLabel})`;
+        `ประจำเดือน ${formattedMonthName} (${teamLabel})`;
     
     document.getElementById('new-summary-table-container').classList.remove('hidden');
     document.getElementById('summary-dashboard-container').classList.remove('hidden');
@@ -1670,7 +1694,7 @@ function updateTempTarget(val) {
     }
 
     // ---------------------------------------------------------
-    // 📍 ควบคุมการแสดงผลปุ่มและหัวข้อตามทีมที่เลือก (แก้ปัญหา 1, 2, 3)
+    // 📍 ควบคุมการแสดงผลปุ่มและหัวข้อตามทีมที่เลือก
     // ---------------------------------------------------------
     const btnPopupPerf = document.getElementById('btn-popup-perf');
     const btnPopupQc = document.getElementById('btn-popup-qc');
@@ -1684,16 +1708,13 @@ function updateTempTarget(val) {
     if (btnPopupCharts) btnPopupCharts.classList.remove('hidden');
 
     if (summaryCurrentTeam === 'all') {
-        // 1. ปุ่มสรุปผลรวม: ต้องไม่มี "กราฟผลการปฏิบัติงานแต่ละด้าน"
         if (btnPopupCharts) btnPopupCharts.classList.add('hidden');
     } else if (summaryCurrentTeam === 'temp') {
-        // 3. ทีม Temp: ไม่มี "กราฟผลการปฏิบัติงานแต่ละด้าน" แต่ **ต้องแสดงปุ่ม Top QC (ยอดอนุมัติผิด)** และเปลี่ยนชื่อ Top Performance เป็น "Top Performance"
         if (btnPopupCharts) btnPopupCharts.classList.add('hidden');
         if (btnPerfLabel) btnPerfLabel.textContent = "Top Performance";
         if (modalPerfTitle) modalPerfTitle.textContent = "🏆 Top Performance ";
-        if (btnPopupQc) btnPopupQc.classList.remove('hidden'); // ให้แสดง Top QC เสมอ
+        if (btnPopupQc) btnPopupQc.classList.remove('hidden');
     } else {
-        // 2. ทีม 1 - 5: มีครบทุกปุ่ม (Top Performance, Top QC, กราฟผลการปฏิบัติงานแต่ละด้าน)
         if (btnPerfLabel) btnPerfLabel.textContent = "Top Performance";
         if (modalPerfTitle) modalPerfTitle.textContent = "🏆 Top Performance";
     }
@@ -2631,6 +2652,1080 @@ window.onload = async function() {
     renderTeamButtons('main');
     renderSummaryTable();
 };
+
+// ==========================================
+// ระบบการนำเสนอสไลด์ (Presentation System) - อัปเดตใหม่ (19 หน้า)
+// ==========================================
+
+let presentationData = { teams: {}, temp: {}, all: {}, rangeText: '', prevRankMapPerf: {}, prevRankMapQc: {} };
+let currentSlideIndex = 0;
+let slideChartInstances = []; // รองรับหลายกราฟใน 1 หน้า
+
+const SLIDES = [
+    { title: 'ข้อมูลสรุป ทีม 1', type: 'team_summary', teamId: 1 },
+    { title: 'กราฟผลการปฏิบัติงานแต่ละด้าน ทีม 1', type: 'team_chart', teamId: 1 },
+    { title: 'ข้อมูลสรุป ทีม 2', type: 'team_summary', teamId: 2 },
+    { title: 'กราฟผลการปฏิบัติงานแต่ละด้าน ทีม 2', type: 'team_chart', teamId: 2 },
+    { title: 'ข้อมูลสรุป ทีม 3', type: 'team_summary', teamId: 3 },
+    { title: 'กราฟผลการปฏิบัติงานแต่ละด้าน ทีม 3', type: 'team_chart', teamId: 3 },
+    { title: 'ข้อมูลสรุป ทีม 4', type: 'team_summary', teamId: 4 },
+    { title: 'กราฟผลการปฏิบัติงานแต่ละด้าน ทีม 4', type: 'team_chart', teamId: 4 },
+    { title: 'ข้อมูลสรุป ทีม 5', type: 'team_summary', teamId: 5 },
+    { title: 'กราฟผลการปฏิบัติงานแต่ละด้าน ทีม 5', type: 'team_chart', teamId: 5 },
+    { title: 'กลุ่ม 20 - 31 วัน (ทีม Temp)', type: 'temp_group', min: 20, max: 31, badge: '🏆' },
+    { title: 'กลุ่ม 10 - 19 วัน (ทีม Temp)', type: 'temp_group', min: 10, max: 19, badge: '⭐' },
+    { title: 'กลุ่ม 1 - 9 วัน (ทีม Temp)', type: 'temp_group', min: 1, max: 9, badge: '🚀' },
+    { title: 'Top Performance (ทีม Temp)', type: 'temp_top_perf' },
+    { title: 'Top การอนุมัติผิด QC (ทีม Temp)', type: 'temp_top_qc' }, // หน้าที่ 15 เพิ่มใหม่
+    { title: 'ตารางผลรวมยอดทั้งหมด (ภาพรวม)', type: 'all_summary_table' }, // 10 อันดับแรก
+    { title: 'Top Performance (ภาพรวม)', type: 'all_top_perf' }, // 10 อันดับแรก
+    { title: 'Top การอนุมัติผิด QC (ภาพรวม)', type: 'all_top_qc' },
+    { title: 'จบการนำเสนอ', type: 'closing' }
+];
+
+function prepareAllPresentationData() {
+    const monthInputVal = document.getElementById('summary-month').value;
+    if (!monthInputVal) return;
+
+    const [yearStr, monthStr] = monthInputVal.split('-');
+    const targetYear = parseInt(yearStr);
+    const targetMonth = parseInt(monthStr) - 1; // 0-11
+
+    const startDate = new Date(targetYear, targetMonth, 1);
+    const endDate = new Date(targetYear, targetMonth + 1, 0);
+
+    // ข้อความแสดงช่วงเวลาในพรีเซนต์ (เช่น ประจำเดือน มกราคม 2569)
+    const formattedMonthName = startDate.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+    presentationData.rangeText = `ประจำเดือน ${formattedMonthName}`;
+
+    const currDates = getDatesInRange(startDate, endDate);
+    
+    // คำนวณช่วงเดือนก่อนหน้าอัตโนมัติ (เดือนก่อนหน้าแบบเต็มเดือน)
+    const prevTargetDate = new Date(targetYear, targetMonth - 1, 1);
+    const prevStart = new Date(prevTargetDate.getFullYear(), prevTargetDate.getMonth(), 1);
+    const prevEnd = new Date(prevTargetDate.getFullYear(), prevTargetDate.getMonth() + 1, 0);
+    const prevDates = getDatesInRange(prevStart, prevEnd);
+
+    let allMembers = [];
+    
+    // เตรียมตัวแปรเก็บข้อมูลกราฟคู่หน้า (2, 4, 6, 8, 10) หากยังไม่มี
+    if (!presentationData.chartPairs) presentationData.chartPairs = {};
+
+    for (let i = 1; i <= 5; i++) {
+        let members = TEAMS_CONFIG[i] || [];
+        allMembers = allMembers.concat(members);
+        
+        // ประมวลผลข้อมูลตารางของทีม (หน้า 1, 3, 5, 7, 9)
+        presentationData.teams[i] = buildStatsForTeam(members, currDates);
+
+        // แมปข้อมูลจากตารางหน้าคี่มาใส่กราฟหน้าคู่ (หน้า 2, 4, 6, 8, 10 ตามลำดับทีม 1-5)
+        const teamStats = presentationData.teams[i];
+        const chartPageNum = i * 2; // ทีม 1 -> หน้า 2, ทีม 2 -> หน้า 4, ..., ทีม 5 -> หน้า 10
+        
+        presentationData.chartPairs[chartPageNum] = {
+            mlpr: teamStats.ml || teamStats.ML || 0,       // ยอด ML -> MLPR
+            mnpr: teamStats.mn || teamStats.MN || 0,       // ยอด MN -> MNPR
+            reconfirm: teamStats.rcf || teamStats.RCF || 0,// ยอด RCF -> Reconfirm
+            qcError: teamStats.qc || teamStats.QC || 0      // ยอด QC -> ยอดอนุมัติผิด (QC)
+        };
+    }
+    
+    presentationData.all = buildStatsForTeam(allMembers, currDates);
+    
+    // แปลงวันที่เป็น string รูปแบบ YYYY-MM-DD เพื่อส่งให้ buildTempTeamStats ทำงานต่อได้ปกติ
+    const startStrFormat = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
+    const endStrFormat = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+    presentationData.temp = buildTempTeamStats(startStrFormat, endStrFormat);
+
+    let prevAll = buildStatsForTeam(allMembers, prevDates);
+    presentationData.prevRankMapPerf = {};
+    presentationData.prevRankMapQc = {};
+
+    // 1. เก็บอันดับเดือนก่อนหน้าของทีมปกติ (All)
+    if (prevAll && prevAll.topPerf) {
+        prevAll.topPerf.forEach((s, idx) => { 
+            presentationData.prevRankMapPerf[s.member.id] = idx + 1; 
+        });
+    }
+    if (prevAll && prevAll.topQc) {
+        prevAll.topQc.forEach((s, idx) => { 
+            presentationData.prevRankMapQc[s.member.id] = idx + 1; 
+        });
+    }
+
+    // ==========================================
+    // 2. ดึงข้อมูลทีม Temp เดือนก่อนหน้า (แมปบันทึกทุก Key)
+    // ==========================================
+    const prevStartStrFormat = `${prevStart.getFullYear()}-${String(prevStart.getMonth() + 1).padStart(2, '0')}-${String(prevStart.getDate()).padStart(2, '0')}`;
+    const prevEndStrFormat = `${prevEnd.getFullYear()}-${String(prevEnd.getMonth() + 1).padStart(2, '0')}-${String(prevEnd.getDate()).padStart(2, '0')}`;
+    
+    let prevTemp = buildTempTeamStats(prevStartStrFormat, prevEndStrFormat);
+    presentationData.prevTemp = prevTemp;
+
+    presentationData.prevRankMapPerfTemp = presentationData.prevRankMapPerfTemp || {};
+    presentationData.prevRankMapQcTemp = presentationData.prevRankMapQcTemp || {};
+
+    // Helper บันทึกอันดับลง Map ด้วยทุก Key ที่เป็นไปได้ (id, userCode, fullName)
+    const setRankToAllKeys = (targetMap, s, rank) => {
+        if (!targetMap || !s) return;
+        const keys = [
+            s.id,
+            s.userCode,
+            s.fullName,
+            s.member?.id,
+            s.member?.userCode,
+            s.member?.fullName
+        ].filter(Boolean);
+
+        keys.forEach(k => {
+            targetMap[k] = rank;
+        });
+    };
+
+    let prevTempList = [];
+    if (Array.isArray(prevTemp)) {
+        prevTempList = prevTemp;
+    } else if (prevTemp && Array.isArray(prevTemp.members)) {
+        prevTempList = prevTemp.members;
+    } else if (prevTemp && Array.isArray(prevTemp.list)) {
+        prevTempList = prevTemp.list;
+    }
+
+    if (prevTempList.length > 0) {
+        // 1. จัดอันดับ Perf (Approve)
+        let sortedPerf = [...prevTempList].sort((a, b) => {
+            const valA = (a.totalApprove !== undefined ? a.totalApprove : a.approve) || 0;
+            const valB = (b.totalApprove !== undefined ? b.totalApprove : b.approve) || 0;
+            if (valB !== valA) return valB - valA;
+            return (a.fullName || '').localeCompare(b.fullName || '');
+        });
+
+        sortedPerf.forEach((s, idx) => {
+            const rank = idx + 1;
+            setRankToAllKeys(presentationData.prevRankMapPerfTemp, s, rank);
+            setRankToAllKeys(presentationData.prevRankMapPerf, s, rank);
+        });
+
+        // 2. จัดอันดับ QC
+        let sortedQc = [...prevTempList].sort((a, b) => {
+            const valA = (a.totalQc !== undefined ? a.totalQc : a.qc) || 0;
+            const valB = (b.totalQc !== undefined ? b.totalQc : b.qc) || 0;
+            if (valA !== valB) return valA - valB;
+            return (a.fullName || '').localeCompare(b.fullName || '');
+        });
+
+        sortedQc.forEach((s, idx) => {
+            const rank = idx + 1;
+            setRankToAllKeys(presentationData.prevRankMapQcTemp, s, rank);
+            setRankToAllKeys(presentationData.prevRankMapQc, s, rank);
+        });
+    } else if (prevTemp && (prevTemp.topPerf || prevTemp.topQc)) {
+        if (Array.isArray(prevTemp.topPerf)) {
+            prevTemp.topPerf.forEach((s, idx) => setRankToAllKeys(presentationData.prevRankMapPerfTemp, s, idx + 1));
+        }
+        if (Array.isArray(prevTemp.topQc)) {
+            prevTemp.topQc.forEach((s, idx) => setRankToAllKeys(presentationData.prevRankMapQcTemp, s, idx + 1));
+        }
+    }
+} 
+
+
+function getDatesInRange(start, end) {
+    const dates = [];
+    let curr = new Date(start);
+    while (curr <= end) {
+        dates.push({ y: curr.getFullYear(), m: curr.getMonth(), d: curr.getDate() });
+        curr.setDate(curr.getDate() + 1);
+    }
+    return dates;
+}
+
+function buildStatsForTeam(members, dates) {
+    let list = [];
+    const pIds = { ml:0, mn:1, rcf:2, log:5, txn:3, cctv:8, inq:4, conv:6, qc:7 };
+    
+    members.forEach(m => {
+        let sums = { ml:0, mn:0, rcf:0, log:0, txn:0, cctv:0, inq:0, conv:0, qc:0 };
+        let workDays = 0;
+
+        dates.forEach(dt => {
+            let hasWorkToday = false;
+            for (let key in pIds) {
+                let dKey = `${dt.y}-${dt.m}-${m.id}-${pIds[key]}-${dt.d}`;
+                let val = parseFloat(masterData[dKey]);
+                if (!isNaN(val) && val > 0) {
+                    sums[key] += val;
+                    if (key !== 'qc') hasWorkToday = true;
+                }
+            }
+            if (hasWorkToday) workDays++;
+        });
+
+        let total = sums.ml + sums.mn + sums.rcf + sums.log + sums.txn + sums.cctv + sums.inq + sums.conv;
+        let avgPerDay = workDays > 0 ? (total / workDays) : 0;
+        let otherTasks = sums.log + sums.txn + sums.cctv + sums.inq + sums.conv;
+        list.push({ member: m, sums, totalTasks: total, totalQc: sums.qc, workDays, avgPerDay, otherTasks });
+    });
+
+    let topPerf = [...list].filter(s => s.totalTasks > 0).sort((a, b) => b.avgPerDay - a.avgPerDay);
+    let topQc = [...list].filter(s => s.totalQc > 0).sort((a, b) => b.totalQc - a.totalQc);
+    
+    return { list, topPerf, topQc };
+}
+
+function buildTempTeamStats(startStr, endStr) {
+    let statsMap = {};
+    let c = new Date(startStr);
+    let end = new Date(endStr);
+    c.setDate(1); 
+    
+    while (c <= end) {
+        let year = c.getFullYear();
+        let month = c.getMonth();
+        let members = TEAMS_CONFIG['temp_monthly']?.[`${year}-${month}`] || TEAMS_CONFIG['temp'] || [];
+        
+        members.forEach(m => {
+            if (!statsMap[m.id]) statsMap[m.id] = { member: m, workDays: 0, totalApprove: 0, totalQc: 0 };
+            let wKey = `${year}-${month}-${m.id}-temp-workDays`;
+            let aKey = `${year}-${month}-${m.id}-temp-totalApprove`;
+            let qKey = `${year}-${month}-${m.id}-temp-totalQc`;
+            
+            statsMap[m.id].workDays += parseFloat(masterData[wKey] || 0);
+            statsMap[m.id].totalApprove += parseFloat(masterData[aKey] || 0);
+            statsMap[m.id].totalQc += parseFloat(masterData[qKey] || 0);
+        });
+        c.setMonth(c.getMonth() + 1);
+    }
+
+    let list = Object.values(statsMap).map(s => {
+        s.avgApprove = s.workDays > 0 ? s.totalApprove / s.workDays : 0;
+        s.avgQc = s.workDays > 0 ? s.totalQc / s.workDays : 0;
+        s.percentWork = s.workDays > 0 ? Math.min(100, (s.workDays / 31) * 100) : 0;
+        s.percentApprove = s.workDays > 0 ? Math.min(100, (s.avgApprove / 4500) * 100) : 0; 
+        s.percentQc = s.avgQc > 0 ? Math.max(0, 100 - (s.avgQc * 10)) : 100;
+        s.totalPercent = (s.percentWork * 0.2) + (s.percentApprove * 0.4) + (s.percentQc * 0.4);
+        return s;
+    });
+
+    let topPerf = [...list].filter(s => s.totalApprove > 0).sort((a, b) => b.totalPercent - a.totalPercent);
+    let topQc = [...list].filter(s => s.totalQc > 0).sort((a, b) => b.totalQc - a.totalQc);
+    
+    return { list, topPerf, topQc };
+}
+
+function getRankBadge(currentRank, prevRank, isQc = false) {
+    if (!prevRank) return `<span class="text-[11px] text-slate-400 font-medium">- เดือนที่แล้วไม่มีข้อมูล</span>`;
+    if (currentRank === prevRank) return `<span class="text-[11px] text-slate-400 font-medium">- เดือนที่แล้วอยู่อันดับที่ ${prevRank}</span>`;
+    
+    let movedUp = currentRank < prevRank; 
+    let color = movedUp ? (isQc ? 'text-red-500' : 'text-emerald-500') : (isQc ? 'text-emerald-500' : 'text-red-500');
+    let arrow = movedUp ? '▲' : '▼';
+    
+    return `<span class="text-[11px] ${color} font-bold tracking-wide">${arrow} เดือนที่แล้วอยู่อันดับที่ ${prevRank}</span>`;
+}
+
+function clearCharts() {
+    slideChartInstances.forEach(chart => chart.dispose());
+    slideChartInstances = [];
+}
+
+function openPresentationSlide() {
+    if (!presentationData.rangeText) {
+        showToast("กรุณากด 'ดึงข้อมูลและรวมยอด' เพื่อเตรียมข้อมูลก่อนนำเสนอ", "error");
+        return;
+    }
+    const modal = document.getElementById('presentation-modal');
+    modal.classList.remove('hidden'); modal.classList.add('flex');
+    setTimeout(() => { modal.classList.remove('opacity-0'); modal.classList.add('opacity-100'); }, 50);
+    currentSlideIndex = 0;
+    renderSlide();
+}
+
+function closePresentation() {
+    const modal = document.getElementById('presentation-modal');
+    modal.classList.remove('opacity-100'); modal.classList.add('opacity-0');
+    setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 500);
+    clearCharts();
+}
+
+function nextSlide() { if (currentSlideIndex < SLIDES.length - 1) { currentSlideIndex++; renderSlide(); } }
+function prevSlide() { if (currentSlideIndex > 0) { currentSlideIndex--; renderSlide(); } }
+
+function renderSlide() {
+    clearCharts();
+    const slide = SLIDES[currentSlideIndex];
+    document.getElementById('slide-indicator').textContent = `หน้า ${currentSlideIndex + 1} / ${SLIDES.length}`;
+    document.getElementById('slide-title').textContent = slide.title;
+    const contentBox = document.getElementById('slide-content');
+    contentBox.innerHTML = '';
+    contentBox.className = "w-full h-full max-w-[1400px] bg-white/95 backdrop-blur-md rounded-[2rem] shadow-2xl p-6 md:p-8 overflow-y-auto border border-white/60 animate-slide";
+
+    const thClass = "p-3 font-bold border-b border-slate-200";
+    const tdClass = "p-3 border-b border-slate-100 text-center";
+
+    // 1. หน้าข้อมูลตารางสรุป (ทีม 1-5) -> แสดงผลสำหรับหน้า 1, 3, 5, 7, 9
+    if (slide.type === 'team_summary') {
+        const tData = presentationData.teams[slide.teamId];
+        let html = `
+        <div class="h-full flex flex-col gap-6">
+            <h3 class="text-xl font-bold text-indigo-700 bg-indigo-50/50 py-3 px-6 rounded-2xl flex items-center gap-3">
+                <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                ผลรวมยอดระหว่างวันที่: ${presentationData.rangeText} (ทีม ${slide.teamId})
+            </h3>
+            
+            <div class="overflow-x-auto border border-slate-200 rounded-2xl shadow-sm bg-white animate-slide delay-100">
+                <table class="w-full text-sm border-collapse">
+                    <thead class="bg-slate-50 text-slate-600">
+                        <tr>
+                            <th class="${thClass} text-left pl-6">ชื่อ</th>
+                            <th class="${thClass} text-green-600">ML</th>
+                            <th class="${thClass} text-red-600">MN</th>
+                            <th class="${thClass} text-orange-500">RCF</th>
+                            <th class="${thClass} text-blue-600">LOG</th>
+                            <th class="${thClass} text-purple-600">TXN Manual</th>
+                            <th class="${thClass} text-amber-600">CCTV (Audit)</th>
+                            <th class="${thClass} text-rose-500">Temp สอบถาม</th>
+                            <th class="${thClass} text-red-700">รถขบวนเสด็จ</th>
+                            <th class="${thClass} text-rose-700">QC</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tData.list.map(s => `
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="${tdClass} text-left pl-6 font-bold text-slate-800">${s.member.nickName || s.member.fullName.split(' ')[0]}</td>
+                            <td class="${tdClass}">${s.sums.ml || '0'}</td>
+                            <td class="${tdClass}">${s.sums.mn || '0'}</td>
+                            <td class="${tdClass}">${s.sums.rcf || '0'}</td>
+                            <td class="${tdClass}">${s.sums.log || '0'}</td>
+                            <td class="${tdClass}">${s.sums.txn || '0'}</td>
+                            <td class="${tdClass}">${s.sums.cctv || '0'}</td>
+                            <td class="${tdClass}">${s.sums.inq || '0'}</td>
+                            <td class="${tdClass}">${s.sums.conv || '0'}</td>
+                            <td class="${tdClass} font-bold text-rose-600">${s.sums.qc || '0'}</td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex-1 flex flex-col lg:flex-row gap-6 min-h-[300px]">
+                <div class="flex-1 bg-indigo-50/30 border border-indigo-100 rounded-3xl p-6 shadow-sm overflow-y-auto animate-slide delay-200">
+                    <h4 class="font-bold text-indigo-800 mb-4 flex items-center gap-2 text-lg">🏆 Top Performance (เฉลี่ยต่อวันทำงาน)</h4>
+                    <div class="flex flex-col gap-3">
+                        ${tData.topPerf.slice(0, 5).map((s, idx) => `
+                        <div class="bg-white rounded-2xl p-4 flex items-center justify-between border border-indigo-50 shadow-sm">
+                            <div class="flex items-center gap-4">
+                                <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-sm">${idx+1}</div>
+                                <span class="font-bold text-slate-700">${s.member.nickName || s.member.fullName.split(' ')[0]}</span>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-black text-indigo-600 text-lg">${s.avgPerDay.toFixed(1)} งาน/วัน</div>
+                                <div class="text-xs text-slate-400">รวม ${s.totalTasks.toLocaleString()} งาน (${s.workDays} วันทำงาน)</div>
+                            </div>
+                        </div>`).join('')}
+                    </div>
+                </div>
+                
+                <div class="flex-1 bg-rose-50/30 border border-rose-100 rounded-3xl p-6 shadow-sm overflow-y-auto animate-slide delay-200">
+                    <h4 class="font-bold text-rose-800 mb-4 flex items-center gap-2 text-lg">🚨 Top การอนุมัติผิด (QC)</h4>
+                    <div class="flex flex-col gap-3">
+                        ${tData.topQc.slice(0, 5).map((s, idx) => `
+                        <div class="bg-white rounded-2xl p-4 flex items-center justify-between border border-rose-50 shadow-sm">
+                            <div class="flex items-center gap-4">
+                                <div class="w-8 h-8 rounded-full bg-rose-100 text-rose-700 font-bold flex items-center justify-center text-sm">${idx+1}</div>
+                                <span class="font-bold text-slate-700">${s.member.nickName || s.member.fullName.split(' ')[0]}</span>
+                            </div>
+                            <div class="font-black text-rose-600 text-lg">${s.totalQc.toLocaleString()} รายการ</div>
+                        </div>`).join('')}
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        contentBox.innerHTML = html;
+    }
+
+    // 1. หน้าข้อมูลตารางสรุป (ทีม 1-5) -> แสดงผลสำหรับหน้า 1, 3, 5, 7, 9
+    if (slide.type === 'team_summary') {
+        const tData = presentationData.teams[slide.teamId];
+        let html = `
+        <div class="h-full flex flex-col gap-6">
+            <h3 class="text-xl font-bold text-indigo-700 bg-indigo-50/50 py-3 px-6 rounded-2xl flex items-center gap-3">
+                <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                ผลรวมยอดระหว่างวันที่: ${presentationData.rangeText} (ทีม ${slide.teamId})
+            </h3>
+            
+            <div class="overflow-x-auto border border-slate-200 rounded-2xl shadow-sm bg-white animate-slide delay-100">
+                <table class="w-full text-sm border-collapse">
+                    <thead class="bg-slate-50 text-slate-600">
+                        <tr>
+                            <th class="${thClass} text-left pl-6">ชื่อ</th>
+                            <th class="${thClass} text-green-600">ML</th>
+                            <th class="${thClass} text-red-600">MN</th>
+                            <th class="${thClass} text-orange-500">RCF</th>
+                            <th class="${thClass} text-blue-600">LOG</th>
+                            <th class="${thClass} text-purple-600">TXN Manual</th>
+                            <th class="${thClass} text-amber-600">CCTV (Audit)</th>
+                            <th class="${thClass} text-rose-500">Temp สอบถาม</th>
+                            <th class="${thClass} text-red-700">รถขบวนเสด็จ</th>
+                            <th class="${thClass} text-rose-700">QC</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tData.list.map(s => `
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="${tdClass} text-left pl-6 font-bold text-slate-800">${s.member.nickName || s.member.fullName.split(' ')[0]}</td>
+                            <td class="${tdClass}">${s.sums.ml || s.sums.ML || '0'}</td>
+                            <td class="${tdClass}">${s.sums.mn || s.sums.MN || '0'}</td>
+                            <td class="${tdClass}">${s.sums.rcf || s.sums.RCF || '0'}</td>
+                            <td class="${tdClass}">${s.sums.log || s.sums.LOG || '0'}</td>
+                            <td class="${tdClass}">${s.sums.txn || s.sums.TXN || '0'}</td>
+                            <td class="${tdClass}">${s.sums.cctv || s.sums.CCTV || '0'}</td>
+                            <td class="${tdClass}">${s.sums.inq || s.sums.INQ || '0'}</td>
+                            <td class="${tdClass}">${s.sums.conv || s.sums.CONV || '0'}</td>
+                            <td class="${tdClass} font-bold text-rose-600">${s.sums.qc || s.sums.QC || '0'}</td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex-1 flex flex-col lg:flex-row gap-6 min-h-[300px]">
+                <div class="flex-1 bg-indigo-50/30 border border-indigo-100 rounded-3xl p-6 shadow-sm overflow-y-auto animate-slide delay-200">
+                    <h4 class="font-bold text-indigo-800 mb-4 flex items-center gap-2 text-lg">🏆 Top Performance (เฉลี่ยต่อวันทำงาน)</h4>
+                    <div class="flex flex-col gap-3">
+                        ${tData.topPerf.slice(0, 5).map((s, idx) => `
+                        <div class="bg-white rounded-2xl p-4 flex items-center justify-between border border-indigo-50 shadow-sm">
+                            <div class="flex items-center gap-4">
+                                <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-sm">${idx+1}</div>
+                                <span class="font-bold text-slate-700">${s.member.nickName || s.member.fullName.split(' ')[0]}</span>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-black text-indigo-600 text-lg">${s.avgPerDay.toFixed(1)} งาน/วัน</div>
+                                <div class="text-xs text-slate-400">รวม ${s.totalTasks.toLocaleString()} งาน (${s.workDays} วันทำงาน)</div>
+                            </div>
+                        </div>`).join('')}
+                    </div>
+                </div>
+                
+                <div class="flex-1 bg-rose-50/30 border border-rose-100 rounded-3xl p-6 shadow-sm overflow-y-auto animate-slide delay-200">
+                    <h4 class="font-bold text-rose-800 mb-4 flex items-center gap-2 text-lg">🚨 Top การอนุมัติผิด (QC)</h4>
+                    <div class="flex flex-col gap-3">
+                        ${tData.topQc.slice(0, 5).map((s, idx) => `
+                        <div class="bg-white rounded-2xl p-4 flex items-center justify-between border border-rose-50 shadow-sm">
+                            <div class="flex items-center gap-4">
+                                <div class="w-8 h-8 rounded-full bg-rose-100 text-rose-700 font-bold flex items-center justify-center text-sm">${idx+1}</div>
+                                <span class="font-bold text-slate-700">${s.member.nickName || s.member.fullName.split(' ')[0]}</span>
+                            </div>
+                            <div class="font-black text-rose-600 text-lg">${s.totalQc.toLocaleString()} รายการ</div>
+                        </div>`).join('')}
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        contentBox.innerHTML = html;
+    }
+    else if (slide.type === 'team_chart') {
+        const tData = presentationData.teams[slide.teamId]; 
+        const tId = slide.teamId; // ดึงหมายเลขทีมมาต่อท้าย ID ป้องกันซ้ำกัน
+        
+        contentBox.innerHTML = `
+        <div class="h-full flex flex-col gap-3 overflow-y-auto p-1">
+            <h3 class="text-xl font-bold text-slate-700 flex items-center gap-2">📊 กราฟผลการปฏิบัติงานแต่ละด้าน (ทีม ${tId})</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="chart-card bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col opacity-0 scale-95 transition-all duration-500 ease-out">
+                    <div class="text-center font-bold text-slate-600 mb-1 text-sm">MLPR</div>
+                    <div id="chart-ml-${tId}" style="width: 100%; height: 280px;"></div>
+                </div>
+                <div class="chart-card bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col opacity-0 scale-95 transition-all duration-500 ease-out">
+                    <div class="text-center font-bold text-slate-600 mb-1 text-sm">MNPR</div>
+                    <div id="chart-mn-${tId}" style="width: 100%; height: 280px;"></div>
+                </div>
+                <div class="chart-card bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col opacity-0 scale-95 transition-all duration-500 ease-out">
+                    <div class="text-center font-bold text-slate-600 mb-1 text-sm">Reconfirm</div>
+                    <div id="chart-rcf-${tId}" style="width: 100%; height: 280px;"></div>
+                </div>
+                <div class="chart-card bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col opacity-0 scale-95 transition-all duration-500 ease-out">
+                    <div class="text-center font-bold text-slate-600 mb-1 text-sm">ยอดอนุมัติผิด (QC)</div>
+                    <div id="chart-qc-${tId}" style="width: 100%; height: 280px;"></div>
+                </div>
+                <div class="chart-card bg-slate-50 p-3 rounded-2xl border border-slate-100 lg:col-span-2 flex flex-col opacity-0 scale-95 transition-all duration-500 ease-out">
+                    <div class="text-center font-bold text-slate-600 mb-1 text-sm">งานอื่นๆ</div>
+                    <div id="chart-oth-${tId}" style="width: 100%; height: 280px;"></div>
+                </div>
+            </div>
+        </div>`;
+
+        // เพิ่มเวลาหน่วงเป็น 500ms เพื่อรอให้แอนิเมชันการเปลี่ยนหน้าสไลด์จบสนิทก่อน
+        setTimeout(() => {
+            // สั่งให้การ์ดแสดงผลแบบค่อยๆ เฟดอินขยายขึ้นมาทีละใบอย่างนิ่มนวล
+            document.querySelectorAll('.chart-card').forEach((el, index) => {
+                setTimeout(() => {
+                    el.classList.remove('opacity-0', 'scale-95');
+                    el.classList.add('opacity-100', 'scale-100');
+                }, index * 60);
+            });
+
+            const parseNum = (val) => {
+                if (typeof val === 'number') return isNaN(val) ? 0 : val;
+                if (!val) return 0;
+                const cleaned = String(val).replace(/[^0-9.-]+/g, '');
+                const num = parseFloat(cleaned);
+                return isNaN(num) ? 0 : num;
+            };
+
+            const chartData = (tData?.list || []).map(s => {
+                const sums = s.sums || {};
+                const name = s.member?.nickName || s.member?.fullName?.split(' ')[0] || 'ไม่ระบุ';
+                return {
+                    name: name,
+                    ml: parseNum(sums.ml !== undefined ? sums.ml : sums.ML),
+                    mn: parseNum(sums.mn !== undefined ? sums.mn : sums.MN),
+                    rcf: parseNum(sums.rcf !== undefined ? sums.rcf : sums.RCF),
+                    qc: parseNum(sums.qc !== undefined ? sums.qc : sums.QC),
+                    others: parseNum(sums.log || sums.LOG) + 
+                            parseNum(sums.txn || sums.TXN) + 
+                            parseNum(sums.cctv || sums.CCTV) + 
+                            parseNum(sums.inq || sums.INQ) + 
+                            parseNum(sums.conv || sums.CONV)
+                };
+            });
+
+            const generateSeriesData = (dataList, key) => {
+                const validData = dataList.filter(d => d[key] > 0);
+                if (validData.length === 0) return [];
+                
+                const maxVal = Math.max(...validData.map(d => d[key]));
+                return validData.map(d => {
+                    const isMax = d[key] === maxVal && d[key] > 0;
+                    return {
+                        name: d.name,
+                        value: d[key],
+                        itemStyle: isMax 
+                            ? { borderColor: '#ef4444', borderWidth: 3, shadowBlur: 8, shadowColor: 'rgba(239, 68, 68, 0.4)' }
+                            : { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
+                        label: isMax 
+                            ? { color: '#ef4444', fontWeight: 'bold', fontSize: 11, formatter: '{b}\n{c}' }
+                            : { color: '#475569', fontWeight: 'normal', fontSize: 10, formatter: '{b}\n{c}' }
+                    };
+                });
+            };
+
+            const pieConfig = (seriesData, name) => {
+                if (seriesData.length === 0) {
+                    return {
+                        animation: true,
+                        animationDuration: 1200,
+                        title: {
+                            text: 'ไม่มีข้อมูลในด้านนี้',
+                            left: 'center',
+                            top: 'center',
+                            textStyle: { color: '#94a3b8', fontSize: 13, fontWeight: 'normal' }
+                        },
+                        series: [{
+                            type: 'pie',
+                            radius: ['40%', '70%'],
+                            data: [{ value: 1, name: 'ไม่มีข้อมูล', itemStyle: { color: '#f1f5f9' } }],
+                            label: { show: false }
+                        }]
+                    };
+                }
+                return {
+                    animation: true,
+                    animationDuration: 1800,      // ยืดเวลาวาดกราฟให้ค่อยๆ ขยายออกอย่างสมูท
+                    animationEasing: 'cubicOut',  // ความเร่งแบบนิ่มนวลตอนจบ
+                    tooltip: { trigger: 'item', formatter: '{b}: <br/>{c} งาน ({d}%)' },
+                    series: [{ 
+                        name, 
+                        type: 'pie', 
+                        radius: ['40%', '70%'], 
+                        center: ['50%', '50%'],
+                        data: seriesData,
+                        label: { show: true, fontSize: 10 }
+                    }]
+                };
+            };
+
+            const drawPie = (id, data, name) => {
+                let dom = document.getElementById(id);
+                if (dom) {
+                    let existingChart = echarts.getInstanceByDom(dom);
+                    if (existingChart) {
+                        existingChart.dispose();
+                    }
+                    let chart = echarts.init(dom);
+                    chart.setOption(pieConfig(data, name));
+                    slideChartInstances.push(chart);
+                }
+            };
+
+            drawPie(`chart-ml-${tId}`, generateSeriesData(chartData, 'ml'), 'MLPR');
+            drawPie(`chart-mn-${tId}`, generateSeriesData(chartData, 'mn'), 'MNPR');
+            drawPie(`chart-rcf-${tId}`, generateSeriesData(chartData, 'rcf'), 'Reconfirm');
+            drawPie(`chart-qc-${tId}`, generateSeriesData(chartData, 'qc'), 'QC');
+            drawPie(`chart-oth-${tId}`, generateSeriesData(chartData, 'others'), 'งานอื่นๆ');
+
+            setTimeout(() => {
+                slideChartInstances.forEach(c => {
+                    if (c && typeof c.resize === 'function') c.resize();
+                });
+            }, 200);
+        }, 500);
+    }
+
+    // 3. หน้าจัดกลุ่ม Temp
+else if (slide.type === 'temp_group') {
+    const selectedMonth = parseInt(document.getElementById('monthSelect')?.value) || 3; 
+    const selectedYear = parseInt(document.getElementById('yearSelect')?.value) || 2026;
+    const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();          
+
+    const targetApprovePerDay = 3600; // Target ยอดอนุมัติเฉลี่ยต่อวัน (ปรับเปลี่ยนได้ตามจริง)
+
+    // 1. คำนวณผลรวมค่าเฉลี่ย QC ของทุกคนในทีม Temp (QC_รวมทีม)
+    const totalTeamQcAvg = presentationData.temp.list.reduce((sum, item) => sum + (item.avgQc || 0), 0);
+
+    // 2. คำนวณเปอร์เซ็นต์ตามเงื่อนไข 3.1 - 3.4 ให้กับพนักงานทุกคนล่วงหน้า
+    presentationData.temp.list.forEach(s => {
+        // 3.1 วันทำงาน (เทียบกับ 10%)
+        s.percentWork = (s.workDays / daysInMonth) * 10;
+
+        // 3.2 อนุมัติ % (เทียบกับ Target เฉลี่ยต่อวัน คูณ 25%)
+        s.percentApprove = (s.avgApprove / targetApprovePerDay) * 25;
+
+        // 3.3 QC % ตามสูตร =(100% - (QC_เฉลี่ยของคนนั้น / QC_รวมทีม)) * 65% QC_รวมทีม
+        let qcRatio = s.avgQc > 0 ? (s.avgQc / totalTeamQcAvg) : 0;
+        s.percentQc = (1 - qcRatio) * 65;
+        if (s.percentQc < 0) s.percentQc = 0; // ป้องกันค่าติดลบ
+
+        // 3.4 % รวม (ผลรวมทั้ง 3 ส่วน)
+        s.totalPercent = s.percentWork + s.percentApprove + s.percentQc;
+    });
+
+    // 3. นำข้อมูลที่คำนวณเสร็จแล้วมา Filter และ Sort ตามปกติ
+    const filtered = presentationData.temp.list.filter(s => s.workDays >= slide.min && s.workDays <= slide.max).sort((a,b) => b.totalPercent - a.totalPercent);
+    
+    contentBox.innerHTML = `
+    <div class="h-full flex flex-col gap-4">
+        <h3 class="text-2xl font-bold text-indigo-800 flex items-center gap-3">
+            ${slide.badge} กลุ่ม ${slide.min} - ${slide.max} วัน <span class="text-slate-500 text-lg font-medium">(${filtered.length} คน)</span>
+        </h3>
+        <div class="flex-1 overflow-y-auto border border-slate-200 rounded-3xl shadow-sm bg-white animate-slide delay-100">
+            <table class="w-full text-sm border-collapse">
+                <thead class="bg-slate-50 text-slate-600 sticky top-0 shadow-sm">
+                    <tr>
+                        <th class="${thClass} text-center w-16">ลำดับ</th>
+                        <th class="${thClass} text-left">ชื่อจริง</th>
+                        <th class="${thClass} text-center">วันทำงาน<br>(%)</th>
+                        <th class="${thClass} text-center text-indigo-600">ยอดรวม<br>อนุมัติ</th>
+                        <th class="${thClass} text-center text-indigo-600">ค่าเฉลี่ย/<br>วัน</th>
+                        <th class="${thClass} text-center text-blue-500">อนุมัติ<br>(%)</th>
+                        <th class="${thClass} text-center text-rose-500">ยอดรวม<br>ผิด</th>
+                        <th class="${thClass} text-center text-rose-500">ค่าเฉลี่ย/<br>วัน</th>
+                        <th class="${thClass} text-center text-rose-500">QC<br>(%)</th>
+                        <th class="${thClass} text-center text-emerald-600">% รวม</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${filtered.map((s, idx) => `
+                    <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                        <td class="p-3 text-center font-bold text-slate-500">${idx+1}</td>
+                        <td class="p-3 text-left font-bold text-slate-800">${s.member.fullName}</td>
+                        <td class="p-3 text-center"><div class="font-bold">${s.workDays} วัน</div><div class="text-indigo-500 text-xs">(${s.percentWork.toFixed(1)}%)</div></td>
+                        <td class="p-3 text-center font-bold text-indigo-800 text-lg">${s.totalApprove.toLocaleString()}</td>
+                        <td class="p-3 text-center font-bold text-indigo-600">${s.avgApprove.toFixed(1)}</td>
+                        <td class="p-3 text-center font-bold text-blue-500">${s.percentApprove.toFixed(1)}%</td>
+                        <td class="p-3 text-center font-bold text-rose-600 text-lg">${s.totalQc.toLocaleString()}</td>
+                        <td class="p-3 text-center font-bold text-rose-500">${s.avgQc.toFixed(2)}</td>
+                        <td class="p-3 text-center font-bold text-rose-400">${s.percentQc.toFixed(1)}%</td>
+                        <td class="p-3 text-center font-black text-emerald-600 text-lg">${s.totalPercent.toFixed(2)}%</td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>
+        </div>
+    </div>`;
+}
+
+    else if (slide.type === 'temp_top_perf' || slide.type === 'temp_top_qc' || slide.type === 'all_top_perf' || slide.type === 'all_top_qc') {
+    let listData = [];
+    let isQc = slide.type.includes('qc');
+    
+    if (slide.type === 'temp_top_perf') listData = presentationData.temp.topPerf.slice(0, 10);
+    else if (slide.type === 'temp_top_qc') listData = presentationData.temp.topQc.slice(0, 10);
+    else if (slide.type === 'all_top_perf') listData = presentationData.all.topPerf.slice(0, 10);
+    else if (slide.type === 'all_top_qc') listData = presentationData.all.topQc.slice(0, 10);
+
+    // --- DEBUG ZONE (กด F12 ดูผลลัพธ์ใน Console) ---
+    console.group(`🔍 [DEBUG] Slide Type: ${slide.type}`);
+    console.log("1. presentationData ทั้งหมด:", presentationData);
+    console.log("2. presentationData.temp:", presentationData.temp);
+    console.log("3. prevRankMapPerf (All):", presentationData.prevRankMapPerf);
+    console.log("4. prevRankMapQc (All):", presentationData.prevRankMapQc);
+    if (presentationData.temp) {
+        console.log("5. prevRankMapPerf (Temp):", presentationData.temp.prevRankMapPerf);
+        console.log("6. prevRankMapQc (Temp):", presentationData.temp.prevRankMapQc);
+    }
+    console.groupEnd();
+    // ---------------------------------------------
+
+    let icon = isQc ? '🚨' : '🏆';
+    let bg = isQc ? 'bg-rose-50/50' : 'bg-indigo-50/50';
+    
+    contentBox.innerHTML = `
+    <div class="h-full flex flex-col gap-2 max-w-5xl mx-auto w-full justify-center">
+        <h3 class="text-xl font-bold flex items-center gap-3 ${isQc ? 'text-rose-800' : 'text-indigo-800'} mb-1">
+            ${icon} ${slide.title}
+        </h3>
+        <div class="flex flex-col gap-1.5 overflow-hidden pr-1 animate-slide delay-100">
+            ${listData.map((s, idx) => {
+                let rankNum = idx + 1;
+                
+                let prevRank;
+                const userId = s.member?.user || s.user || s.member?.id; 
+		const fullName = s.member?.fullName || s.fullName;
+                
+                const sourcesToCheck = [
+                    slide.type.startsWith('temp_') ? presentationData.temp : null,
+                    presentationData.all,
+                    presentationData
+                ].filter(Boolean);
+
+                for (const source of sourcesToCheck) {
+                    const rankMap = isQc ? source?.prevRankMapQc : source?.prevRankMapPerf;
+                    if (rankMap) {
+    // เปลี่ยนมาใช้ userId ในการตรวจสอบเป็นอันดับแรก
+    if (userId && rankMap[userId] !== undefined) {
+        prevRank = rankMap[userId];
+        break;
+    }
+    // สำรองการค้นหาด้วยชื่อเผื่อกรณีที่ไม่มี User
+    if (fullName && rankMap[fullName] !== undefined) {
+        prevRank = rankMap[fullName];
+        break;
+    }
+}
+                }
+
+                // DEBUG รายชื่อแต่ละคน
+                console.log(`👤 สมาชิก: [${fullName}] (User: ${userId}) -> หาค่า prevRank ได้:`, prevRank);
+
+                let rankBadgeHtml = getRankBadge(rankNum, prevRank, isQc);
+                let nickNameStr = s.member.nickName ? '(' + s.member.nickName + ')' : '';
+                
+                if (slide.type === 'temp_top_perf') {
+                    const avgApprovePerDay = s.workDays > 0 ? (s.totalApprove / s.workDays).toFixed(1) : 0;
+                    return `
+                    <div class="bg-white rounded-xl py-2 px-4 flex items-center justify-between border border-indigo-100 shadow-sm">
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-7 h-7 rounded-full bg-indigo-50 text-indigo-700 font-black flex items-center justify-center text-xs">${rankNum}</div>
+                            <div>
+                                <div class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                    ${s.member.fullName} ${nickNameStr}
+                                    ${rankBadgeHtml}
+                                </div>
+                                <div class="flex items-center gap-4 text-xs text-slate-500 mt-0.5">
+                                    <span>วันทำงาน: <strong class="text-slate-700">${s.workDays} วัน</strong></span>
+                                    <span>เฉลี่ยอนุมัติ: <strong class="text-indigo-600">${avgApprovePerDay} งาน/วัน</strong></span>
+                                    <span>ยอดผิด: <strong class="text-rose-600">${s.totalQc || 0} รายการ</strong></span>
+                                    <span class="text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-medium">รวม: ${s.totalApprove.toLocaleString()} งาน</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-rose-500">${s.totalPercent.toFixed(2)}%</div>
+                            <span class="text-[10px] text-slate-400 font-medium">เปอร์เซ็นต์รวม</span>
+                        </div>
+                    </div>`;
+                }
+
+                let mainValue = ''; let subValue = '';
+                if (slide.type === 'temp_top_qc') {
+                    mainValue = `<div class="font-black text-rose-600 text-base">${s.totalQc.toLocaleString()} รายการ</div>`;
+                    subValue = `วันทำงาน ${s.workDays} วัน`;
+                } else if (slide.type === 'all_top_perf') {
+                    mainValue = `<div class="font-black text-indigo-600 text-base">${s.avgPerDay.toFixed(1)} งาน/วัน</div>`;
+                    subValue = `รวม ${s.totalTasks.toLocaleString()} งาน (${s.workDays} วัน)`;
+                } else {
+                    mainValue = `<div class="font-black text-rose-600 text-base">${s.totalQc.toLocaleString()} รายการ</div>`;
+                }
+
+                return `
+                <div class="bg-white rounded-xl py-1.5 px-4 flex items-center justify-between border ${isQc ? 'border-rose-100' : 'border-indigo-100'} shadow-sm">
+                    <div class="flex items-center gap-4">
+                        <div class="w-7 h-7 rounded-full ${bg} ${isQc ? 'text-rose-700' : 'text-indigo-700'} font-black flex items-center justify-center text-xs">${rankNum}</div>
+                        <div>
+                            <div class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                ${s.member.fullName} ${nickNameStr}
+                                ${rankBadgeHtml}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        ${mainValue}
+                        <div class="text-[11px] text-slate-400 font-medium">${subValue}</div>
+                    </div>
+                </div>`;
+            }).join('')}
+        </div>
+    </div>`;
+}
+
+    // หน้าตารางภาพรวมทีม 1-5 (10 อันดับแรก)
+    else if (slide.type === 'all_summary_table') {
+        const top10 = presentationData.all.topPerf.slice(0, 10);
+        contentBox.innerHTML = `
+        <div class="h-full flex flex-col gap-4">
+            <h3 class="text-xl font-bold text-indigo-700 bg-indigo-50/50 py-3 px-6 rounded-2xl flex items-center gap-3">
+                <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                ผลรวมยอดระหว่างวันที่: ${presentationData.rangeText} (สรุปผลรวม 10 อันดับแรก ทีม 1-5)
+            </h3>
+            <div class="overflow-x-auto border border-slate-200 rounded-3xl shadow-sm bg-white animate-slide delay-100">
+                <table class="w-full text-base border-collapse">
+                    <thead class="bg-slate-50 text-slate-600">
+                        <tr>
+                            <th class="${thClass} text-left pl-6 w-48">ชื่อ</th>
+                            <th class="${thClass} text-green-600">ML</th>
+                            <th class="${thClass} text-red-600">MN</th>
+                            <th class="${thClass} text-orange-500">RCF</th>
+                            <th class="${thClass} text-blue-600">LOG</th>
+                            <th class="${thClass} text-purple-600">TXN Manual</th>
+                            <th class="${thClass} text-amber-600">CCTV</th>
+                            <th class="${thClass} text-rose-500">Temp</th>
+                            <th class="${thClass} text-red-700">รถขบวน</th>
+                            <th class="${thClass} text-rose-700">QC</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${top10.map(s => `
+                        <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                            <td class="p-4 text-left pl-6 font-bold text-slate-800">${s.member.nickName || s.member.fullName.split(' ')[0]}</td>
+                            <td class="${tdClass}">${s.sums.ml || '0'}</td>
+                            <td class="${tdClass}">${s.sums.mn || '0'}</td>
+                            <td class="${tdClass}">${s.sums.rcf || '0'}</td>
+                            <td class="${tdClass}">${s.sums.log || '0'}</td>
+                            <td class="${tdClass}">${s.sums.txn || '0'}</td>
+                            <td class="${tdClass}">${s.sums.cctv || '0'}</td>
+                            <td class="${tdClass}">${s.sums.inq || '0'}</td>
+                            <td class="${tdClass}">${s.sums.conv || '0'}</td>
+                            <td class="${tdClass} font-bold text-rose-600">${s.sums.qc || '0'}</td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>`;
+    }
+
+    else if (slide.type === 'closing') {
+        contentBox.innerHTML = `
+        <div class="h-full w-full flex flex-col items-center justify-center bg-gradient-to-br from-indigo-900 via-slate-800 to-slate-900 rounded-[2rem] text-white shadow-inner animate-slide">
+            <div class="w-32 h-32 bg-white/10 rounded-full flex items-center justify-center mb-6">
+                <svg class="w-16 h-16 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            <h1 class="text-5xl md:text-6xl font-black mb-6 tracking-wide drop-shadow-md">ขอบคุณครับ/ค่ะ 🎉</h1>
+            <p class="text-xl md:text-2xl text-slate-300 font-medium tracking-wider">จบการนำเสนอผลการปฏิบัติงาน M-Flow (MLPR)</p>
+        </div>`;
+    }
+}
+
+// ตัวแปรสำหรับเก็บภาพสไลด์ที่สะสมไว้
+window.collectedPdfSlides = window.collectedPdfSlides || [];
+
+// ระบบสำรองป้องกันกรณีฟังก์ชัน showToast เดิมไม่มีอยู่จริง (ไม่กระทบของเดิม)
+if (typeof window.showToast !== 'function') {
+    window.showToast = function(message, type = 'success') {
+        const existing = document.getElementById('safe-toast-box');
+        if (existing) existing.remove();
+        const t = document.createElement('div');
+        t.id = 'safe-toast-box';
+        t.textContent = message;
+        t.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:999999;padding:12px 20px;border-radius:10px;color:#fff;font-family:Sarabun,sans-serif,system-ui;font-size:14px;font-weight:500;box-shadow:0 10px 25px rgba(0,0,0,0.25);transition:all 0.3s cubic-bezier(0.16,1,0.3,1);opacity:0;transform:translateY(15px);';
+        t.style.backgroundColor = type === 'error' ? '#ef4444' : (type === 'blue' ? '#3b82f6' : '#10b981');
+        document.body.appendChild(t);
+        requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translateY(0)'; });
+        setTimeout(() => {
+            t.style.opacity = '0';
+            t.style.transform = 'translateY(15px)';
+            setTimeout(() => t.remove(), 300);
+        }, 3000);
+    };
+}
+
+// 1. ฟังก์ชันเรนเดอร์และบันทึกภาพสไลด์ พร้อมแจ้งเตือนทันทีที่กดปุ่ม
+async function captureCurrentSlideForPDF() {
+    // แจ้งเตือนทันทีเมื่อเริ่มกดปุ่ม
+    showToast("📥 กำลังบันทึกหน้าสไลด์นี้ลง PDF...", "blue");
+
+    const originalSlide = document.getElementById('presentation-slide-container') || document.getElementById('slide-content');
+    if (!originalSlide) {
+        showToast("ไม่พบข้อมูลสไลด์ในหน้าจอ", "error");
+        return;
+    }
+
+    const actualWidth = originalSlide.offsetWidth || originalSlide.clientWidth || 1200;
+    const actualHeight = originalSlide.offsetHeight || originalSlide.clientHeight || 800;
+
+    const exportContainer = document.createElement('div');
+    exportContainer.style.position = 'absolute';
+    exportContainer.style.left = '-9999px';
+    exportContainer.style.top = '0';
+    exportContainer.style.width = actualWidth + 'px';
+    exportContainer.style.height = actualHeight + 'px';
+    exportContainer.style.background = '#ffffff';
+    exportContainer.style.padding = window.getComputedStyle(originalSlide).padding || '0px';
+    exportContainer.style.fontFamily = 'Sarabun, sans-serif, system-ui';
+    exportContainer.style.boxSizing = 'border-box';
+    
+    exportContainer.innerHTML = originalSlide.innerHTML;
+    
+    exportContainer.querySelectorAll('*').forEach(el => {
+        el.style.animation = 'none';
+        el.style.transition = 'none';
+        el.style.opacity = '1';
+
+        // ป้องกันปัญหา Gradient Text หายกลายเป็นกล่องสีส้ม
+        const compStyle = window.getComputedStyle(el);
+        if (el.classList.contains('text-transparent') || 
+            el.classList.contains('bg-clip-text') || 
+            compStyle.webkitBackgroundClip === 'text' || 
+            compStyle.backgroundClip === 'text') {
+            
+            el.style.background = 'none';
+            el.style.webkitTextFillColor = 'initial';
+            el.style.color = '#e11d48'; 
+            el.classList.remove('text-transparent', 'bg-clip-text');
+        }
+
+        // ป้องกัน Element ลูกถูกตัดความสูง
+        if (el.classList.contains('h-full') || el.classList.contains('h-screen')) {
+            el.style.minHeight = '100%';
+        }
+
+        // บังคับจัดกึ่งกลางตัวเลขในวงกลม
+        if (el.classList.contains('rounded-full') || compStyle.borderRadius === '9999px' || compStyle.borderRadius === '50%') {
+            const currentHeight = el.clientHeight || parseFloat(compStyle.height) || 24;
+            el.style.display = 'inline-flex';
+            el.style.alignItems = 'center';
+            el.style.justifyContent = 'center';
+            el.style.flexShrink = '0';
+            
+            const innerTexts = el.querySelectorAll('*');
+            if (innerTexts.length === 0) {
+                el.style.textAlign = 'center';
+                el.style.lineHeight = currentHeight + 'px';
+            } else {
+                innerTexts.forEach(child => {
+                    child.style.display = 'inline-block';
+                    child.style.verticalAlign = 'middle';
+                    child.style.lineHeight = '1';
+                    child.style.margin = '0';
+                });
+            }
+        }
+    });
+
+    const origCanvases = originalSlide.querySelectorAll('canvas');
+    const clonedCanvases = exportContainer.querySelectorAll('canvas');
+    origCanvases.forEach((origCanvas, idx) => {
+        if (clonedCanvases[idx]) {
+            try {
+                const img = document.createElement('img');
+                img.src = origCanvas.toDataURL('image/png');
+                img.style.width = origCanvas.style.width || origCanvas.width + 'px';
+                img.style.height = origCanvas.style.height || origCanvas.height + 'px';
+                clonedCanvases[idx].parentNode.replaceChild(img, clonedCanvases[idx]);
+            } catch (e) {
+                console.log("Canvas clone skip", e);
+            }
+        }
+    });
+
+    document.body.appendChild(exportContainer);
+
+    try {
+        const canvas = await html2canvas(exportContainer, {
+            scale: 3,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+            logging: false,
+            width: actualWidth,    
+            height: actualHeight,  
+            windowWidth: actualWidth,
+            windowHeight: actualHeight
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        window.collectedPdfSlides.push({
+            data: imgData,
+            width: canvas.width,
+            height: canvas.height
+        });
+
+        const totalCaptured = window.collectedPdfSlides.length;
+        const counterEl = document.getElementById('pdf-counter');
+        if (counterEl) counterEl.textContent = totalCaptured;
+
+        // แจ้งเตือนความสำเร็จพร้อมแสดงจำนวนหน้าที่สะสมทั้งหมด
+        showToast(`✅ บันทึกหน้านี้สำเร็จ! (สะสมรวม ${totalCaptured} หน้า)`, "success");
+
+    } catch (err) {
+        console.error("Error generating PDF slide:", err);
+        showToast("เกิดข้อผิดพลาดในการสร้างภาพสไลด์", "error");
+    } finally {
+        document.body.removeChild(exportContainer);
+    }
+}
+
+// 2. ฟังก์ชันรวมไฟล์และดาวน์โหลด PDF
+async function finalizeAndDownloadPDF() {
+    if (!window.collectedPdfSlides || window.collectedPdfSlides.length === 0) {
+        showToast("ยังไม่มีหน้าสไลด์ที่ถูกบันทึก กรุณากดบันทึกอย่างน้อย 1 หน้า", "error");
+        return;
+    }
+
+    showToast("กำลังประมวลผลสร้างไฟล์ PDF...", "blue");
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+    });
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+
+    for (let i = 0; i < window.collectedPdfSlides.length; i++) {
+        if (i > 0) {
+            pdf.addPage();
+        }
+
+        const slide = window.collectedPdfSlides[i];
+        const imgRatio = slide.width / slide.height;
+        let renderWidth = pdfWidth;
+        let renderHeight = pdfWidth / imgRatio;
+
+        if (renderHeight > pdfHeight) {
+            renderHeight = pdfHeight;
+            renderWidth = pdfHeight * imgRatio;
+        }
+
+        const x = (pdfWidth - renderWidth) / 2;
+        const y = (pdfHeight - renderHeight) / 2;
+
+        pdf.addImage(slide.data, 'PNG', x, y, renderWidth, renderHeight, undefined, 'FAST');
+    }
+
+    pdf.save(`MLPR_Presentation_Report_${currentYear}_${currentMonth + 1}.pdf`);
+    
+    showToast("ดาวน์โหลดไฟล์ PDF สำเร็จ!", "success");
+    clearCollectedPDFSlides();
+}
+
+// 3. ฟังก์ชันเคลียร์ข้อมูลสไลด์ที่สะสมไว้
+function clearCollectedPDFSlides() {
+    window.collectedPdfSlides = [];
+    const counterEl = document.getElementById('pdf-counter');
+    if (counterEl) counterEl.textContent = '0';
+    showToast("ล้างรายการสไลด์ที่สะสมไว้เรียบร้อยแล้ว", "blue");
+}
     </script>
 
 <!-- Modal Top Performance -->
@@ -2692,6 +3787,56 @@ window.onload = async function() {
             <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 lg:col-span-2">
                 <div id="chart-others" style="width: 100%; height: 320px;"></div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal สำหรับนำเสนอสไลด์ -->
+<div id="presentation-modal" class="fixed inset-0 bg-slate-900 z-[400] hidden flex-col transition-all duration-500 opacity-0">
+    <!-- Header / Navigation -->
+    <div class="flex flex-wrap justify-between items-center p-4 text-white bg-slate-800 border-b border-slate-700 shadow-lg gap-4">
+        <!-- ฝั่งซ้าย: ตัวบอกหน้าและหัวข้อ -->
+        <div class="flex items-center gap-4">
+            <span id="slide-indicator" class="text-sm font-bold bg-slate-700 px-3 py-1 rounded-full text-emerald-300">หน้า 1 / 19</span>
+            <h2 id="slide-title" class="text-xl font-bold text-white tracking-wide">นำเสนอผลการปฏิบัติงาน</h2>
+        </div>
+
+        <!-- ฝั่งขวา: ปุ่มควบคุมทั้งหมด (จัดกลุ่ม Flex ให้เป็นระเบียบ) -->
+        <div class="flex items-center gap-2 flex-wrap">
+            <!-- ปุ่มเปลี่ยนหน้า -->
+            <button onclick="prevSlide()" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-bold transition flex items-center gap-1.5 text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg> ก่อนหน้า
+            </button>
+            <button onclick="nextSlide()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg font-bold transition flex items-center gap-1.5 text-sm">
+                ถัดไป <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+
+            <div class="h-6 w-px bg-slate-700 mx-1"></div>
+
+            <!-- ปุ่มระบบ PDF -->
+            <button onclick="captureCurrentSlideForPDF()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl font-bold text-sm shadow-md flex items-center gap-1.5 transition">
+                📸 บันทึกหน้านี้ลง PDF
+            </button>
+            <button onclick="finalizeAndDownloadPDF()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl font-bold text-sm shadow-md flex items-center gap-1.5 transition">
+                📥 ดาวน์โหลด PDF รวม (<span id="pdf-counter">0</span> หน้า)
+            </button>
+            <button onclick="clearCollectedPDFSlides()" class="bg-gray-600 hover:bg-gray-700 text-white px-2.5 py-2 rounded-xl text-xs shadow transition">
+                🗑️ เริ่มใหม่
+            </button>
+
+            <div class="h-6 w-px bg-slate-700 mx-1"></div>
+
+            <!-- ปุ่มปิดหน้าต่าง -->
+            <button onclick="closePresentation()" class="px-3 py-2 bg-rose-600 hover:bg-rose-500 rounded-lg font-bold transition flex items-center gap-1.5 text-sm">
+                ปิดหน้าต่าง <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Slide Content Area -->
+    <div class="flex-1 overflow-hidden relative flex items-center justify-center p-4 md:p-8" style="background-color: #f8fafc; background-image: radial-gradient(at 10% 20%, hsla(28,100%,74%,0.15) 0px, transparent 50%), radial-gradient(at 80% 10%, hsla(189,100%,56%,0.15) 0px, transparent 50%), radial-gradient(at 90% 90%, hsla(343,100%,76%,0.15) 0px, transparent 50%);">
+        <div id="slide-content" class="w-full h-full max-w-[1400px] bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-6 md:p-8 overflow-y-auto border border-white/60">
+            <!-- ข้อมูลสไลด์จะถูกเติมที่นี่ด้วย JavaScript -->
         </div>
     </div>
 </div>
