@@ -102,6 +102,56 @@ div::-webkit-scrollbar {
     .delay-100 { animation-delay: 100ms; }
     .delay-200 { animation-delay: 200ms; }
 
+/* Animation สำหรับเปลี่ยนหน้าเปิดหนังสือ */
+@keyframes pageTurnCurl {
+    0% {
+        width: 0%;
+        transform: skewY(0deg);
+        box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+    }
+    50% {
+        width: 50%;
+        transform: skewY(-1.5deg);
+        box-shadow: -25px 0 35px rgba(0,0,0,0.25);
+    }
+    100% {
+        width: 100%;
+        transform: skewY(0deg);
+        box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+    }
+}
+
+@keyframes catRunAcross {
+    0% {
+        left: -10%;
+        transform: translateY(-50%) rotate(-3deg);
+    }
+    50% {
+        transform: translateY(-54%) rotate(3deg);
+    }
+    100% {
+        left: 105%;
+        transform: translateY(-50%) rotate(-3deg);
+    }
+}
+
+@keyframes catBounce {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-6px); }
+}
+
+.animate-cat-run {
+    animation: catRunAcross 1.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-page-curl {
+    animation: pageTurnCurl 1.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-cat-bounce {
+    animation: catBounce 0.2s infinite ease-in-out;
+}
+
     </style>
 </head>
 <body class="p-3 lg:p-8 min-h-screen">
@@ -2948,8 +2998,63 @@ function closePresentation() {
     clearCharts();
 }
 
-function nextSlide() { if (currentSlideIndex < SLIDES.length - 1) { currentSlideIndex++; renderSlide(); } }
-function prevSlide() { if (currentSlideIndex > 0) { currentSlideIndex--; renderSlide(); } }
+// ฟังก์ชันเล่นแอนิเมชันแมวเปลี่ยนหน้า
+function playCatPageTurnAnimation(onMidpointCallback) {
+    const transitionOverlay = document.getElementById('cat-page-transition');
+    const catRunner = document.getElementById('cat-runner');
+    const pageCurl = document.getElementById('cat-page-curl');
+
+    if (!transitionOverlay || !catRunner || !pageCurl) {
+        if (onMidpointCallback) onMidpointCallback();
+        return;
+    }
+
+    // แสดง Overlay และเริ่ม Animation
+    transitionOverlay.classList.remove('hidden');
+    catRunner.classList.remove('animate-cat-run');
+    pageCurl.classList.remove('animate-page-curl');
+
+    // Force Reflow เพื่อ Reset Animation
+    void catRunner.offsetWidth;
+
+    catRunner.classList.add('animate-cat-run');
+    pageCurl.classList.add('animate-page-curl');
+
+    // สลับเนื้อหาสไลด์ตอนกึ่งกลางแอนิเมชัน (ประมาณ 350ms)
+    setTimeout(() => {
+        if (typeof onMidpointCallback === 'function') {
+            onMidpointCallback();
+        }
+    }, 700);
+
+    // ปิด Overlay เมื่อแอนิเมชันจบลง (750ms)
+    setTimeout(() => {
+        transitionOverlay.classList.add('hidden');
+        catRunner.classList.remove('animate-cat-run');
+        pageCurl.classList.remove('animate-page-curl');
+    }, 800);
+}
+
+// วิธีการนำไปใช้กับปุ่ม prevSlide() และ nextSlide() เดิมของคุณ:
+function nextSlide() {
+    // เช็กว่ามีสไลด์ถัดไปหรือไม่ ก่อนเริ่มเล่นแอนิเมชัน
+    if (currentSlideIndex < SLIDES.length - 1) {
+        playCatPageTurnAnimation(() => {
+            currentSlideIndex++;
+            renderSlide();
+        });
+    }
+}
+
+function prevSlide() {
+    // เช็กว่ามีสไลด์ก่อนหน้าหรือไม่ ก่อนเริ่มเล่นแอนิเมชัน
+    if (currentSlideIndex > 0) {
+        playCatPageTurnAnimation(() => {
+            currentSlideIndex--;
+            renderSlide();
+        });
+    }
+}
 
 function renderSlide() {
     clearCharts();
@@ -3834,9 +3939,57 @@ function clearCollectedPDFSlides() {
     </div>
 
     <!-- Slide Content Area -->
-    <div class="flex-1 overflow-hidden relative flex items-center justify-center p-4 md:p-8" style="background-color: #f8fafc; background-image: radial-gradient(at 10% 20%, hsla(28,100%,74%,0.15) 0px, transparent 50%), radial-gradient(at 80% 10%, hsla(189,100%,56%,0.15) 0px, transparent 50%), radial-gradient(at 90% 90%, hsla(343,100%,76%,0.15) 0px, transparent 50%);">
-        <div id="slide-content" class="w-full h-full max-w-[1400px] bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-6 md:p-8 overflow-y-auto border border-white/60">
-            <!-- ข้อมูลสไลด์จะถูกเติมที่นี่ด้วย JavaScript -->
+    <!-- Slide Content Area -->
+<div class="flex-1 overflow-hidden relative flex items-center justify-center p-4 md:p-8" style="background-color: #f8fafc; background-image: radial-gradient(at 10% 20%, hsla(28,100%,74%,0.15) 0px, transparent 50%), radial-gradient(at 80% 10%, hsla(189,100%,56%,0.15) 0px, transparent 50%), radial-gradient(at 90% 90%, hsla(343,100%,76%,0.15) 0px, transparent 50%);">
+    
+    <!-- Container เนื้อหาสไลด์ -->
+    <div id="slide-content" class="w-full h-full max-w-[1400px] bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-6 md:p-8 overflow-y-auto border border-white/60 relative">
+        <!-- ข้อมูลสไลด์จะถูกเติมที่นี่ด้วย JavaScript -->
+    </div>
+
+    <!-- Overlay แอนิเมชันแมวสีขาวคาบกระดาษเปลี่ยนหน้า -->
+    <div id="cat-page-transition" class="pointer-events-none absolute inset-0 z-[500] hidden overflow-hidden rounded-3xl">
+        <!-- แผ่นกระดาษที่เปิดพับเหมือนหน้าหนังสือ -->
+        <div id="cat-page-curl" class="absolute top-0 bottom-0 left-0 w-0 bg-white/95 shadow-[-20px_0_25px_rgba(0,0,0,0.15)] border-r-4 border-slate-200 backdrop-blur-sm overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-r from-slate-200/40 via-white to-slate-100/80"></div>
+        </div>
+
+        <!-- ตัวแมวสีขาวคาบปลายกระดาษ -->
+        <div id="cat-runner" class="absolute top-1/2 -translate-y-1/2 -left-32 w-28 h-28 z-20 flex items-center justify-center">
+            <!-- SVG แมวการ์ตูนสีขาวถือกระดาษ -->
+            <svg class="w-full h-full drop-shadow-lg animate-cat-bounce" viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- กระดาษในปากแมว -->
+                <path d="M 35 55 L 10 40 L 15 75 L 42 62 Z" fill="#F1F5F9" stroke="#94A3B8" stroke-width="2"/>
+                
+                <!-- หางแมว -->
+                <path d="M 105 50 Q 120 30 115 20 Q 108 15 105 32" stroke="#334155" stroke-width="6" stroke-linecap="round" fill="none"/>
+                
+                <!-- ตัวแมวสีขาว -->
+                <ellipse cx="75" cy="55" rx="30" ry="22" fill="#FFFFFF" stroke="#334155" stroke-width="3"/>
+                <!-- หัวแมว -->
+                <circle cx="45" cy="45" r="20" fill="#FFFFFF" stroke="#334155" stroke-width="3"/>
+                
+                <!-- หูซ้าย-ขวา -->
+                <polygon points="32,32 38,15 48,28" fill="#FFFFFF" stroke="#334155" stroke-width="3"/>
+                <polygon points="35,30 39,18 46,27" fill="#FCA5A5"/>
+                <polygon points="48,28 58,15 62,32" fill="#FFFFFF" stroke="#334155" stroke-width="3"/>
+                <polygon points="50,27 57,18 60,30" fill="#FCA5A5"/>
+
+                <!-- ตาแมว (หลับตาน่ารักๆ ขณะวิ่ง) -->
+                <path d="M 35 42 Q 39 37 43 42" stroke="#334155" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                <path d="M 48 42 Q 52 37 56 42" stroke="#334155" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                
+                <!-- จมูกและแก้มชมพู -->
+                <polygon points="43,46 47,46 45,49" fill="#F43F5E"/>
+                <circle cx="34" cy="47" r="4" fill="#FECDD3" opacity="0.8"/>
+                <circle cx="56" cy="47" r="4" fill="#FECDD3" opacity="0.8"/>
+
+                <!-- ขาแมววิ่ง (หน้า-หลัง) -->
+                <path class="animate-leg-1" d="M 40 70 Q 32 85 25 82" stroke="#334155" stroke-width="4" stroke-linecap="round"/>
+                <path class="animate-leg-2" d="M 52 72 Q 58 87 65 83" stroke="#334155" stroke-width="4" stroke-linecap="round"/>
+                <path class="animate-leg-2" d="M 70 73 Q 65 88 58 85" stroke="#334155" stroke-width="4" stroke-linecap="round"/>
+                <path class="animate-leg-1" d="M 88 71 Q 96 85 102 81" stroke="#334155" stroke-width="4" stroke-linecap="round"/>
+            </svg>
         </div>
     </div>
 </div>
