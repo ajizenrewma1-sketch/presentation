@@ -102,56 +102,6 @@ div::-webkit-scrollbar {
     .delay-100 { animation-delay: 100ms; }
     .delay-200 { animation-delay: 200ms; }
 
-/* Animation สำหรับเปลี่ยนหน้าเปิดหนังสือ */
-@keyframes pageTurnCurl {
-    0% {
-        width: 0%;
-        transform: skewY(0deg);
-        box-shadow: -5px 0 15px rgba(0,0,0,0.1);
-    }
-    50% {
-        width: 50%;
-        transform: skewY(-1.5deg);
-        box-shadow: -25px 0 35px rgba(0,0,0,0.25);
-    }
-    100% {
-        width: 100%;
-        transform: skewY(0deg);
-        box-shadow: -5px 0 15px rgba(0,0,0,0.1);
-    }
-}
-
-@keyframes catRunAcross {
-    0% {
-        left: -10%;
-        transform: translateY(-50%) rotate(-3deg);
-    }
-    50% {
-        transform: translateY(-54%) rotate(3deg);
-    }
-    100% {
-        left: 105%;
-        transform: translateY(-50%) rotate(-3deg);
-    }
-}
-
-@keyframes catBounce {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-6px); }
-}
-
-.animate-cat-run {
-    animation: catRunAcross 1.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-.animate-page-curl {
-    animation: pageTurnCurl 1.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-.animate-cat-bounce {
-    animation: catBounce 0.2s infinite ease-in-out;
-}
-
     </style>
 </head>
 <body class="p-3 lg:p-8 min-h-screen">
@@ -545,6 +495,28 @@ let tempGroupDataStore = {}; // เก็บข้อมูลตารางเ
             { id: 7, label: "QC", short: "QC Temp", class: "col-qc" }
         ];
 
+	const T7R_PRODUCT_MAP = [
+            { id: 't7rtotal', label: "จำนวนที่ตรวจสอบ", class: "col-t7r-1" },
+            { id: 't7rcorrect', label: "อนุมัติถูกต้อง", class: "col-t7r-2" },
+            { id: 't7rwrong', label: "อนุมัติผิด", class: "col-t7r-3" },
+            { id: 't7rpctcorrect', label: "% อนุมัติถูก", class: "col-t7r-4" },
+            { id: 't7rpcttagget', label: "% Tagget", class: "col-t7r-5" }
+        ];
+
+        const DEFAULT_T7R_MEMBERS = [
+            { id: 2001, fullName: "T+7", nickName: "" },
+            { id: 2002, fullName: "R1", nickName: "" },
+            { id: 2003, fullName: "R2", nickName: "" },
+            { id: 2004, fullName: "R3", nickName: "" },
+            { id: 2005, fullName: "R4", nickName: "" },
+            { id: 2006, fullName: "R5", nickName: "" },
+            { id: 2007, fullName: "R6", nickName: "" },
+            { id: 2008, fullName: "R7", nickName: "" },
+            { id: 2009, fullName: "R8", nickName: "" },
+            { id: 2010, fullName: "R9", nickName: "" },
+            { id: 2011, fullName: "R10", nickName: "" }
+        ];
+
         const DEFAULT_TEAMS_CONFIG = {
             1: [
                 { id: 101, fullName: "นายพงศกร วัดเซ่ง", nickName: "ปอร์" },
@@ -553,7 +525,8 @@ let tempGroupDataStore = {}; // เก็บข้อมูลตารางเ
                 { id: 104, fullName: "นายเพชรนรินทร์ แย้มสาย", nickName: "เป๋าเป้" }
             ],
             2: [], 3: [], 4: [], 5: [],
-            temp: []
+            temp: [],
+            t7r: JSON.parse(JSON.stringify(DEFAULT_T7R_MEMBERS))
         };
 
         let TEAMS_CONFIG = {};
@@ -711,6 +684,10 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkb-fcFnbrN0p7
                 // ตรวจสอบว่ามี result.masterData ที่เป็น Object จริงๆ เท่านั้น ห้ามใช้ || result
                 if (result && result.masterData && typeof result.masterData === 'object' && !result.masterData.status) {
                     TEAMS_CONFIG = result.teamsConfig || {};
+		     // ป้องกัน Error ทีมใหม่เมื่อดึง Cloud Backup เก่า
+                        if (!TEAMS_CONFIG['t7r'] || TEAMS_CONFIG['t7r'].length === 0) {
+                            TEAMS_CONFIG['t7r'] = JSON.parse(JSON.stringify(DEFAULT_T7R_MEMBERS));
+                        }
                     masterData = result.masterData;
                     
                     saveTeamsConfig();
@@ -775,32 +752,36 @@ function getTempMembers(year, month) {
 }
 
         function loadLocalData() {
-    try {
-        const storedTeams = localStorage.getItem('mlpr_teams_config_v3');
-        if (storedTeams) {
-            TEAMS_CONFIG = JSON.parse(storedTeams);
-            for (let i = 1; i <= 5; i++) {
-                if (!TEAMS_CONFIG[i]) TEAMS_CONFIG[i] = [];
+            try {
+                const storedTeams = localStorage.getItem('mlpr_teams_config_v3');
+                if (storedTeams) {
+                    TEAMS_CONFIG = JSON.parse(storedTeams);
+                    for (let i = 1; i <= 5; i++) {
+                        if (!TEAMS_CONFIG[i]) TEAMS_CONFIG[i] = [];
+                    }
+                    if (!TEAMS_CONFIG['temp_monthly']) TEAMS_CONFIG['temp_monthly'] = {};
+                    
+                    // ป้องกัน Error ทีมใหม่เมื่อโหลดข้อมูลเก่า
+                    if (!TEAMS_CONFIG['t7r'] || TEAMS_CONFIG['t7r'].length === 0) {
+                        TEAMS_CONFIG['t7r'] = JSON.parse(JSON.stringify(DEFAULT_T7R_MEMBERS));
+                    }
+                } else {
+                    TEAMS_CONFIG = JSON.parse(JSON.stringify(DEFAULT_TEAMS_CONFIG));
+                    saveTeamsConfig();
+                }
+            } catch(e) {
+                TEAMS_CONFIG = JSON.parse(JSON.stringify(DEFAULT_TEAMS_CONFIG));
             }
-            if (!TEAMS_CONFIG['temp_monthly']) TEAMS_CONFIG['temp_monthly'] = {};
-        } else {
-            TEAMS_CONFIG = JSON.parse(JSON.stringify(DEFAULT_TEAMS_CONFIG));
-            saveTeamsConfig();
+
+            try {
+                const storedData = localStorage.getItem('mlpr_v5_final');
+                masterData = storedData ? JSON.parse(storedData) : {};
+            } catch(e) {
+                masterData = {};
+            }
+
+            hasUnsavedChanges = false;
         }
-    } catch(e) {
-        TEAMS_CONFIG = JSON.parse(JSON.stringify(DEFAULT_TEAMS_CONFIG));
-    }
-
-    try {
-        const storedData = localStorage.getItem('mlpr_v5_final');
-        masterData = storedData ? JSON.parse(storedData) : {};
-} catch(e) {
-        masterData = {};
-    }
-
-    // เพิ่มบรรทัดนี้เพื่อเคลียร์สถานะไม่ให้มองว่าเป็นการเปลี่ยนแปลงที่ต้องอัปโหลดทับ
-    hasUnsavedChanges = false;
-}
 
         function saveTeamsConfig() {
             localStorage.setItem('mlpr_teams_config_v3', JSON.stringify(TEAMS_CONFIG));
@@ -827,7 +808,7 @@ function getTempMembers(year, month) {
 
         function updateLabels() {
             document.getElementById('dashboard-subtitle').textContent = `ระบบบันทึกและสรุปยอดงานประจำเดือน ${thaiMonths[currentMonth]} ${currentYear}`;
-            document.getElementById('display-team-name').textContent = currentTeam === 'temp' ? `ทีม Temp` : `ทีม ${currentTeam}`;
+            document.getElementById('display-team-name').textContent = currentTeam === 'temp' ? `ทีม Temp` : (currentTeam === 't7r' ? `ทีม T+7 และ Rอื่นๆ` : `ทีม ${currentTeam}`);
             
             const tempMapBtn = document.getElementById('temp-qc-map-btn');
             if (tempMapBtn) {
@@ -920,6 +901,18 @@ function getTempMembers(year, month) {
                 container.appendChild(btnAll);
             }
 
+const btnT7R = document.createElement('button');
+            btnT7R.textContent = `T+7 และ Rอื่นๆ`;
+            let btnClassT7R = `btn-pop px-5 py-2 rounded-xl text-sm font-bold border-2 transition-all shadow-sm`;
+            if (activeTeam === 't7r') {
+                btnClassT7R += ` team-btn-active`;
+            } else {
+                btnClassT7R += ` team-btn-inactive`;
+            }
+            btnT7R.className = btnClassT7R;
+            btnT7R.onclick = () => window[onClickFn]('t7r');
+            container.appendChild(btnT7R);
+
             for (let i = 1; i <= 5; i++) {
                 const btn = document.createElement('button');
                 btn.textContent = `ทีม ${i}`;
@@ -959,7 +952,7 @@ function getTempMembers(year, month) {
         function selectConfigTeam(teamId) {
     configTeam = teamId;
     renderTeamButtons('config');
-    document.getElementById('config-current-team-label').textContent = configTeam === 'temp' ? `ทีม Temp` : `ทีม ${configTeam}`;
+    document.getElementById('config-current-team-label').textContent = configTeam === 'temp' ? `ทีม Temp` : (configTeam === 't7r' ? `ทีม T+7 และ Rอื่นๆ` : `ทีม ${configTeam}`);
     
     const tempBulkSection = document.getElementById('temp-bulk-section');
     const newUsercodeInp = document.getElementById('new-usercode');
@@ -1022,166 +1015,237 @@ function addBulkTempMembers() {
 }
         
         function selectSummaryTeam(teamId) {
-            summaryCurrentTeam = teamId;
-            renderTeamButtons('summary');
-        }
+    summaryCurrentTeam = teamId;
+    renderTeamButtons('summary');
 
-        function renderSummaryTable() {
-            const thead = document.getElementById('summary-thead');
-            const tbody = document.getElementById('summary-tbody');
-            const emptyState = document.getElementById('empty-team-state');
-            const tableWrapper = document.querySelector('.table-wrapper');
-            
-            if (!thead || !tbody) return;
-
-            const currentMembers = currentTeam === 'temp' ? getTempMembers(currentYear, currentMonth) : (TEAMS_CONFIG[currentTeam] || []);
-            
-            if (currentMembers.length === 0) {
-                tableWrapper.classList.add('hidden');
-                emptyState.classList.remove('hidden');
-                emptyState.classList.add('flex');
-                return;
-            } else {
-                tableWrapper.classList.remove('hidden');
-                emptyState.classList.add('hidden');
-                emptyState.classList.remove('flex');
-            }
-
-            if (currentTeam === 'temp') {
-                thead.innerHTML = `
-    <tr class="bg-slate-800 text-white text-[12px]">
-        <th class="p-3 text-center min-w-[200px] border-r border-slate-700">เจ้าหน้าที่</th>
-        <th class="p-3 text-center min-w-[120px] border-r border-slate-700">User</th>
-        <th class="p-3 text-center min-w-[120px] border-r border-slate-700">วันทำงาน</th>
-        <th class="p-3 text-center min-w-[150px] border-r border-slate-700">ยอดรวมอนุมติ</th>
-        <th class="p-3 text-center min-w-[160px] border-r border-slate-700 text-blue-300">ยอดรวมอนุมติเฉลี่ยต่อวัน</th>
-        <th class="p-3 text-center min-w-[150px] border-r border-slate-700 text-rose-300">ยอดอนุมัติผิด</th>
-        <th class="p-3 text-center min-w-[160px] text-rose-300">ยอดอนุมัติผิดเฉลี่ยต่อวัน</th>
-    </tr>
-`;
-
-                tbody.innerHTML = '';
-                currentMembers.forEach((staff, sIdx) => {
-    const rowBgClass = sIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
+    // จัดการแสดง/ซ่อนปุ่ม Top Performance, Top QC และกราฟ
+    const perfBtn = document.getElementById('btn-popup-perf');
+    const qcBtn = document.getElementById('btn-popup-qc');
+    const chartsBtn = document.getElementById('btn-popup-charts');
     
-    const userCodeVal = masterData[getTempKey(staff.id, 'userCode')] || staff.userCode || '';
-    const workDaysVal = masterData[getTempKey(staff.id, 'workDays')] || '';
-    const totalApproveVal = masterData[getTempKey(staff.id, 'totalApprove')] || '';
-    const totalQcVal = masterData[getTempKey(staff.id, 'totalQc')] || '';
-
-    const wNum = parseFloat(workDaysVal) || 0;
-    const aNum = parseFloat(totalApproveVal) || 0;
-    const qNum = parseFloat(totalQcVal) || 0;
-
-    const formattedApprove = aNum >= 1000 ? aNum.toLocaleString() : aNum;
-    const formattedQc = qNum >= 1000 ? qNum.toLocaleString() : qNum;
-
-    const avgApp = wNum > 0 ? (aNum / wNum).toFixed(2) : '0';
-    const avgQc = wNum > 0 ? (qNum / wNum).toFixed(2) : '0';
-
-    const tr = document.createElement('tr');
-    tr.className = rowBgClass;
-    tr.innerHTML = `
-        <td class="p-3 text-left pl-6 border-r border-slate-200">
-            <strong class="text-slate-800">${staff.fullName}</strong><br>
-            <span class="text-xs text-slate-500 font-medium">(${staff.nickName || '-'})</span>
-        </td>
-        <td class="p-2 border-r border-slate-200">
-            <input type="text" class="input-cell font-bold text-slate-700 text-center py-2" value="${userCodeVal}" oninput="handleTempInput(${staff.id}, 'userCode', this)">
-        </td>
-        <td class="p-2 border-r border-slate-200">
-            <input type="number" class="input-cell font-bold text-slate-700 text-center py-2" value="${workDaysVal}" onwheel="event.preventDefault()" oninput="handleTempInput(${staff.id}, 'workDays', this)">
-        </td>
-        <td class="p-2 border-r border-slate-200">
-            <input type="text" class="input-cell font-bold text-indigo-700 text-center py-2" 
-                value="${totalApproveVal >= 100 ? Number(totalApproveVal).toLocaleString() : totalApproveVal}" 
-                oninput="handleTempInput(${staff.id}, 'totalApprove', this)">
-        </td>
-        <td class="p-3 font-bold text-blue-600 text-center border-r border-slate-200" id="temp-avg-app-${staff.id}">${avgApp}</td>
-        <td class="p-2 border-r border-slate-200">
-            <input type="number" class="input-cell font-bold text-rose-600 text-center py-2" value="${totalQcVal}" id="temp-qc-input-${staff.id}" onwheel="event.preventDefault()" oninput="handleTempInput(${staff.id}, 'totalQc', this)">
-        </td>
-        <td class="p-3 font-bold text-rose-600 text-center" id="temp-avg-qc-${staff.id}">${avgQc}</td>
-    `;
-    tbody.appendChild(tr);
-});
-                return;
-            }
-
-            let thDays = '';
-            for (let d = 1; d <= daysInMonth; d++) {
-                thDays += `
-                    <th class="p-1 text-center min-w-[45px] border-r border-slate-200">
-                        <div class="text-[11px] text-slate-500 font-bold">${d}</div>
-                    </th>`;
-            }
-            
-            const monthName = thaiMonths[currentMonth];
-            const headerTitle = `บันทึกข้อมูลประจำเดือน ${monthName} ${currentYear}`;
-            
-            thead.innerHTML = `
-                <tr class="bg-slate-800 text-white text-[11px]">
-                    <th rowspan="2" class="p-2 text-center min-w-[120px] sticky-col-1 bg-slate-800 border-r-2 border-slate-700">เจ้าหน้าที่</th>
-                    <th rowspan="2" class="p-2 text-center min-w-[70px] sticky-col-2 bg-slate-800 border-r border-slate-700">Product</th>
-                    <th rowspan="2" class="p-2 text-center min-w-[65px] sticky-col-3 bg-slate-800 text-blue-300 border-r-2 border-slate-700">รวมงาน</th>
-                    <th colspan="${daysInMonth}" class="p-1 text-center bg-slate-700/50 font-medium tracking-wider text-[11px] text-slate-300 border-b border-slate-700">
-                        ${headerTitle}
-                    </th>
-                </tr>
-                <tr class="bg-slate-100 text-slate-700 border-b border-slate-300 shadow-sm">
-                    ${thDays}
-                </tr>
-            `;
-
-            tbody.innerHTML = '';
-            
-            currentMembers.forEach((staff, sIdx) => {
-                const rowBgClass = sIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
-                
-                PRODUCT_MAP.forEach((prod, pIdx) => {
-                    const tr = document.createElement('tr');
-                    if (pIdx === PRODUCT_MAP.length - 1) tr.className = "staff-divider";
-                    
-                    let rowHTML = "";
-                    if (pIdx === 0) {
-                        rowHTML += `
-                            <td rowspan="${PRODUCT_MAP.length}" class="sticky-col-1 border-r-2 bg-white">
-                                <div class="p-2">
-                                    <strong class="text-slate-800">${staff.fullName}</strong><br>
-                                    <span class="text-xs text-slate-500 font-medium">(${staff.nickName || '-'})</span>
-                                </div>
-                            </td>`;
-                    }
-
-                    rowHTML += `
-                        <td class="sticky-col-2 ${prod.label === 'QC' ? 'qc-text' : 'font-medium text-slate-700'} ${rowBgClass}">${prod.label}</td>
-                        <td class="sticky-col-3 font-bold text-blue-600 text-center" id="sum-${staff.id}-${prod.id}">${calculateSum(staff.id, prod.id)}</td>`;
-
-                    for (let d = 1; d <= daysInMonth; d++) {
-                        const key = getKey(staff.id, prod.id, d);
-                        const val = masterData[key] || '';
-                        
-                        let textColorClass = "text-slate-700";
-                        if(val === 'วันหยุด') textColorClass = "holiday-text";
-                        else if(val !== '' && val !== '0' && val !== '-') textColorClass = "font-bold text-indigo-700";
-
-                        const inputId = `summary-${staff.id}-${prod.id}-${d}`;
-                        
-                        rowHTML += `
-                            <td class="day-cell p-0 border-r border-slate-200 ${rowBgClass}">
-                                <input type="text" id="${inputId}" 
-                                    class="input-cell ${textColorClass}"
-                                    value="${val}"
-                                    oninput="handleInputFromSummary(${staff.id}, ${prod.id}, ${d}, this)">
-                            </td>`;
-                    }
-
-                    tr.innerHTML = rowHTML;
-                    tbody.appendChild(tr);
-                });
-            });
+    if (perfBtn && qcBtn && chartsBtn) {
+        if (teamId === 't7r') {
+            perfBtn.parentElement.style.display = 'none'; // ซ่อนทั้งกลุ่มปุ่ม
+        } else {
+            perfBtn.parentElement.style.display = 'flex';
         }
+    }
+}
 
+function renderSummaryTable() {
+    const thead = document.getElementById('summary-thead');
+    const tbody = document.getElementById('summary-tbody');
+    const emptyState = document.getElementById('empty-team-state');
+    const tableWrapper = document.querySelector('.table-wrapper');
+    
+    if (!thead || !tbody) return;
+
+    const currentMembers = currentTeam === 'temp' ? getTempMembers(currentYear, currentMonth) : (TEAMS_CONFIG[currentTeam] || []);
+    
+    if (currentMembers.length === 0) {
+        tableWrapper.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        emptyState.classList.add('flex');
+        return;
+    } else {
+        tableWrapper.classList.remove('hidden');
+        emptyState.classList.add('hidden');
+        emptyState.classList.remove('flex');
+    }
+
+    // 1. จัดการกรณีทีม Temp (สรุปยอดรวมรายเดือน)
+    if (currentTeam === 'temp') {
+        thead.innerHTML = `
+            <tr class="bg-slate-800 text-white text-[12px]">
+                <th class="p-3 text-center min-w-[200px] border-r border-slate-700">เจ้าหน้าที่</th>
+                <th class="p-3 text-center min-w-[120px] border-r border-slate-700">User</th>
+                <th class="p-3 text-center min-w-[120px] border-r border-slate-700">วันทำงาน</th>
+                <th class="p-3 text-center min-w-[150px] border-r border-slate-700">ยอดรวมอนุมติ</th>
+                <th class="p-3 text-center min-w-[160px] border-r border-slate-700 text-blue-300">ยอดรวมอนุมติเฉลี่ยต่อวัน</th>
+                <th class="p-3 text-center min-w-[150px] border-r border-slate-700 text-rose-300">ยอดอนุมัติผิด</th>
+                <th class="p-3 text-center min-w-[160px] text-rose-300">ยอดอนุมัติผิดเฉลี่ยต่อวัน</th>
+            </tr>
+        `;
+
+        tbody.innerHTML = '';
+        currentMembers.forEach((staff, sIdx) => {
+            const rowBgClass = sIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
+            
+            const userCodeVal = masterData[getTempKey(staff.id, 'userCode')] || staff.userCode || '';
+            const workDaysVal = masterData[getTempKey(staff.id, 'workDays')] || '';
+            const totalApproveVal = masterData[getTempKey(staff.id, 'totalApprove')] || '';
+            const totalQcVal = masterData[getTempKey(staff.id, 'totalQc')] || '';
+
+            const wNum = parseFloat(workDaysVal) || 0;
+            const aNum = parseFloat(totalApproveVal) || 0;
+            const qNum = parseFloat(totalQcVal) || 0;
+
+            const avgApp = wNum > 0 ? (aNum / wNum).toFixed(2) : '0';
+            const avgQc = wNum > 0 ? (qNum / wNum).toFixed(2) : '0';
+
+            const tr = document.createElement('tr');
+            tr.className = rowBgClass;
+            tr.innerHTML = `
+                <td class="p-3 text-left pl-6 border-r border-slate-200">
+                    <strong class="text-slate-800">${staff.fullName}</strong><br>
+                    <span class="text-xs text-slate-500 font-medium">(${staff.nickName || '-'})</span>
+                </td>
+                <td class="p-2 border-r border-slate-200">
+                    <input type="text" class="input-cell font-bold text-slate-700 text-center py-2" value="${userCodeVal}" oninput="handleTempInput(${staff.id}, 'userCode', this)">
+                </td>
+                <td class="p-2 border-r border-slate-200">
+                    <input type="number" class="input-cell font-bold text-slate-700 text-center py-2" value="${workDaysVal}" onwheel="event.preventDefault()" oninput="handleTempInput(${staff.id}, 'workDays', this)">
+                </td>
+                <td class="p-2 border-r border-slate-200">
+                    <input type="text" class="input-cell font-bold text-indigo-700 text-center py-2" 
+                        value="${totalApproveVal >= 100 ? Number(totalApproveVal).toLocaleString() : totalApproveVal}" 
+                        oninput="handleTempInput(${staff.id}, 'totalApprove', this)">
+                </td>
+                <td class="p-3 font-bold text-blue-600 text-center border-r border-slate-200" id="temp-avg-app-${staff.id}">${avgApp}</td>
+                <td class="p-2 border-r border-slate-200">
+                    <input type="number" class="input-cell font-bold text-rose-600 text-center py-2" value="${totalQcVal}" id="temp-qc-input-${staff.id}" onwheel="event.preventDefault()" oninput="handleTempInput(${staff.id}, 'totalQc', this)">
+                </td>
+                <td class="p-3 font-bold text-rose-600 text-center" id="temp-avg-qc-${staff.id}">${avgQc}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+        return;
+    }
+
+    // 2. จัดการกรณีทีมปกติ และ ทีม T+7 และ Rอื่นๆ (t7r)
+    let thDays = '';
+    for (let d = 1; d <= daysInMonth; d++) {
+        thDays += `
+            <th class="p-1 text-center min-w-[45px] border-r border-slate-200">
+                <div class="text-[11px] text-slate-500 font-bold">${d}</div>
+            </th>`;
+    }
+    
+    const monthName = thaiMonths[currentMonth];
+    const headerTitle = `บันทึกข้อมูลประจำเดือน ${monthName} ${currentYear}`;
+    
+    thead.innerHTML = `
+        <tr class="bg-slate-800 text-white text-[11px]">
+            <th rowspan="2" class="p-2 text-center min-w-[120px] sticky-col-1 bg-slate-800 border-r-2 border-slate-700">เจ้าหน้าที่</th>
+            <th rowspan="2" class="p-2 text-center min-w-[70px] sticky-col-2 bg-slate-800 border-r border-slate-700">Product</th>
+            <th rowspan="2" class="p-2 text-center min-w-[65px] sticky-col-3 bg-slate-800 text-blue-300 border-r-2 border-slate-700">รวมงาน</th>
+            <th colspan="${daysInMonth}" class="p-1 text-center bg-slate-700/50 font-medium tracking-wider text-[11px] text-slate-300 border-b border-slate-700">
+                ${headerTitle}
+            </th>
+        </tr>
+        <tr class="bg-slate-100 text-slate-700 border-b border-slate-300 shadow-sm">
+            ${thDays}
+        </tr>
+    `;
+
+    tbody.innerHTML = '';
+    
+    // เลือก Product Map ให้ตรงกับทีมปัจจุบัน
+    const currentProductMap = currentTeam === 't7r' ? T7R_PRODUCT_MAP : PRODUCT_MAP;
+    
+    currentMembers.forEach((staff, sIdx) => {
+        const rowBgClass = sIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
+        
+        currentProductMap.forEach((prod, pIdx) => {
+            const tr = document.createElement('tr');
+            if (pIdx === currentProductMap.length - 1) tr.className = "staff-divider";
+            
+            let rowHTML = "";
+            if (pIdx === 0) {
+                rowHTML += `
+                    <td rowspan="${currentProductMap.length}" class="sticky-col-1 border-r-2 bg-white">
+                        <div class="p-2">
+                            <strong class="text-slate-800">${staff.fullName}</strong><br>
+                            <span class="text-xs text-slate-500 font-medium">(${staff.nickName || '-'})</span>
+                        </div>
+                    </td>`;
+            }
+
+            rowHTML += `
+                <td class="sticky-col-2 ${prod.label === 'QC' || prod.label === 'อนุมัติผิด' ? 'qc-text' : 'font-medium text-slate-700'} ${rowBgClass}">${prod.label}</td>
+                <td class="sticky-col-3 font-bold text-blue-600 text-center" id="sum-${staff.id}-${prod.id}">${calculateSum(staff.id, prod.id)}</td>`;
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const key = getKey(staff.id, prod.id, d);
+                let val = masterData[key] || '';
+                
+                let textColorClass = "text-slate-700";
+                let isReadOnly = false;
+                let cellBgClass = rowBgClass;
+
+                // เงื่อนไขพิเศษเฉพาะทีม T+7 และ Rอื่นๆ (t7r)
+                if (currentTeam === 't7r') {
+    if (prod.id === 't7rpctcorrect') {
+        // 1.1 คำนวณ % อนุมัติถูกอัตโนมัติ: หากยอดตรวจเป็น 0 ให้แสดง 100.00%
+        const totalVal = parseFloat(masterData[getKey(staff.id, 't7rtotal', d)]) || 0;
+        const correctVal = parseFloat(masterData[getKey(staff.id, 't7rcorrect', d)]) || 0;
+        
+        if (totalVal === 0) {
+            val = '100.00%';
+        } else {
+            val = ((correctVal / totalVal) * 100).toFixed(2) + '%';
+        }
+        
+        masterData[key] = val;
+        textColorClass = "font-bold text-blue-600";
+        cellBgClass = `${rowBgClass} bg-slate-50/80`;
+        isReadOnly = true;
+    } else if (prod.id === 't7rpcttagget') {
+        // 1.2 ฟิกค่า % Tagget: T+7 ได้ 99.50%, นอกนั้นได้ 85.00%
+        val = (staff.fullName === 'T+7' || staff.id === 2001) ? '99.50%' : '85.00%';
+        masterData[key] = val;
+        textColorClass = "font-bold text-emerald-600";
+        cellBgClass = `${rowBgClass} bg-slate-50/80`;
+        isReadOnly = true;
+    }
+} else {
+    if(val === 'วันหยุด') textColorClass = "holiday-text";
+    else if(val !== '' && val !== '0' && val !== '-') textColorClass = "font-bold text-indigo-700";
+}
+
+                const inputId = `summary-${staff.id}-${prod.id}-${d}`;
+                
+                rowHTML += `
+                    <td class="day-cell p-0 border-r border-slate-200 ${cellBgClass}">
+                        <input type="text" id="${inputId}" 
+                            class="input-cell ${textColorClass}"
+                            value="${val}"
+                            ${isReadOnly ? 'readonly' : ''}
+                            oninput="handleInputFromSummary(${staff.id}, '${prod.id}', ${d}, this)">
+                    </td>`;
+            }
+
+            tr.innerHTML = rowHTML;
+            tbody.appendChild(tr);
+        });
+    });
+}
+
+const originalHandleInputFromSummary = window.handleInputFromSummary || function(){};
+window.handleInputFromSummary = function(staffId, prodId, day, element) {
+    if (typeof originalHandleInputFromSummary === 'function') {
+        originalHandleInputFromSummary(staffId, prodId, day, element);
+    }
+
+    if (currentTeam === 't7r' && (prodId === 't7rtotal' || prodId === 't7rcorrect')) {
+        const totalInput = document.getElementById(`summary-${staffId}-t7rtotal-${day}`);
+        const correctInput = document.getElementById(`summary-${staffId}-t7rcorrect-${day}`);
+        const pctInput = document.getElementById(`summary-${staffId}-t7rpctcorrect-${day}`);
+
+        if (totalInput && correctInput && pctInput) {
+            const totalVal = parseFloat(totalInput.value) || 0;
+            const correctVal = parseFloat(correctInput.value) || 0;
+            
+            let calcPct = '100.00%';
+            if (totalVal > 0) {
+                calcPct = ((correctVal / totalVal) * 100).toFixed(2) + '%';
+            }
+            
+            pctInput.value = calcPct;
+            masterData[getKey(staffId, 't7rpctcorrect', day)] = calcPct;
+        }
+    }
+};
         function openTempQcModal() {
             document.getElementById('temp-qc-modal').classList.remove('hidden');
             document.getElementById('temp-qc-modal').classList.add('flex');
@@ -1295,18 +1359,39 @@ function addBulkTempMembers() {
         }
 
         function calculateSum(sId, pId) { 
-    let t = 0; 
-    for (let d = 1; d <= daysInMonth; d++) {
-        let rawVal = masterData[getKey(sId, pId, d)];
-        if (rawVal !== undefined && rawVal !== null) {
-            let val = String(rawVal).replace(/,/g, '').trim();
-            if (val !== '' && val !== '-' && val !== 'วันหยุด' && !isNaN(val)) {
-                t += parseFloat(val);
+            if (currentTeam === 't7r') {
+                if (pId === 't7rpctcorrect') {
+                    let totalInspected = 0;
+                    let totalCorrect = 0;
+                    for (let d = 1; d <= daysInMonth; d++) {
+                        let totVal = parseFloat(String(masterData[getKey(sId, 't7rtotal', d)] || '').replace(/,/g, '')) || 0;
+                        let corVal = parseFloat(String(masterData[getKey(sId, 't7rcorrect', d)] || '').replace(/,/g, '')) || 0;
+                        totalInspected += totVal;
+                        totalCorrect += corVal;
+                    }
+                    if (totalInspected === 0) return '100.00%';
+                    return ((totalCorrect / totalInspected) * 100).toFixed(2) + '%';
+                }
+                if (pId === 't7rpcttagget') {
+                    const members = TEAMS_CONFIG['t7r'] || [];
+                    const staff = members.find(m => String(m.id) === String(sId));
+                    const isT7 = staff && (staff.fullName === 'T+7' || staff.id === 2001);
+                    return isT7 ? '99.50%' : '85.00%';
+                }
             }
+
+            let t = 0; 
+            for (let d = 1; d <= daysInMonth; d++) {
+                let rawVal = masterData[getKey(sId, pId, d)];
+                if (rawVal !== undefined && rawVal !== null) {
+                    let val = String(rawVal).replace(/,/g, '').trim();
+                    if (val !== '' && val !== '-' && val !== 'วันหยุด' && !isNaN(val)) {
+                        t += parseFloat(val);
+                    }
+                }
+            } 
+            return t === 0 ? '0' : (t >= 100 ? t.toLocaleString() : t); 
         }
-    } 
-    return t === 0 ? '0' : (t >= 100 ? t.toLocaleString() : t); 
-}
 
         document.addEventListener('paste', function(e) {
             const target = e.target;
@@ -1424,8 +1509,7 @@ function addBulkTempMembers() {
                                 
                                 const parts = input.id.split('-');
                                 const sId = parseInt(parts[1]);
-                                const pId = parseInt(parts[2]);
-                                const day = parseInt(parts[3]);
+                                const pId = isNaN(parts[2]) ? parts[2] : parseInt(parts[2]);                                 					const day = parseInt(parts[3]);
                                 
                                 if (pId === 7) {
                                     if (cleanVal === '' || cleanVal === '0' || cleanVal === '-') {
@@ -1725,8 +1809,9 @@ function updateTempTarget(val) {
     // กำหนดวันเริ่มต้น (วันที่ 1) และวันสิ้นสุด (วันสุดท้ายของเดือน) โดยอัตโนมัติ
     const startDate = new Date(targetYear, targetMonth, 1);
     const endDate = new Date(targetYear, targetMonth + 1, 0);
+    const days = endDate.getDate();
 
-    const teamLabel = summaryCurrentTeam === 'all' ? 'สรุปผลรวมทุกทีม' : (summaryCurrentTeam === 'temp' ? 'ทีม Temp' : `ทีม ${summaryCurrentTeam}`);
+    const teamLabel = summaryCurrentTeam === 'all' ? 'สรุปผลรวมทุกทีม' : (summaryCurrentTeam === 'temp' ? 'ทีม Temp' : (summaryCurrentTeam === 't7r' ? 'ทีม T+7 และ Rอื่นๆ' : `ทีม ${summaryCurrentTeam}`));
     
     // แปลงชื่อเดือนเป็นภาษาไทยสำหรับแสดงผล (เช่น ประจำเดือน มกราคม 2569)
     const formattedMonthName = startDate.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
@@ -1751,11 +1836,13 @@ function updateTempTarget(val) {
     const btnPopupCharts = document.getElementById('btn-popup-charts');
     const btnPerfLabel = document.getElementById('btn-perf-label');
     const modalPerfTitle = document.getElementById('modal-perf-title');
+    const perfBtnGroup = btnPopupPerf ? btnPopupPerf.parentElement : null;
 
     // ค่าเริ่มต้น: เปิดแสดงทุกปุ่ม
     if (btnPopupPerf) btnPopupPerf.classList.remove('hidden');
     if (btnPopupQc) btnPopupQc.classList.remove('hidden');
     if (btnPopupCharts) btnPopupCharts.classList.remove('hidden');
+    if (perfBtnGroup) perfBtnGroup.style.display = 'flex';
 
     if (summaryCurrentTeam === 'all') {
         if (btnPopupCharts) btnPopupCharts.classList.add('hidden');
@@ -1764,12 +1851,85 @@ function updateTempTarget(val) {
         if (btnPerfLabel) btnPerfLabel.textContent = "Top Performance";
         if (modalPerfTitle) modalPerfTitle.textContent = "🏆 Top Performance ";
         if (btnPopupQc) btnPopupQc.classList.remove('hidden');
+    } else if (summaryCurrentTeam === 't7r') {
+        // ซ่อนกลุ่มปุ่มเมื่อเลือกทีม T+7 และ Rอื่นๆ
+        if (perfBtnGroup) perfBtnGroup.style.display = 'none';
     } else {
         if (btnPerfLabel) btnPerfLabel.textContent = "Top Performance";
         if (modalPerfTitle) modalPerfTitle.textContent = "🏆 Top Performance";
     }
 
-    renderNewSummaryTable(startDate, endDate);
+    // ---------------------------------------------------------
+    // 📍 จัดการเรนเดอร์ตารางข้อมูล
+    // ---------------------------------------------------------
+    const thead = document.querySelector('#new-summary-table-container thead tr');
+    const tbody = document.getElementById('new-summary-tbody');
+
+    let members = [];
+    if (summaryCurrentTeam === 'all') {
+        Object.keys(TEAMS_CONFIG).forEach(tKey => {
+            if (tKey !== 'temp_monthly' && tKey !== 'temp' && tKey !== 't7r') {
+                members = members.concat(TEAMS_CONFIG[tKey] || []);
+            }
+        });
+    } else if (summaryCurrentTeam === 'temp') {
+        members = getTempMembers(targetYear, targetMonth);
+    } else if (summaryCurrentTeam === 't7r') {
+        members = TEAMS_CONFIG['t7r'] || DEFAULT_T7R_MEMBERS;
+    } else {
+        members = TEAMS_CONFIG[summaryCurrentTeam] || [];
+    }
+
+    // กรณีเลือกทีม T+7 และ Rอื่นๆ: แสดงเฉพาะคอลัมน์เฉพาะกิจ
+    if (summaryCurrentTeam === 't7r') {
+        thead.innerHTML = `
+            <th class="p-2 border-r border-slate-200 text-left pl-4">ชื่อ</th>
+            <th class="p-2 border-r border-slate-200 text-slate-700">จำนวนที่ตรวจสอบ</th>
+            <th class="p-2 border-r border-slate-200 text-green-700">อนุมัติถูกต้อง</th>
+            <th class="p-2 border-r border-slate-200 text-rose-700">อนุมัติผิด</th>
+            <th class="p-2 border-r border-slate-200 text-blue-700">% อนุมัติถูก</th>
+            <th class="p-2 text-emerald-700">% Tagget</th>
+        `;
+
+        tbody.innerHTML = '';
+        members.forEach((staff, sIdx) => {
+            let sumTotal = 0;
+            let sumCorrect = 0;
+            let sumWrong = 0;
+
+            for (let d = 1; d <= days; d++) {
+                const totalKey = `${targetYear}-${targetMonth}-${staff.id}-t7rtotal-${d}`;
+                const correctKey = `${targetYear}-${targetMonth}-${staff.id}-t7rcorrect-${d}`;
+                const wrongKey = `${targetYear}-${targetMonth}-${staff.id}-t7rwrong-${d}`;
+
+                sumTotal += parseFloat(masterData[totalKey]) || 0;
+                sumCorrect += parseFloat(masterData[correctKey]) || 0;
+                sumWrong += parseFloat(masterData[wrongKey]) || 0;
+            }
+
+            const pctCorrect = sumTotal > 0 ? ((sumCorrect / sumTotal) * 100).toFixed(2) + '%' : '100.00%';
+            const pctTagget = (staff.fullName === 'T+7' || staff.id === 2001) ? '99.50%' : '85.00%';
+
+            const rowBg = sIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
+            const tr = document.createElement('tr');
+            tr.className = `${rowBg} border-b border-slate-200`;
+            tr.innerHTML = `
+                <td class="p-2 border-r border-slate-200 text-left pl-4 font-bold text-slate-800">${staff.fullName}</td>
+                <td class="p-2 border-r border-slate-200 font-bold">${sumTotal.toLocaleString()}</td>
+                <td class="p-2 border-r border-slate-200 text-green-700 font-bold">${sumCorrect.toLocaleString()}</td>
+                <td class="p-2 border-r border-slate-200 text-rose-700 font-bold">${sumWrong.toLocaleString()}</td>
+                <td class="p-2 border-r border-slate-200 text-blue-600 font-bold">${pctCorrect}</td>
+                <td class="p-2 text-emerald-600 font-bold">${pctTagget}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+        return; // จบการทำงานสำหรับ t7r ไม่ให้รันโค้ดตารางปกติทับ
+    }
+
+    // กรณีทีมอื่นๆ ให้เรียกฟังก์ชันเรนเดอร์ปกติของคุณตามเดิม
+    if (typeof renderNewSummaryTable === 'function') {
+        renderNewSummaryTable(startDate, endDate);
+    }
 }
 
 // --- ฟังก์ชันควบคุม Popup Top Performance ---
@@ -2704,14 +2864,65 @@ window.onload = async function() {
 };
 
 // ==========================================
-// ระบบการนำเสนอสไลด์ (Presentation System) - อัปเดตใหม่ (19 หน้า)
+// ระบบการนำเสนอสไลด์ (Presentation System) - อัปเดตเพิ่ม 22 หน้าแรก + 19 หน้าเดิม
 // ==========================================
 
-let presentationData = { teams: {}, temp: {}, all: {}, rangeText: '', prevRankMapPerf: {}, prevRankMapQc: {} };
+let presentationData = {
+    rangeText: "",
+    t7OtherData: [], // Array สำหรับวนลูปแสดง 22 หน้า (หน้าละ 2 สไลด์ต่อคน)
+    teams: {},
+    chartPairs: {},
+    all: null,
+    temp: null,
+    prevRankMapPerf: {},
+    prevRankMapQc: {},
+    prevRankMapPerfTemp: {},
+    prevRankMapQcTemp: {},
+    prevTemp: null
+};
+let staffTargetMap = {};
+
 let currentSlideIndex = 0;
 let slideChartInstances = []; // รองรับหลายกราฟใน 1 หน้า
 
-const SLIDES = [
+// ฟังก์ชันดึงรายชื่อสมาชิก T+7 และ R อื่นๆ (รวม 11 คน เพื่อสร้าง 22 หน้า: รายวัน + ย้อนหลัง 3 เดือน)
+// ดึงรายชื่อทีม T+7 และ R อื่นๆ จากโครงสร้างจริงของระบบคุณ
+function getT7AndOtherMembers() {
+    if (typeof TEAMS_CONFIG !== 'undefined' && TEAMS_CONFIG['t7r']) {
+        return TEAMS_CONFIG['t7r'];
+    }
+    if (typeof DEFAULT_T7R_MEMBERS !== 'undefined') {
+        return DEFAULT_T7R_MEMBERS;
+    }
+    return [];
+}
+
+// สร้าง 22 สไลด์แรกอัตโนมัติ (หน้าคี่ = รายวัน, หน้าคู่ = สถิติย้อนหลัง 3 เดือน)
+function generateDynamicSlides() {
+    const members = getT7AndOtherMembers();
+    let dynamicSlides = [];
+    
+    members.forEach((m, index) => {
+        // หน้าคี่ (รายวัน)
+        dynamicSlides.push({
+            title: `ผลการปฏิบัติงานรายวัน: ${m.fullName || m.nickName}`,
+            type: 't7_other_daily',
+            memberId: m.id,
+            memberIndex: index
+        });
+        // หน้าคู่ (สถิติย้อนหลัง 3 เดือน)
+        dynamicSlides.push({
+            title: `สถิติย้อนหลัง 3 เดือน: ${m.fullName || m.nickName}`,
+            type: 't7_other_monthly',
+            memberId: m.id,
+            memberIndex: index
+        });
+    });
+    return dynamicSlides;
+}
+
+// 19 สไลด์เดิมของคุณ
+const ORIGINAL_SLIDES = [
     { title: 'ข้อมูลสรุป ทีม 1', type: 'team_summary', teamId: 1 },
     { title: 'กราฟผลการปฏิบัติงานแต่ละด้าน ทีม 1', type: 'team_chart', teamId: 1 },
     { title: 'ข้อมูลสรุป ทีม 2', type: 'team_summary', teamId: 2 },
@@ -2722,117 +2933,235 @@ const SLIDES = [
     { title: 'กราฟผลการปฏิบัติงานแต่ละด้าน ทีม 4', type: 'team_chart', teamId: 4 },
     { title: 'ข้อมูลสรุป ทีม 5', type: 'team_summary', teamId: 5 },
     { title: 'กราฟผลการปฏิบัติงานแต่ละด้าน ทีม 5', type: 'team_chart', teamId: 5 },
+    { title: 'ผลปฏิบัติงานทีม Temp', type: 'temp_performance' },
     { title: 'กลุ่ม 20 - 31 วัน (ทีม Temp)', type: 'temp_group', min: 20, max: 31, badge: '🏆' },
     { title: 'กลุ่ม 10 - 19 วัน (ทีม Temp)', type: 'temp_group', min: 10, max: 19, badge: '⭐' },
     { title: 'กลุ่ม 1 - 9 วัน (ทีม Temp)', type: 'temp_group', min: 1, max: 9, badge: '🚀' },
+    { title: 'สรุปผล Top Performance', type: 'summary_top_perf' },
     { title: 'Top Performance (ทีม Temp)', type: 'temp_top_perf' },
-    { title: 'Top การอนุมัติผิด QC (ทีม Temp)', type: 'temp_top_qc' }, // หน้าที่ 15 เพิ่มใหม่
-    { title: 'ตารางผลรวมยอดทั้งหมด (ภาพรวม)', type: 'all_summary_table' }, // 10 อันดับแรก
-    { title: 'Top Performance (ภาพรวม)', type: 'all_top_perf' }, // 10 อันดับแรก
+    { title: 'Top การอนุมัติผิด QC (ทีม Temp)', type: 'temp_top_qc' },
+    { title: 'ตารางผลรวมยอดทั้งหมด (ภาพรวม)', type: 'all_summary_table' },
+    { title: 'Top Performance (ภาพรวม)', type: 'all_top_perf' },
     { title: 'Top การอนุมัติผิด QC (ภาพรวม)', type: 'all_top_qc' },
     { title: 'จบการนำเสนอ', type: 'closing' }
+];
+
+let SLIDES = [
+    { title: 'หน้าปก', type: 'cover' }, // <--- สไลด์แรก (Index 0) สำหรับหน้าปก
+    ...generateDynamicSlides(),          // สไลด์พนักงาน 22 หน้า (Index 1 ถึง 22)
+    { title: 'ผลปฏิบัติงานทีม TG', type: 'tg_performance' },
+    ...ORIGINAL_SLIDES                   // สไลด์เดิม 19 หน้า
 ];
 
 function prepareAllPresentationData() {
     const monthInputVal = document.getElementById('summary-month').value;
     if (!monthInputVal) return;
 
-    const [yearStr, monthStr] = monthInputVal.split('-');
-    const targetYear = parseInt(yearStr);
-    const targetMonth = parseInt(monthStr) - 1; // 0-11
+    const parts = monthInputVal.split('-');
+    const targetYear = parseInt(parts[0]);
+    const targetMonth = parseInt(parts[1]) - 1; // 0-11
 
     const startDate = new Date(targetYear, targetMonth, 1);
     const endDate = new Date(targetYear, targetMonth + 1, 0);
+    const totalDaysInMonth = endDate.getDate();
 
-    // ข้อความแสดงช่วงเวลาในพรีเซนต์ (เช่น ประจำเดือน มกราคม 2569)
     const formattedMonthName = startDate.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
-    presentationData.rangeText = `ประจำเดือน ${formattedMonthName}`;
+    presentationData.rangeText = "ประจำเดือน " + formattedMonthName;
+
+    presentationData.monthName = startDate.toLocaleDateString('th-TH', { month: 'long' });
+    presentationData.year = targetYear + 543; //
 
     const currDates = getDatesInRange(startDate, endDate);
     
-    // คำนวณช่วงเดือนก่อนหน้าอัตโนมัติ (เดือนก่อนหน้าแบบเต็มเดือน)
     const prevTargetDate = new Date(targetYear, targetMonth - 1, 1);
     const prevStart = new Date(prevTargetDate.getFullYear(), prevTargetDate.getMonth(), 1);
     const prevEnd = new Date(prevTargetDate.getFullYear(), prevTargetDate.getMonth() + 1, 0);
     const prevDates = getDatesInRange(prevStart, prevEnd);
 
-    let allMembers = [];
+    var allMembers = [];
     
-    // เตรียมตัวแปรเก็บข้อมูลกราฟคู่หน้า (2, 4, 6, 8, 10) หากยังไม่มี
-    if (!presentationData.chartPairs) presentationData.chartPairs = {};
+    if (!presentationData.chartPairs) {
+        presentationData.chartPairs = {};
+    }
 
-    for (let i = 1; i <= 5; i++) {
-        let members = TEAMS_CONFIG[i] || [];
+    presentationData.t7OtherData = [];
+
+    var t7rMembers = [];
+    if (typeof TEAMS_CONFIG !== 'undefined' && TEAMS_CONFIG['t7r']) {
+        t7rMembers = TEAMS_CONFIG['t7r'];
+    } else if (typeof DEFAULT_T7R_MEMBERS !== 'undefined') {
+        t7rMembers = DEFAULT_T7R_MEMBERS;
+    }
+    t7rMembers = t7rMembers.slice(0, 11);
+
+    // ==========================================
+    // DEBUG: ตรวจสอบข้อมูลตั้งต้นของทีม T+7
+    // ==========================================
+    console.group("=== [DEBUG] T+7 Team Data Extraction ===");
+    console.log("Target Year & Month (0-11):", targetYear, targetMonth);
+    console.log("Total Days in Month:", totalDaysInMonth);
+    console.log("t7rMembers Config:", t7rMembers);
+    console.log("masterData status:", typeof masterData !== 'undefined' ? "Loaded" : "Undefined / Missing");
+
+    t7rMembers.forEach(function(m, index) {
+        var dailyStats = [];
+        var matchCount = 0;
+
+        for (var d = 1; d <= totalDaysInMonth; d++) {
+            var totalKey = targetYear + "-" + targetMonth + "-" + m.id + "-t7rtotal-" + d;
+            var correctKey = targetYear + "-" + targetMonth + "-" + m.id + "-t7rcorrect-" + d;
+            var wrongKey = targetYear + "-" + targetMonth + "-" + m.id + "-t7rwrong-" + d;
+
+            var total = (typeof masterData !== 'undefined' && masterData[totalKey]) ? parseFloat(masterData[totalKey]) : 0;
+            var correct = (typeof masterData !== 'undefined' && masterData[correctKey]) ? parseFloat(masterData[correctKey]) : 0;
+            var wrong = (typeof masterData !== 'undefined' && masterData[wrongKey]) ? parseFloat(masterData[wrongKey]) : 0;
+            var percent = total > 0 ? parseFloat(((correct / total) * 100).toFixed(2)) : 100.00;
+
+            if (total > 0 || correct > 0 || wrong > 0) {
+                matchCount++;
+            }
+
+            dailyStats.push({
+                date: d + "/" + (targetMonth + 1) + "/" + (targetYear + 543),
+                correct: correct,
+                wrong: wrong,
+                total: total,
+                percent: percent
+            });
+        }
+
+        // กำหนด Target: เฉพาะ T+7 ใช้ 99.50% ส่วนชื่ออื่น (R1-R10) ใช้ 85.00%
+        var isT7 = (m.name === 'T+7' || m.fullName === 'T+7' || index === 0);
+        var memberTarget = isT7 ? 99.50 : 85.00;
+
+        // คำนวณผลรวมทั้งเดือนสำหรับใส่ตารางสรุป
+        var sumTotalWork = dailyStats.reduce(function(sum, item) { return sum + item.total; }, 0);
+        var sumCorrectWork = dailyStats.reduce(function(sum, item) { return sum + item.correct; }, 0);
+        var sumWrongWork = dailyStats.reduce(function(sum, item) { return sum + item.wrong; }, 0);
+        var avgPct = sumTotalWork > 0 ? parseFloat(((sumCorrectWork / sumTotalWork) * 100).toFixed(2)) : 100.00;
+
+        var monthlyStats = [];
+        for (var i = 2; i >= 0; i--) {
+            // คำนวณปีและเดือนย้อนหลังแต่ละรอบ
+            var targetD = new Date(targetYear, targetMonth - i, 1);
+            var pYear = targetD.getFullYear();
+            var pMonth = targetD.getMonth();
+            var mName = targetD.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+            
+            // หาจำนวนวันในเดือนนั้นๆ
+            var daysInMonthCount = new Date(pYear, pMonth + 1, 0).getDate();
+            var pTotal = 0, pCorrect = 0, pWrong = 0;
+
+            // วนลูปดึงข้อมูลจาก masterData ของเดือนนั้นๆ (ถ้ามี)
+            for (var d = 1; d <= daysInMonthCount; d++) {
+                var totalKey = pYear + "-" + pMonth + "-" + m.id + "-t7rtotal-" + d;
+                var correctKey = pYear + "-" + pMonth + "-" + m.id + "-t7rcorrect-" + d;
+                var wrongKey = pYear + "-" + pMonth + "-" + m.id + "-t7rwrong-" + d;
+
+                if (typeof masterData !== 'undefined') {
+                    if (masterData[totalKey]) pTotal += parseFloat(masterData[totalKey]) || 0;
+                    if (masterData[correctKey]) pCorrect += parseFloat(masterData[correctKey]) || 0;
+                    if (masterData[wrongKey]) pWrong += parseFloat(masterData[wrongKey]) || 0;
+                }
+            }
+
+            var pPct = pTotal > 0 ? parseFloat(((pCorrect / pTotal) * 100).toFixed(2)) : 100.00;
+
+            monthlyStats.push({
+                monthName: mName,
+                products: [
+                    { productId: 't7rtotal', productName: 'จำนวนที่ตรวจสอบ', work: pTotal },
+                    { productId: 't7rcorrect', productName: 'อนุมัติถูกต้อง', work: pCorrect },
+                    { productId: 't7rwrong', productName: 'อนุมัติผิด', work: pWrong },
+                    { productId: 't7rpctcorrect', productName: '% อนุมัติถูก', work: pPct },
+                    { productId: 't7rpcttagget', productName: '% Target', work: memberTarget }
+                ]
+            });
+        }
+
+        presentationData.t7OtherData.push({
+            member: m,
+            summary: {
+                totalChecked: sumTotalWork,
+                correct: sumCorrectWork,
+                wrong: sumWrongWork,
+                pctCorrect: avgPct,
+                target: memberTarget
+            },
+            daily: dailyStats,
+            monthly: monthlyStats
+        });
+    });
+
+    console.log("Final presentationData.t7OtherData Array:", presentationData.t7OtherData);
+    console.groupEnd();
+    // ==========================================
+
+    for (var i = 1; i <= 5; i++) {
+        var members = TEAMS_CONFIG[i] || [];
         allMembers = allMembers.concat(members);
         
-        // ประมวลผลข้อมูลตารางของทีม (หน้า 1, 3, 5, 7, 9)
         presentationData.teams[i] = buildStatsForTeam(members, currDates);
 
-        // แมปข้อมูลจากตารางหน้าคี่มาใส่กราฟหน้าคู่ (หน้า 2, 4, 6, 8, 10 ตามลำดับทีม 1-5)
-        const teamStats = presentationData.teams[i];
-        const chartPageNum = i * 2; // ทีม 1 -> หน้า 2, ทีม 2 -> หน้า 4, ..., ทีม 5 -> หน้า 10
+        var teamStats = presentationData.teams[i];
+        var chartPageNum = (i * 2) + 22;
         
         presentationData.chartPairs[chartPageNum] = {
-            mlpr: teamStats.ml || teamStats.ML || 0,       // ยอด ML -> MLPR
-            mnpr: teamStats.mn || teamStats.MN || 0,       // ยอด MN -> MNPR
-            reconfirm: teamStats.rcf || teamStats.RCF || 0,// ยอด RCF -> Reconfirm
-            qcError: teamStats.qc || teamStats.QC || 0      // ยอด QC -> ยอดอนุมัติผิด (QC)
+            mlpr: teamStats.ml || teamStats.ML || 0,
+            mnpr: teamStats.mn || teamStats.MN || 0,
+            reconfirm: teamStats.rcf || teamStats.RCF || 0,
+            qcError: teamStats.qc || teamStats.QC || 0
         };
     }
     
     presentationData.all = buildStatsForTeam(allMembers, currDates);
     
-    // แปลงวันที่เป็น string รูปแบบ YYYY-MM-DD เพื่อส่งให้ buildTempTeamStats ทำงานต่อได้ปกติ
-    const startStrFormat = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
-    const endStrFormat = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+    var startStrFormat = startDate.getFullYear() + "-" + String(startDate.getMonth() + 1).padStart(2, '0') + "-" + String(startDate.getDate()).padStart(2, '0');
+    var endStrFormat = endDate.getFullYear() + "-" + String(endDate.getMonth() + 1).padStart(2, '0') + "-" + String(endDate.getDate()).padStart(2, '0');
     presentationData.temp = buildTempTeamStats(startStrFormat, endStrFormat);
 
-    let prevAll = buildStatsForTeam(allMembers, prevDates);
+    var prevAll = buildStatsForTeam(allMembers, prevDates);
     presentationData.prevRankMapPerf = {};
     presentationData.prevRankMapQc = {};
 
-    // 1. เก็บอันดับเดือนก่อนหน้าของทีมปกติ (All)
     if (prevAll && prevAll.topPerf) {
-        prevAll.topPerf.forEach((s, idx) => { 
+        prevAll.topPerf.forEach(function(s, idx) { 
             presentationData.prevRankMapPerf[s.member.id] = idx + 1; 
         });
     }
     if (prevAll && prevAll.topQc) {
-        prevAll.topQc.forEach((s, idx) => { 
+        prevAll.topQc.forEach(function(s, idx) { 
             presentationData.prevRankMapQc[s.member.id] = idx + 1; 
         });
     }
 
-    // ==========================================
-    // 2. ดึงข้อมูลทีม Temp เดือนก่อนหน้า (แมปบันทึกทุก Key)
-    // ==========================================
-    const prevStartStrFormat = `${prevStart.getFullYear()}-${String(prevStart.getMonth() + 1).padStart(2, '0')}-${String(prevStart.getDate()).padStart(2, '0')}`;
-    const prevEndStrFormat = `${prevEnd.getFullYear()}-${String(prevEnd.getMonth() + 1).padStart(2, '0')}-${String(prevEnd.getDate()).padStart(2, '0')}`;
+    var prevStartStrFormat = prevStart.getFullYear() + "-" + String(prevStart.getMonth() + 1).padStart(2, '0') + "-" + String(prevStart.getDate()).padStart(2, '0');
+    var prevEndStrFormat = prevEnd.getFullYear() + "-" + String(prevEnd.getMonth() + 1).padStart(2, '0') + "-" + String(prevEnd.getDate()).padStart(2, '0');
     
-    let prevTemp = buildTempTeamStats(prevStartStrFormat, prevEndStrFormat);
+    var prevTemp = buildTempTeamStats(prevStartStrFormat, prevEndStrFormat);
     presentationData.prevTemp = prevTemp;
 
     presentationData.prevRankMapPerfTemp = presentationData.prevRankMapPerfTemp || {};
     presentationData.prevRankMapQcTemp = presentationData.prevRankMapQcTemp || {};
 
-    // Helper บันทึกอันดับลง Map ด้วยทุก Key ที่เป็นไปได้ (id, userCode, fullName)
-    const setRankToAllKeys = (targetMap, s, rank) => {
+    var setRankToAllKeys = function(targetMap, s, rank) {
         if (!targetMap || !s) return;
-        const keys = [
+        var keys = [
             s.id,
             s.userCode,
             s.fullName,
-            s.member?.id,
-            s.member?.userCode,
-            s.member?.fullName
-        ].filter(Boolean);
-
-        keys.forEach(k => {
-            targetMap[k] = rank;
-        });
+            s.member ? s.member.id : null,
+            s.member ? s.member.userCode : null,
+            s.member ? s.member.fullName : null
+        ];
+        for (var k = 0; k < keys.length; k++) {
+            if (keys[k]) {
+                targetMap[keys[k]] = rank;
+            }
+        }
     };
 
-    let prevTempList = [];
+    var prevTempList = [];
     if (Array.isArray(prevTemp)) {
         prevTempList = prevTemp;
     } else if (prevTemp && Array.isArray(prevTemp.members)) {
@@ -2842,39 +3171,37 @@ function prepareAllPresentationData() {
     }
 
     if (prevTempList.length > 0) {
-        // 1. จัดอันดับ Perf (Approve)
-        let sortedPerf = [...prevTempList].sort((a, b) => {
-            const valA = (a.totalApprove !== undefined ? a.totalApprove : a.approve) || 0;
-            const valB = (b.totalApprove !== undefined ? b.totalApprove : b.approve) || 0;
+        var sortedPerf = prevTempList.slice().sort(function(a, b) {
+            var valA = (a.totalApprove !== undefined ? a.totalApprove : a.approve) || 0;
+            var valB = (b.totalApprove !== undefined ? b.totalApprove : b.approve) || 0;
             if (valB !== valA) return valB - valA;
             return (a.fullName || '').localeCompare(b.fullName || '');
         });
 
-        sortedPerf.forEach((s, idx) => {
-            const rank = idx + 1;
+        sortedPerf.forEach(function(s, idx) {
+            var rank = idx + 1;
             setRankToAllKeys(presentationData.prevRankMapPerfTemp, s, rank);
             setRankToAllKeys(presentationData.prevRankMapPerf, s, rank);
         });
 
-        // 2. จัดอันดับ QC
-        let sortedQc = [...prevTempList].sort((a, b) => {
-            const valA = (a.totalQc !== undefined ? a.totalQc : a.qc) || 0;
-            const valB = (b.totalQc !== undefined ? b.totalQc : b.qc) || 0;
-            if (valA !== valB) return valA - valB;
+        var sortedQc = prevTempList.slice().sort(function(a, b) {
+            var valA = (a.totalQc !== undefined ? a.totalQc : a.qc) || 0;
+            var valB = (b.totalQc !== undefined ? b.totalQc : b.qc) || 0;
+            if (valA !== valB) return valB - valA;
             return (a.fullName || '').localeCompare(b.fullName || '');
         });
 
-        sortedQc.forEach((s, idx) => {
-            const rank = idx + 1;
+        sortedQc.forEach(function(s, idx) {
+            var rank = idx + 1;
             setRankToAllKeys(presentationData.prevRankMapQcTemp, s, rank);
             setRankToAllKeys(presentationData.prevRankMapQc, s, rank);
         });
     } else if (prevTemp && (prevTemp.topPerf || prevTemp.topQc)) {
         if (Array.isArray(prevTemp.topPerf)) {
-            prevTemp.topPerf.forEach((s, idx) => setRankToAllKeys(presentationData.prevRankMapPerfTemp, s, idx + 1));
+            prevTemp.topPerf.forEach(function(s, idx) { setRankToAllKeys(presentationData.prevRankMapPerfTemp, s, idx + 1); });
         }
         if (Array.isArray(prevTemp.topQc)) {
-            prevTemp.topQc.forEach((s, idx) => setRankToAllKeys(presentationData.prevRankMapQcTemp, s, idx + 1));
+            prevTemp.topQc.forEach(function(s, idx) { setRankToAllKeys(presentationData.prevRankMapQcTemp, s, idx + 1); });
         }
     }
 } 
@@ -2984,6 +3311,21 @@ function openPresentationSlide() {
         showToast("กรุณากด 'ดึงข้อมูลและรวมยอด' เพื่อเตรียมข้อมูลก่อนนำเสนอ", "error");
         return;
     }
+
+    // สั่งเปิด Full Screen อัตโนมัติเมื่อเริ่มนำเสนอ
+    const elem = document.documentElement;
+    if (!document.fullscreenElement) {
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen().catch(err => {
+                console.warn(`ไม่สามารถเปิดโหมดเต็มจอได้: ${err.message}`);
+            });
+        } else if (elem.webkitRequestFullscreen) { /* Safari */
+            elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) { /* IE/Edge */
+            elem.msRequestFullscreen();
+        }
+    }
+
     const modal = document.getElementById('presentation-modal');
     modal.classList.remove('hidden'); modal.classList.add('flex');
     setTimeout(() => { modal.classList.remove('opacity-0'); modal.classList.add('opacity-100'); }, 50);
@@ -2993,68 +3335,30 @@ function openPresentationSlide() {
 
 function closePresentation() {
     const modal = document.getElementById('presentation-modal');
-    modal.classList.remove('opacity-100'); modal.classList.add('opacity-0');
-    setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 500);
+    if (!modal || modal.classList.contains('hidden')) return;
+
+    // ออกจากโหมด Full Screen เฉพาะเมื่อยังอยู่ในโหมดเต็มจอ
+    if (document.fullscreenElement) {
+        if (document.exitFullscreen) {
+            document.exitFullscreen().catch(err => console.warn(err));
+        } else if (document.webkitExitFullscreen) { /* Safari */
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) { /* IE/Edge */
+            document.msExitFullscreen();
+        }
+    }
+
+    modal.classList.remove('opacity-100'); 
+    modal.classList.add('opacity-0');
+    setTimeout(() => { 
+        modal.classList.add('hidden'); 
+        modal.classList.remove('flex'); 
+    }, 500);
     clearCharts();
 }
 
-// ฟังก์ชันเล่นแอนิเมชันแมวเปลี่ยนหน้า
-function playCatPageTurnAnimation(onMidpointCallback) {
-    const transitionOverlay = document.getElementById('cat-page-transition');
-    const catRunner = document.getElementById('cat-runner');
-    const pageCurl = document.getElementById('cat-page-curl');
-
-    if (!transitionOverlay || !catRunner || !pageCurl) {
-        if (onMidpointCallback) onMidpointCallback();
-        return;
-    }
-
-    // แสดง Overlay และเริ่ม Animation
-    transitionOverlay.classList.remove('hidden');
-    catRunner.classList.remove('animate-cat-run');
-    pageCurl.classList.remove('animate-page-curl');
-
-    // Force Reflow เพื่อ Reset Animation
-    void catRunner.offsetWidth;
-
-    catRunner.classList.add('animate-cat-run');
-    pageCurl.classList.add('animate-page-curl');
-
-    // สลับเนื้อหาสไลด์ตอนกึ่งกลางแอนิเมชัน (ประมาณ 350ms)
-    setTimeout(() => {
-        if (typeof onMidpointCallback === 'function') {
-            onMidpointCallback();
-        }
-    }, 700);
-
-    // ปิด Overlay เมื่อแอนิเมชันจบลง (750ms)
-    setTimeout(() => {
-        transitionOverlay.classList.add('hidden');
-        catRunner.classList.remove('animate-cat-run');
-        pageCurl.classList.remove('animate-page-curl');
-    }, 800);
-}
-
-// วิธีการนำไปใช้กับปุ่ม prevSlide() และ nextSlide() เดิมของคุณ:
-function nextSlide() {
-    // เช็กว่ามีสไลด์ถัดไปหรือไม่ ก่อนเริ่มเล่นแอนิเมชัน
-    if (currentSlideIndex < SLIDES.length - 1) {
-        playCatPageTurnAnimation(() => {
-            currentSlideIndex++;
-            renderSlide();
-        });
-    }
-}
-
-function prevSlide() {
-    // เช็กว่ามีสไลด์ก่อนหน้าหรือไม่ ก่อนเริ่มเล่นแอนิเมชัน
-    if (currentSlideIndex > 0) {
-        playCatPageTurnAnimation(() => {
-            currentSlideIndex--;
-            renderSlide();
-        });
-    }
-}
+function nextSlide() { if (currentSlideIndex < SLIDES.length - 1) { currentSlideIndex++; renderSlide(); } }
+function prevSlide() { if (currentSlideIndex > 0) { currentSlideIndex--; renderSlide(); } }
 
 function renderSlide() {
     clearCharts();
@@ -3063,10 +3367,317 @@ function renderSlide() {
     document.getElementById('slide-title').textContent = slide.title;
     const contentBox = document.getElementById('slide-content');
     contentBox.innerHTML = '';
-    contentBox.className = "w-full h-full max-w-[1400px] bg-white/95 backdrop-blur-md rounded-[2rem] shadow-2xl p-6 md:p-8 overflow-y-auto border border-white/60 animate-slide";
+    contentBox.className = "w-full h-full max-w-[1400px] bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-100/40 backdrop-blur-md rounded-[2rem] shadow-2xl p-6 md:p-8 overflow-y-auto border border-slate-200/80 animate-slide";
 
     const thClass = "p-3 font-bold border-b border-slate-200";
     const tdClass = "p-3 border-b border-slate-100 text-center";
+
+// --- หน้าแรก: หน้าปกสไลด์ ---
+if (currentSlideIndex === 0) {
+    const displayMonth = presentationData.monthName || '';
+    const displayYear = presentationData.year || '';
+
+    contentBox.innerHTML = `
+    <div class="relative flex flex-col items-center justify-center h-full p-8 text-center overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-900 text-white rounded-[2rem] shadow-2xl">
+        <!-- แสงตกแต่งพื้นหลัง -->
+        <div class="absolute -top-24 -left-24 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
+        
+        <!-- เนื้อหาหน้าปก -->
+        <div class="z-10 mb-16">
+            <h1 class="text-4xl lg:text-6xl font-black tracking-tight mb-4 drop-shadow-lg text-white">
+                ผลประกอบการประจำเดือน ${displayMonth} ${displayYear}
+            </h1>
+            <p class="text-lg text-slate-300 font-medium tracking-wide">รายงานและสรุปผลการปฏิบัติงาน Temp และ TG</p>
+        </div>
+
+        <!-- ถนนจำลองและอนิเมชั่นรถวิ่งด้านล่าง (ขยายพื้นที่ถนนให้ใหญ่ขึ้น h-24) -->
+        <div class="absolute bottom-0 left-0 w-full h-24 overflow-hidden border-t-2 border-slate-700/60 bg-slate-950/80 backdrop-blur-md flex items-center shadow-inner">
+            <!-- เส้นประกลางถนน -->
+            <div class="absolute w-full border-b-4 border-dashed border-amber-400/80 top-1/2 -translate-y-1/2"></div>
+            <!-- รถวิ่งอนิเมชั่น (เพิ่มขนาดเป็น text-5xl และใช้ scaleX(-1) กลับด้านหันหน้าถูกฝั่ง) -->
+            <div class="absolute text-5xl filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)]" style="animation: carDrive 8s linear infinite;">
+                🚗
+            </div>
+        </div>
+        
+        <style>
+            @keyframes carDrive {
+                0% { transform: translateX(-120px) scaleX(-1); }
+                100% { transform: translateX(calc(100vw + 120px)) scaleX(-1); }
+            }
+        </style>
+    </div>`;
+    return;
+}
+
+// --- หน้าผลปฏิบัติงานทีม TG ---
+else if (slide.type === 'tg_performance') {
+    contentBox.innerHTML = `
+    <div class="relative flex flex-col items-center justify-center h-full p-8 text-center overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-900 text-white rounded-[2rem] shadow-2xl">
+        <!-- แสงตกแต่งพื้นหลัง -->
+        <div class="absolute -top-24 -left-24 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
+        
+        <!-- หัวข้อสไลด์ (อยู่ตรงกลางหน้า) -->
+        <div class="z-10">
+            <h2 class="text-4xl lg:text-6xl font-black tracking-tight drop-shadow-lg text-white">
+                📊 ผลปฏิบัติงานทีม TG
+            </h2>
+        </div>
+    </div>`;
+}
+
+// --- หน้าผลปฏิบัติงานทีม Temp ---
+else if (slide.type === 'temp_performance') {
+    contentBox.innerHTML = `
+    <div class="relative flex flex-col items-center justify-center h-full p-8 text-center overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-900 text-white rounded-[2rem] shadow-2xl">
+        <!-- แสงตกแต่งพื้นหลัง -->
+        <div class="absolute -top-24 -left-24 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
+        
+        <!-- หัวข้อสไลด์ (อยู่ตรงกลางหน้า) -->
+        <div class="z-10">
+            <h2 class="text-4xl lg:text-6xl font-black tracking-tight drop-shadow-lg text-white">
+                📊 ผลปฏิบัติงานทีม Temp
+            </h2>
+        </div>
+    </div>`;
+}
+
+// --- หน้าสรุปผล Top Performance ---
+else if (slide.type === 'summary_top_perf') {
+    contentBox.innerHTML = `
+    <div class="relative flex flex-col items-center justify-center h-full p-8 text-center overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-900 text-white rounded-[2rem] shadow-2xl">
+        <!-- แสงตกแต่งพื้นหลัง -->
+        <div class="absolute -top-24 -left-24 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
+        
+        <!-- หัวข้อสไลด์ (อยู่ตรงกลางหน้า แบบแบ่ง 3 บรรทัด) -->
+        <div class="z-10 space-y-4">
+            <h2 class="text-4xl lg:text-6xl font-black tracking-tight drop-shadow-lg text-white">
+                🏆 สรุปผล Top Performance
+            </h2>
+            <div class="text-4xl lg:text-6xl font-black tracking-tight drop-shadow-lg text-white">
+                และ
+            </div>
+            <h2 class="text-4xl lg:text-6xl font-black tracking-tight drop-shadow-lg text-white">
+                🚨 Top การอนุมัติผิด
+            </h2>
+        </div>
+    </div>`;
+}
+
+// --- หน้าคี่: ตาราง 5 เมตริกหลัก + กราฟผสมรายวัน ---
+else if (slide.type === 't7_other_daily') {
+    let dataIndex = slide.memberIndex !== undefined ? slide.memberIndex : 0;
+    if (slide.memberId) {
+        const foundIdx = presentationData.t7OtherData.findIndex(item => item.member.id === slide.memberId);
+        if (foundIdx !== -1) dataIndex = foundIdx;
+    }
+
+    const pData = presentationData.t7OtherData[dataIndex] || presentationData.t7OtherData[0] || { summary: {}, daily: [], member: {} };
+    const summary = pData.summary || {};
+    const member = pData.member || {};
+    const targetId = member.id || dataIndex;
+    
+    let totalInspected = summary.totalChecked || 0;
+    let totalCorrect = summary.correct || 0;
+    let totalWrong = summary.wrong || 0;
+    let avgPercent = summary.pctCorrect !== undefined ? summary.pctCorrect : 100.00;
+    let targetPercent = summary.target || staffTargetMap?.[targetId] || 99.50;
+    let isPass = parseFloat(avgPercent) >= targetPercent;
+    let nickDisplay = member.nickName ? `(${member.nickName})` : '';
+
+    contentBox.innerHTML = `
+    <div class="h-full flex flex-col gap-4">
+        <!-- การ์ดตารางข้อมูล -->
+        <div class="bg-white/90 backdrop-blur-md rounded-2xl p-5 border border-slate-200/80 shadow-xl shadow-indigo-500/5">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+                <h3 class="text-lg lg:text-xl font-black text-slate-900 flex items-center gap-3">
+                    <span class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-violet-600 text-white flex items-center justify-center shadow-lg shadow-indigo-500/30 text-lg">📊</span>
+                    <span class="bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-800 bg-clip-text text-transparent">${member.fullName || member.name || 'หมวดงาน'} <span class="text-indigo-600 font-bold">${nickDisplay}</span></span>
+                </h3>
+                <!-- สไตล์ป้ายตราสแตรมป์ (Rubber Stamp Style) -->
+                <div class="px-3 py-1 rounded-lg border-2 font-black text-sm tracking-widest uppercase select-none shadow-sm ${isPass ? 'border-emerald-600 text-emerald-600 bg-emerald-50/50 rotate-2' : 'border-rose-600 text-rose-600 bg-rose-50/50 -rotate-2'}">
+                    ${isPass ? 'PASS' : 'FAIL'}
+                </div>
+            </div>
+            <div class="overflow-hidden rounded-xl border border-slate-200/70 shadow-sm">
+                <table class="w-full text-sm border-collapse">
+                    <!-- ปรับโทนสีหัวตารางให้มีสีสันละมุนขึ้น -->
+                    <thead class="bg-gradient-to-r from-indigo-50/80 via-blue-50/50 to-slate-50 text-slate-700 font-bold uppercase tracking-wider text-xs">
+                        <tr>
+                            <th class="p-3 text-left pl-5 border-b border-slate-200">Product</th>
+                            <th class="p-3 text-right pr-5 border-b border-slate-200">รวมงาน</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 bg-white">
+                        <tr class="hover:bg-slate-50/80 transition-colors bg-slate-50/30">
+                            <td class="p-3 pl-5 font-semibold text-slate-600 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-slate-400"></span>จำนวนที่ตรวจสอบ
+                            </td>
+                            <td class="p-3 pr-5 text-right font-black text-slate-800 text-base">${totalInspected.toLocaleString()}</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50/80 transition-colors bg-emerald-50/20">
+                            <td class="p-3 pl-5 font-semibold text-emerald-700 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>อนุมัติถูกต้อง
+                            </td>
+                            <td class="p-3 pr-5 text-right font-black text-emerald-600 text-base">${totalCorrect.toLocaleString()}</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50/80 transition-colors bg-rose-50/20">
+                            <td class="p-3 pl-5 font-semibold text-rose-700 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-rose-500"></span>อนุมัติผิด
+                            </td>
+                            <td class="p-3 pr-5 text-right font-black text-rose-600 text-base">${totalWrong.toLocaleString()}</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50/80 transition-colors bg-indigo-50/30">
+                            <td class="p-3 pl-5 font-bold text-indigo-900 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-indigo-500"></span>% อนุมัติถูก
+                            </td>
+                            <td class="p-3 pr-5 text-right font-black text-indigo-700 text-base">${avgPercent}%</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50/80 transition-colors bg-amber-50/20">
+                            <td class="p-3 pl-5 font-bold text-amber-800 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-amber-500"></span>% Target
+                            </td>
+                            <td class="p-3 pr-5 text-right font-black text-amber-600 text-base">${targetPercent}%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- การ์ดแสดงกราฟ -->
+        <div class="flex-1 bg-white/80 backdrop-blur-md rounded-2xl p-4 border border-slate-200/80 shadow-xl shadow-indigo-500/5 flex flex-col">
+            <h4 class="font-bold text-slate-700 text-sm mb-2 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-indigo-600"></span> กราฟแสดงยอดอนุมัติถูกต้อง/ผิด และ % อนุมัติถูกรายวัน
+            </h4>
+            <div id="chart-daily-${targetId}" class="w-full flex-1 min-h-[220px]"></div>
+        </div>
+    </div>`;
+
+    setTimeout(() => {
+        renderSlideDailyMixedChart(targetId, pData, targetPercent);
+    }, 300);
+}
+
+// --- หน้าคู่: ตาราง 4 คอลัมน์ + กราฟผสมรายเดือน ---
+else if (slide.type === 't7_other_monthly') {
+    let dataIndex = slide.memberIndex !== undefined ? slide.memberIndex : 0;
+    if (slide.memberId) {
+        const foundIdx = presentationData.t7OtherData.findIndex(item => item.member.id === slide.memberId);
+        if (foundIdx !== -1) dataIndex = foundIdx;
+    }
+
+    const pData = presentationData.t7OtherData[dataIndex] || presentationData.t7OtherData[0] || { summary: {}, monthly: [], member: {} };
+    const months = pData.monthly || [];
+    const member = pData.member || {};
+    const summary = pData.summary || {};
+    const targetId = member.id || dataIndex;
+    let nickDisplay = member.nickName ? `(${member.nickName})` : '';
+    let targetPercent = summary.target || staffTargetMap?.[targetId] || (member.name === 'T+7' || dataIndex === 0 ? 99.50 : 85.00);
+
+    const sampleProducts = months[2]?.products || months[0]?.products || [
+        { productName: 'จำนวนที่ตรวจสอบ', productId: 't7rtotal' },
+        { productName: 'อนุมัติถูกต้อง', productId: 't7rcorrect' },
+        { productName: 'อนุมัติผิด', productId: 't7rwrong' },
+        { productName: '% อนุมัติถูก', productId: 't7rpctcorrect' },
+        { productName: '% Target', productId: 't7rpcttagget' }
+    ];
+
+    const formatTableVal = (val, isPct) => {
+        if (isPct) return val;
+        const num = parseFloat(String(val).replace(/,/g, ''));
+        return !isNaN(num) && num > 99 ? num.toLocaleString() : val;
+    };
+
+    contentBox.innerHTML = `
+    <div class="h-full flex flex-col gap-4">
+        <!-- การ์ดตารางสถิติย้อนหลัง -->
+        <div class="bg-white/90 backdrop-blur-md rounded-2xl p-5 border border-slate-200/80 shadow-xl shadow-indigo-500/5">
+            <h3 class="text-base lg:text-lg font-extrabold text-slate-800 mb-4 pb-2 border-b border-slate-100 flex items-center gap-2.5">
+                <span class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-500 text-white flex items-center justify-center shadow-md shadow-indigo-500/20 text-base">📈</span>
+                <span>สถิติย้อนหลัง 3 เดือน: <span class="text-indigo-600">${member.fullName || member.name || 'พนักงาน'} ${nickDisplay}</span></span>
+            </h3>
+            <div class="overflow-hidden rounded-xl border border-slate-200/70 shadow-sm">
+                <table class="w-full text-sm border-collapse">
+                    <thead class="bg-gradient-to-r from-indigo-50/80 via-blue-50/50 to-slate-50 text-slate-700 font-bold uppercase tracking-wider text-xs">
+                        <tr>
+                            <th class="p-3 text-left pl-5 border-b border-slate-200">Product</th>
+                            <th class="p-3 text-center border-b border-slate-200">${months[0]?.monthName || 'เดือนย้อน 2 เดือน'}</th>
+                            <th class="p-3 text-center border-b border-slate-200">${months[1]?.monthName || 'เดือนย้อน 1 เดือน'}</th>
+                            <th class="p-3 text-center border-b border-slate-200 text-indigo-700 bg-indigo-100/50">${months[2]?.monthName || 'เดือนปัจจุบัน'}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 bg-white">
+                        ${sampleProducts.map((prod, pIdx) => {
+                            const isPct = prod.productId === 't7rpctcorrect' || prod.productId === 't7rpcttagget';
+                            const val0 = months[0]?.products[pIdx]?.work || 0;
+                            const val1 = months[1]?.products[pIdx]?.work || 0;
+                            const val2 = months[2]?.products[pIdx]?.work || 0;
+
+                            let extraBadge = '';
+                            if (prod.productId === 't7rwrong') {
+                                const numPrev = parseFloat(String(val1).replace(/,/g, '')) || 0;
+                                const numCurr = parseFloat(String(val2).replace(/,/g, '')) || 0;
+                                
+                                let diffPct = 0;
+                                if (numPrev > 0) {
+                                    diffPct = ((numCurr - numPrev) / numPrev) * 100;
+                                } else {
+                                    diffPct = numCurr * 100;
+                                }
+
+                                const absPct = Math.abs(diffPct).toFixed(1);
+                                const isIncreased = numCurr > numPrev;
+                                const arrow = isIncreased ? '↑' : (numCurr < numPrev ? '↓' : '');
+                                const badgeColor = isIncreased ? 'text-rose-600 bg-rose-50 border border-rose-200' : (numCurr < numPrev ? 'text-emerald-600 bg-emerald-50 border border-emerald-200' : 'text-slate-500 bg-slate-100');
+                                
+                                if (numCurr !== numPrev) {
+                                    extraBadge = `<div class="mt-1.5"><span class="px-2.5 py-1 rounded-md text-xs md:text-sm font-black ${badgeColor} inline-flex items-center gap-1">${arrow} ${absPct}% จากเดือนก่อน</span></div>`;
+                                } else {
+                                    extraBadge = `<div class="mt-1.5"><span class="px-2.5 py-1 rounded-md text-xs md:text-sm font-black text-slate-500 bg-slate-100 border border-slate-200 inline-flex items-center gap-1">ยอดเท่ากับเดือนที่แล้ว</span></div>`;
+                                }
+                            }
+
+                            // เพิ่มสีพื้นหลังเบาๆ แยกตามประเภทแถว
+                            let rowBg = 'hover:bg-slate-50/80 transition-colors';
+                            if (prod.productId === 't7rcorrect') rowBg += ' bg-emerald-50/10';
+                            if (prod.productId === 't7rwrong') rowBg += ' bg-rose-50/10';
+                            if (isPct) rowBg += ' bg-indigo-50/10';
+
+                            return `
+                            <tr class="${rowBg}">
+                                <td class="p-3 pl-5 font-bold text-slate-700">${prod.productName}</td>
+                                <td class="p-3 text-center ${isPct ? 'font-semibold text-slate-600' : 'text-slate-600'}">${formatTableVal(val0, isPct)}${isPct ? '%' : ''}</td>
+                                <td class="p-3 text-center ${isPct ? 'font-semibold text-slate-600' : 'text-slate-600'}">${formatTableVal(val1, isPct)}${isPct ? '%' : ''}</td>
+                                <td class="p-3 text-center font-black text-indigo-600 bg-indigo-50/30">
+                                    <div class="flex flex-col items-center justify-center">
+                                        <span>${formatTableVal(val2, isPct)}${isPct ? '%' : ''}</span>
+                                        ${extraBadge}
+                                    </div>
+                                </td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- การ์ดแสดงกราฟรายเดือน -->
+        <div class="flex-1 bg-white/80 backdrop-blur-md rounded-2xl p-4 border border-slate-200/80 shadow-xl shadow-indigo-500/5 flex flex-col">
+            <h4 class="font-bold text-slate-700 text-sm mb-2 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-blue-600"></span> กราฟเปรียบเทียบผลงานรายเดือน (3 เดือนย้อนหลัง)
+            </h4>
+            <div id="chart-monthly-${targetId}" class="w-full flex-1 min-h-[220px]"></div>
+        </div>
+    </div>`;
+
+    setTimeout(() => {
+        renderSlideMonthlyChartHelper(targetId, months, targetPercent);
+    }, 300);
+}
 
     // 1. หน้าข้อมูลตารางสรุป (ทีม 1-5) -> แสดงผลสำหรับหน้า 1, 3, 5, 7, 9
     if (slide.type === 'team_summary') {
@@ -3824,6 +4435,322 @@ async function finalizeAndDownloadPDF() {
     clearCollectedPDFSlides();
 }
 
+function renderSlideDailyMixedChart(memberId, pData, targetPercent) {
+    const dom = document.getElementById(`chart-daily-${memberId}`);
+    if (!dom) return;
+    
+    let chart = echarts.init(dom);
+    if (typeof slideChartInstances !== 'undefined') {
+        slideChartInstances.push(chart);
+    }
+
+    const dailyList = (pData && Array.isArray(pData.daily) && pData.daily.length > 0) ? pData.daily : [
+        { 
+            date: 'รวมทั้งสิ้น', 
+            correct: pData?.summary?.correct || 0, 
+            wrong: pData?.summary?.wrong || 0, 
+            percent: parseFloat(pData?.summary?.pctCorrect || 100) 
+        }
+    ];
+
+    const days = dailyList.map(d => d.date || '-');
+    const correctData = dailyList.map(d => d.correct || 0);
+    const wrongData = dailyList.map(d => d.wrong || 0);
+    const percentData = dailyList.map(d => d.percent || 100);
+
+    const checkIsT7 = (val) => {
+        if (!val) return false;
+        const clean = String(val).toLowerCase().replace(/[^a-z0-9]/g, '');
+        return clean.includes('t7');
+    };
+
+    let minPercent = 10;
+    const memberObj = pData?.member || (typeof presentationData !== 'undefined' && presentationData.t7OtherData ? presentationData.t7OtherData.find(item => item?.member?.id === memberId)?.member : null);
+    
+    if (memberObj) {
+        if (checkIsT7(memberObj.fullName) || checkIsT7(memberObj.name) || checkIsT7(memberObj.group) || checkIsT7(memberObj.role) || checkIsT7(memberObj.nickName) || checkIsT7(memberObj.id)) {
+            minPercent = 97;
+        }
+    } else {
+        if (typeof presentationData !== 'undefined' && presentationData.t7OtherData) {
+            const foundItem = presentationData.t7OtherData.find(item => item?.member?.id === memberId);
+            if (foundItem && foundItem.member && (checkIsT7(foundItem.member.fullName) || checkIsT7(foundItem.member.id))) {
+                minPercent = 97;
+            } else if (presentationData.t7OtherData.length > 0 && presentationData.t7OtherData[0]?.member?.id === memberId) {
+                minPercent = 97;
+            }
+        }
+        if (checkIsT7(memberId)) {
+            minPercent = 97;
+        }
+    }
+
+    const isT7 = (minPercent === 97);
+
+    chart.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        legend: { data: ['ยอดถูกต้อง', 'ยอดผิด', '% อนุมัติถูก', 'Target'], textStyle: { fontSize: 11 } },
+        grid: { top: '18%', bottom: '12%', left: '6%', right: '5%' },
+        xAxis: [{ type: 'category', data: days, axisLabel: { fontSize: 11, interval: 0, rotate: 30 }, splitLine: { show: false } }],
+        yAxis: [
+            {
+                type: 'value',
+                name: 'จำนวนงาน',
+                position: 'left',
+                max: function (value) {
+                    return Math.ceil(value.max * 1.2); 
+                },
+                axisLabel: { showMaxLabel: false },
+                splitLine: { show: false }
+            },
+            {
+                type: 'value',
+                name: '',
+                min: minPercent,
+                max: 100,
+                position: 'right',
+                axisLabel: { 
+                    formatter: '{value}%',
+                    showMaxLabel: false 
+                },
+                splitLine: { show: false }
+            }
+        ],
+        series: [
+            { 
+                name: 'ยอดถูกต้อง', 
+                type: 'bar', 
+                stack: 'total', 
+                data: correctData, 
+                itemStyle: { 
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: '#34d399' },
+                        { offset: 1, color: '#059669' }
+                    ]),
+                    shadowColor: 'rgba(0, 0, 0, 0.15)',
+                    shadowBlur: 5,
+                    shadowOffsetX: 2,
+                    shadowOffsetY: 2
+                }, 
+                label: { 
+                    show: true, 
+                    position: 'inside', 
+                    fontSize: 10, // ขนาดสำหรับรายวัน (พอดีกับช่องที่มีหลายแท่ง)
+                    color: '#ffffff',
+                    textBorderColor: 'rgba(0, 0, 0, 0.7)',
+                    textBorderWidth: 2,
+                    formatter: function(params) {
+                        return params.value > 99 ? Number(params.value).toLocaleString() : params.value;
+                    } 
+                } 
+            },
+            { 
+                name: 'ยอดผิด', 
+                type: 'bar', 
+                stack: 'total', 
+                data: wrongData, 
+                barMinHeight: isT7 ? 7 : 0, 
+                itemStyle: { 
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: '#f87171' },
+                        { offset: 1, color: '#dc2626' }
+                    ]),
+                    shadowColor: 'rgba(0, 0, 0, 0.15)',
+                    shadowBlur: 5,
+                    shadowOffsetX: 2,
+                    shadowOffsetY: 2
+                }, 
+                label: { 
+                    show: true, 
+                    position: 'top', 
+                    fontSize: 10,
+                    formatter: function(params) {
+                        return params.value > 99 ? Number(params.value).toLocaleString() : params.value;
+                    } 
+                } 
+            },
+            { 
+                name: '% อนุมัติถูก', 
+                type: 'line', 
+                yAxisIndex: 1, 
+                data: percentData, 
+                itemStyle: { color: '#3b82f6' }, 
+                lineStyle: { width: 3, shadowColor: 'rgba(59, 130, 246, 0.4)', shadowBlur: 6 }, 
+                symbolSize: 7, 
+                label: { show: true, position: 'top', formatter: '{c}%', fontSize: 10 } 
+            },
+            { 
+                name: 'Target', 
+                type: 'line', 
+                yAxisIndex: 1, 
+                data: days.map(() => targetPercent), 
+                lineStyle: { type: 'dashed', color: '#f59e0b', width: 2 }, 
+                symbol: 'none' 
+            }
+        ]
+    });
+}
+
+function renderSlideMonthlyChartHelper(memberId, months, targetPercent) {
+    const dom = document.getElementById(`chart-monthly-${memberId}`);
+    if (!dom) return;
+    
+    let chart = echarts.init(dom);
+    if (typeof slideChartInstances !== 'undefined') {
+        slideChartInstances.push(chart);
+    }
+
+    const monthLabels = months.map(m => m.monthName);
+    
+    const correctWorkPerMonth = months.map(m => {
+        if (!m || !Array.isArray(m.products)) return 0;
+        const p = m.products.find(item => item.productId === 't7rcorrect');
+        return p ? parseFloat(String(p.work || 0).replace(/,/g, '')) || 0 : 0;
+    });
+
+    const wrongWorkPerMonth = months.map(m => {
+        if (!m || !Array.isArray(m.products)) return 0;
+        const p = m.products.find(item => item.productId === 't7rwrong');
+        return p ? parseFloat(String(p.work || 0).replace(/,/g, '')) || 0 : 0;
+    });
+
+    const percentPerMonth = months.map(m => {
+        if (!m || !Array.isArray(m.products)) return 100;
+        const p = m.products.find(item => item.productId === 't7rpctcorrect');
+        return p ? parseFloat(String(p.work || 0).replace(/,/g, '')) || 100 : 100;
+    });
+
+    const checkIsT7 = (val) => {
+        if (!val) return false;
+        const clean = String(val).toLowerCase().replace(/[^a-z0-9]/g, '');
+        return clean.includes('t7');
+    };
+
+    let minPercent = 10;
+    let memberObj = null;
+    if (typeof presentationData !== 'undefined' && presentationData.t7OtherData) {
+        const found = presentationData.t7OtherData.find(item => item?.member?.id === memberId);
+        if (found) memberObj = found.member;
+    }
+
+    if (memberObj) {
+        if (checkIsT7(memberObj.fullName) || checkIsT7(memberObj.name) || checkIsT7(memberObj.group) || checkIsT7(memberObj.role) || checkIsT7(memberObj.nickName) || checkIsT7(memberObj.id)) {
+            minPercent = 97;
+        }
+    } else {
+        if (typeof presentationData !== 'undefined' && presentationData.t7OtherData) {
+            const foundItem = presentationData.t7OtherData.find(item => item?.member?.id === memberId);
+            if (foundItem && foundItem.member && (checkIsT7(foundItem.member.fullName) || checkIsT7(foundItem.member.id))) {
+                minPercent = 97;
+            } else if (presentationData.t7OtherData.length > 0 && presentationData.t7OtherData[0]?.member?.id === memberId) {
+                minPercent = 97;
+            }
+        }
+        if (checkIsT7(memberId)) {
+            minPercent = 97;
+        }
+    }
+
+    const isT7 = (minPercent === 97);
+
+    chart.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        legend: { data: ['ยอดถูกต้อง', 'ยอดผิด', '% อนุมัติถูก'], textStyle: { fontSize: 11 } },
+        grid: { top: '18%', bottom: '12%', left: '6%', right: '5%' },
+        xAxis: [{ type: 'category', data: monthLabels, axisLabel: { fontSize: 11, interval: 0, rotate: 30 }, splitLine: { show: false } }],
+        yAxis: [
+            {
+                type: 'value',
+                name: 'จำนวนงาน',
+                position: 'left',
+                max: function (value) {
+                    return Math.ceil(value.max * 1.2); 
+                },
+                axisLabel: { showMaxLabel: false },
+                splitLine: { show: false }
+            },
+            {
+                type: 'value',
+                name: '',
+                min: minPercent,
+                max: 100,
+                position: 'right',
+                axisLabel: { 
+                    formatter: '{value}%',
+                    showMaxLabel: false 
+                },
+                splitLine: { show: false }
+            }
+        ],
+        series: [
+            { 
+                name: 'ยอดถูกต้อง', 
+                type: 'bar', 
+                stack: 'total', 
+                data: correctWorkPerMonth, 
+                itemStyle: { 
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: '#34d399' },
+                        { offset: 1, color: '#059669' }
+                    ]),
+                    shadowColor: 'rgba(0, 0, 0, 0.15)',
+                    shadowBlur: 5,
+                    shadowOffsetX: 2,
+                    shadowOffsetY: 2
+                }, 
+                label: { 
+                    show: true, 
+                    position: 'inside', 
+                    fontSize: 16, // ตัวใหญ่เด่นชัดเป็นพิเศษสำหรับหน้ารายเดือนเพราะมีพื้นที่กว้าง
+                    fontWeight: 'bold',
+                    color: '#ffffff',
+                    textBorderColor: 'rgba(0, 0, 0, 0.8)',
+                    textBorderWidth: 2.5,
+                    formatter: function(params) {
+                        return params.value > 99 ? Number(params.value).toLocaleString() : params.value;
+                    } 
+                } 
+            },
+            { 
+                name: 'ยอดผิด', 
+                type: 'bar', 
+                stack: 'total', 
+                data: wrongWorkPerMonth, 
+                barMinHeight: isT7 ? 7 : 0, 
+                itemStyle: { 
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: '#f87171' },
+                        { offset: 1, color: '#dc2626' }
+                    ]),
+                    shadowColor: 'rgba(0, 0, 0, 0.15)',
+                    shadowBlur: 5,
+                    shadowOffsetX: 2,
+                    shadowOffsetY: 2
+                }, 
+                label: { 
+                    show: true, 
+                    position: 'top', 
+                    fontSize: 12,
+                    fontWeight: 'bold',
+                    formatter: function(params) {
+                        return params.value > 99 ? Number(params.value).toLocaleString() : params.value;
+                    } 
+                } 
+            },
+            { 
+                name: '% อนุมัติถูก', 
+                type: 'line', 
+                yAxisIndex: 1, 
+                data: percentPerMonth, 
+                itemStyle: { color: '#3b82f6' }, 
+                lineStyle: { width: 3, shadowColor: 'rgba(59, 130, 246, 0.4)', shadowBlur: 6 }, 
+                symbolSize: 7, 
+                label: { show: true, position: 'top', formatter: '{c}%', fontSize: 11, fontWeight: 'bold' } 
+            }
+        ]
+    });
+}
+
 // 3. ฟังก์ชันเคลียร์ข้อมูลสไลด์ที่สะสมไว้
 function clearCollectedPDFSlides() {
     window.collectedPdfSlides = [];
@@ -3831,6 +4758,101 @@ function clearCollectedPDFSlides() {
     if (counterEl) counterEl.textContent = '0';
     showToast("ล้างรายการสไลด์ที่สะสมไว้เรียบร้อยแล้ว", "blue");
 }
+
+// ฟังก์ชันกระโดดไปหน้าที่ระบุจากช่อง input
+function jumpToSlideFromInput() {
+    const input = document.getElementById('jump-slide-input');
+    if (!input) return;
+    
+    let targetPage = parseInt(input.value);
+    if (isNaN(targetPage) || targetPage < 1) return;
+    
+    const targetIndex = targetPage - 1; // แปลงเลขหน้า (เริ่มจาก 1) เป็น Index (เริ่มจาก 0)
+
+    // 1. อัปเดตตัวแปรเก็บตำแหน่งหน้าที่ใช้งานจริงในระบบของคุณ (ลองเช็คดูว่าโค้ดเก่าใช้ชื่อไหน)
+    if (typeof currentSlideIndex !== 'undefined') {
+        currentSlideIndex = targetIndex;
+    } else if (typeof currentIndex !== 'undefined') {
+        currentIndex = targetIndex;
+    } else if (typeof currentSlide !== 'undefined') {
+        currentSlide = targetIndex;
+    }
+
+    // 2. เรียกฟังก์ชันวาดหน้าจอหรือเปลี่ยนสไลด์ตัวหลักของระบบ
+    if (typeof goToSlide === 'function') {
+        goToSlide(targetIndex);
+    } else if (typeof renderSlide === 'function') {
+        renderSlide();
+    } else if (typeof updateSlideView === 'function') {
+        updateSlideView();
+    } else if (typeof showSlide === 'function') {
+        showSlide(targetIndex);
+    } else {
+        // หากระบบหลักใช้ฟังก์ชันอื่น ให้ลองเรียกฟังก์ชัน Next วนไปจนถึงหน้าที่ต้องการ (วิธีสำรองกรณีหาชื่อฟังก์ชันไม่เจอ)
+        console.warn("ไม่พบฟังก์ชันเปลี่ยนสไลด์โดยตรง กรุณาตรวจสอบชื่อฟังก์ชันใน script หลัก");
+    }
+    
+    input.value = ''; // เคลียร์ช่องกรอก
+    input.blur();     // เอาโฟกัสออกจากช่องกรอกทันทีเพื่อให้กดปุ่มลูกศรเปลี่ยนหน้าได้เลย
+}
+
+// ควบคุมการเปลี่ยนหน้าด้วยปุ่มลูกศรซ้าย / ขวาบนคีย์บอร์ด
+document.addEventListener('keydown', function(event) {
+    const presentationModal = document.getElementById('presentation-modal');
+    
+    // ทำงานเฉพาะตอนเปิดหน้าต่างนำเสนออยู่เท่านั้น
+    if (!presentationModal || presentationModal.classList.contains('hidden')) {
+        return;
+    }
+
+    // ป้องกันไม่ให้เปลี่ยนสไลด์ขณะกำลังพิมพ์ตัวเลขในช่อง Input หรือ textarea อื่นๆ
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+        return;
+    }
+
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+        event.preventDefault();
+        if (typeof nextSlide === 'function') nextSlide();
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        if (typeof prevSlide === 'function') prevSlide();
+    }
+});
+
+document.addEventListener('fullscreenchange', () => {
+    const presentationModal = document.getElementById('presentation-modal');
+    if (!document.fullscreenElement && presentationModal && !presentationModal.classList.contains('hidden')) {
+        closePresentation();
+    }
+});
+
+document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            const presentationModal = document.getElementById('presentation-modal');
+            // ตรวจสอบว่าหน้าต่างนำเสนอเปิดอยู่หรือไม่ (เช็คว่าไม่มีคลาส hidden หรือกำลังแสดงผลอยู่)
+            if (presentationModal && !presentationModal.classList.contains('hidden')) {
+                if (typeof closePresentation === 'function') {
+                    closePresentation();
+                }
+            }
+            
+            // (ทางเลือก) ปิด Modal อื่นๆ ด้วยหากเปิดอยู่
+            const modals = ['modal-top-perf', 'modal-top-qc', 'modal-charts'];
+            const closeFuncs = {
+                'modal-top-perf': typeof closePopupPerf === 'function' ? closePopupPerf : null,
+                'modal-top-qc': typeof closePopupQc === 'function' ? closePopupQc : null,
+                'modal-charts': typeof closePopupCharts === 'function' ? closePopupCharts : null
+            };
+            
+            modals.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && !el.classList.contains('hidden')) {
+                    if (closeFuncs[id]) closeFuncs[id]();
+                }
+            });
+        }
+    });
+
     </script>
 
 <!-- Modal Top Performance -->
@@ -3875,7 +4897,7 @@ function clearCollectedPDFSlides() {
             </button>
         </div>
         
-        <!-- พื้นที่แสดงกราฟ (ย้ายมาไว้ข้างใน Modal) -->
+        <!-- พื้นที่แสดงกราฟ -->
         <div id="charts-section" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
                 <div id="chart-ml" style="width: 100%; height: 320px;"></div>
@@ -3899,16 +4921,27 @@ function clearCollectedPDFSlides() {
 <!-- Modal สำหรับนำเสนอสไลด์ -->
 <div id="presentation-modal" class="fixed inset-0 bg-slate-900 z-[400] hidden flex-col transition-all duration-500 opacity-0">
     <!-- Header / Navigation -->
-    <div class="flex flex-wrap justify-between items-center p-4 text-white bg-slate-800 border-b border-slate-700 shadow-lg gap-4">
-        <!-- ฝั่งซ้าย: ตัวบอกหน้าและหัวข้อ -->
-        <div class="flex items-center gap-4">
-            <span id="slide-indicator" class="text-sm font-bold bg-slate-700 px-3 py-1 rounded-full text-emerald-300">หน้า 1 / 19</span>
-            <h2 id="slide-title" class="text-xl font-bold text-white tracking-wide">นำเสนอผลการปฏิบัติงาน</h2>
+    <div class="flex flex-wrap justify-between items-center p-4 text-white bg-slate-800 border-b border-slate-700 shadow-lg gap-4 shrink-0">
+        <!-- ฝั่งซ้าย: ตัวบอกหน้า, ช่องกรอกกระโดดหน้า และหัวข้อ -->
+        <div class="flex items-center gap-3 flex-wrap">
+            <span id="slide-indicator" class="text-sm font-bold bg-slate-700 px-3 py-1.5 rounded-xl text-emerald-300">หน้า 1 / 19</span>
+            
+            <!-- ช่องกรอกเพื่อกระโดดไปหน้าที่ต้องการ -->
+            <div class="flex items-center gap-1.5 bg-slate-700/80 px-2.5 py-1 rounded-xl border border-slate-600 shadow">
+                <span class="text-xs text-slate-300 font-medium">ไปหน้า:</span>
+                <input type="number" id="jump-slide-input" min="1" max="19" 
+                       class="w-14 bg-slate-900 text-white text-center text-xs py-1 px-1 rounded-lg border border-slate-600 focus:outline-none focus:border-emerald-500 font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                       onkeydown="if(event.key === 'Enter') jumpToSlideFromInput()">
+                <button onclick="jumpToSlideFromInput()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-2.5 py-1 rounded-lg font-bold transition shadow">
+                    ไป
+                </button>
+            </div>
+
+            <h2 id="slide-title" class="text-xl font-bold text-white tracking-wide ml-2">นำเสนอผลการปฏิบัติงาน</h2>
         </div>
 
-        <!-- ฝั่งขวา: ปุ่มควบคุมทั้งหมด (จัดกลุ่ม Flex ให้เป็นระเบียบ) -->
+        <!-- ฝั่งขวา: ปุ่มควบคุมทั้งหมด -->
         <div class="flex items-center gap-2 flex-wrap">
-            <!-- ปุ่มเปลี่ยนหน้า -->
             <button onclick="prevSlide()" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-bold transition flex items-center gap-1.5 text-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg> ก่อนหน้า
             </button>
@@ -3918,7 +4951,6 @@ function clearCollectedPDFSlides() {
 
             <div class="h-6 w-px bg-slate-700 mx-1"></div>
 
-            <!-- ปุ่มระบบ PDF -->
             <button onclick="captureCurrentSlideForPDF()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl font-bold text-sm shadow-md flex items-center gap-1.5 transition">
                 📸 บันทึกหน้านี้ลง PDF
             </button>
@@ -3931,7 +4963,6 @@ function clearCollectedPDFSlides() {
 
             <div class="h-6 w-px bg-slate-700 mx-1"></div>
 
-            <!-- ปุ่มปิดหน้าต่าง -->
             <button onclick="closePresentation()" class="px-3 py-2 bg-rose-600 hover:bg-rose-500 rounded-lg font-bold transition flex items-center gap-1.5 text-sm">
                 ปิดหน้าต่าง <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
@@ -3939,57 +4970,9 @@ function clearCollectedPDFSlides() {
     </div>
 
     <!-- Slide Content Area -->
-    <!-- Slide Content Area -->
-<div class="flex-1 overflow-hidden relative flex items-center justify-center p-4 md:p-8" style="background-color: #f8fafc; background-image: radial-gradient(at 10% 20%, hsla(28,100%,74%,0.15) 0px, transparent 50%), radial-gradient(at 80% 10%, hsla(189,100%,56%,0.15) 0px, transparent 50%), radial-gradient(at 90% 90%, hsla(343,100%,76%,0.15) 0px, transparent 50%);">
-    
-    <!-- Container เนื้อหาสไลด์ -->
-    <div id="slide-content" class="w-full h-full max-w-[1400px] bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-6 md:p-8 overflow-y-auto border border-white/60 relative">
-        <!-- ข้อมูลสไลด์จะถูกเติมที่นี่ด้วย JavaScript -->
-    </div>
-
-    <!-- Overlay แอนิเมชันแมวสีขาวคาบกระดาษเปลี่ยนหน้า -->
-    <div id="cat-page-transition" class="pointer-events-none absolute inset-0 z-[500] hidden overflow-hidden rounded-3xl">
-        <!-- แผ่นกระดาษที่เปิดพับเหมือนหน้าหนังสือ -->
-        <div id="cat-page-curl" class="absolute top-0 bottom-0 left-0 w-0 bg-white/95 shadow-[-20px_0_25px_rgba(0,0,0,0.15)] border-r-4 border-slate-200 backdrop-blur-sm overflow-hidden">
-            <div class="absolute inset-0 bg-gradient-to-r from-slate-200/40 via-white to-slate-100/80"></div>
-        </div>
-
-        <!-- ตัวแมวสีขาวคาบปลายกระดาษ -->
-        <div id="cat-runner" class="absolute top-1/2 -translate-y-1/2 -left-32 w-28 h-28 z-20 flex items-center justify-center">
-            <!-- SVG แมวการ์ตูนสีขาวถือกระดาษ -->
-            <svg class="w-full h-full drop-shadow-lg animate-cat-bounce" viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <!-- กระดาษในปากแมว -->
-                <path d="M 35 55 L 10 40 L 15 75 L 42 62 Z" fill="#F1F5F9" stroke="#94A3B8" stroke-width="2"/>
-                
-                <!-- หางแมว -->
-                <path d="M 105 50 Q 120 30 115 20 Q 108 15 105 32" stroke="#334155" stroke-width="6" stroke-linecap="round" fill="none"/>
-                
-                <!-- ตัวแมวสีขาว -->
-                <ellipse cx="75" cy="55" rx="30" ry="22" fill="#FFFFFF" stroke="#334155" stroke-width="3"/>
-                <!-- หัวแมว -->
-                <circle cx="45" cy="45" r="20" fill="#FFFFFF" stroke="#334155" stroke-width="3"/>
-                
-                <!-- หูซ้าย-ขวา -->
-                <polygon points="32,32 38,15 48,28" fill="#FFFFFF" stroke="#334155" stroke-width="3"/>
-                <polygon points="35,30 39,18 46,27" fill="#FCA5A5"/>
-                <polygon points="48,28 58,15 62,32" fill="#FFFFFF" stroke="#334155" stroke-width="3"/>
-                <polygon points="50,27 57,18 60,30" fill="#FCA5A5"/>
-
-                <!-- ตาแมว (หลับตาน่ารักๆ ขณะวิ่ง) -->
-                <path d="M 35 42 Q 39 37 43 42" stroke="#334155" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-                <path d="M 48 42 Q 52 37 56 42" stroke="#334155" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-                
-                <!-- จมูกและแก้มชมพู -->
-                <polygon points="43,46 47,46 45,49" fill="#F43F5E"/>
-                <circle cx="34" cy="47" r="4" fill="#FECDD3" opacity="0.8"/>
-                <circle cx="56" cy="47" r="4" fill="#FECDD3" opacity="0.8"/>
-
-                <!-- ขาแมววิ่ง (หน้า-หลัง) -->
-                <path class="animate-leg-1" d="M 40 70 Q 32 85 25 82" stroke="#334155" stroke-width="4" stroke-linecap="round"/>
-                <path class="animate-leg-2" d="M 52 72 Q 58 87 65 83" stroke="#334155" stroke-width="4" stroke-linecap="round"/>
-                <path class="animate-leg-2" d="M 70 73 Q 65 88 58 85" stroke="#334155" stroke-width="4" stroke-linecap="round"/>
-                <path class="animate-leg-1" d="M 88 71 Q 96 85 102 81" stroke="#334155" stroke-width="4" stroke-linecap="round"/>
-            </svg>
+    <div class="flex-1 overflow-hidden relative flex items-center justify-center p-1 md:p-2" style="background-color: #f8fafc; background-image: radial-gradient(at 10% 20%, hsla(28,100%,74%,0.15) 0px, transparent 50%), radial-gradient(at 80% 10%, hsla(189,100%,56%,0.15) 0px, transparent 50%), radial-gradient(at 90% 90%, hsla(343,100%,76%,0.15) 0px, transparent 50%);">
+        <div id="slide-content" class="w-full h-full max-w-[99.5vw] bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl p-4 md:p-6 overflow-y-auto border border-white/60 flex flex-col">
+            <!-- ข้อมูลสไลด์จะถูกเติมที่นี่ด้วย JavaScript -->
         </div>
     </div>
 </div>
