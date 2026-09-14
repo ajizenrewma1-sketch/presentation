@@ -419,6 +419,8 @@ div::-webkit-scrollbar {
 
     <script>
 
+let editingMemberId = null;
+
 async function backupDataToDrive() {
     showToast("กำลังสำรองข้อมูลขึ้น Google Drive...", "blue");
     try {
@@ -1611,15 +1613,78 @@ window.handleInputFromSummary = function(staffId, prodId, day, element) {
                     <div class="text-[11px] text-slate-500 font-medium mt-0.5">ชื่อเล่น: ${member.nickName || '-'}</div>
                 </div>
             </div>
-            <button onclick="deleteMember(${member.id})" class="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors" title="ลบพนักงาน">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-            </button>
+            <div class="flex items-center gap-1">
+                <button onclick="startEditMember(${member.id})" class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors" title="แก้ไขข้อมูล">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                </button>
+                <button onclick="deleteMember(${member.id})" class="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors" title="ลบพนักงาน">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+            </div>
         `;
         listContainer.appendChild(card);
     });
 }
 
-        function addMember() {
+function startEditMember(memberId) {
+    const members = configTeam === 'temp' ? getTempMembers(currentYear, currentMonth) : (TEAMS_CONFIG[configTeam] || []);
+    const member = members.find(m => m.id === memberId);
+    if (!member) return;
+
+    editingMemberId = member.id;
+
+    const fullNameInput = document.getElementById('new-fullname');
+    const nickNameInput = document.getElementById('new-nickname');
+    const userCodeInput = document.getElementById('new-usercode');
+
+    fullNameInput.value = member.fullName || '';
+    nickNameInput.value = member.nickName || '';
+    if (userCodeInput) userCodeInput.value = member.userCode || '';
+
+    // เปลี่ยนปุ่ม "เพิ่ม" เป็น "บันทึกการแก้ไข"
+    const addBtn = fullNameInput.closest('.bg-indigo-50\\/50').querySelector('button[onclick="addMember()"]');
+    if (addBtn) {
+        addBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> บันทึกการแก้ไข`;
+        addBtn.className = "btn-pop bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-xl font-bold shadow-md shadow-amber-200 text-sm whitespace-nowrap flex items-center justify-center gap-2";
+
+        // สร้างปุ่มยกเลิกหากยังไม่มี
+        let cancelBtn = document.getElementById('cancel-edit-btn');
+        if (!cancelBtn) {
+            cancelBtn = document.createElement('button');
+            cancelBtn.id = 'cancel-edit-btn';
+            cancelBtn.type = 'button';
+            cancelBtn.className = "btn-pop bg-slate-300 hover:bg-slate-400 text-slate-700 px-4 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap";
+            cancelBtn.textContent = "ยกเลิก";
+            cancelBtn.onclick = cancelEditMember;
+            addBtn.parentNode.insertBefore(cancelBtn, addBtn.nextSibling);
+        }
+    }
+
+    fullNameInput.focus();
+    if (typeof showToast === 'function') showToast("กำลังอยู่ในโหมดแก้ไขข้อมูลสมาชิก", "info");
+}
+
+function cancelEditMember() {
+    editingMemberId = null;
+    const fullNameInput = document.getElementById('new-fullname');
+    const nickNameInput = document.getElementById('new-nickname');
+    const userCodeInput = document.getElementById('new-usercode');
+
+    fullNameInput.value = '';
+    nickNameInput.value = '';
+    if (userCodeInput) userCodeInput.value = '';
+
+    const addBtn = document.querySelector('button[onclick="addMember()"]');
+    if (addBtn) {
+        addBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> เพิ่ม`;
+        addBtn.className = "btn-pop bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md shadow-indigo-200 text-sm whitespace-nowrap flex items-center justify-center gap-2";
+    }
+
+    const cancelBtn = document.getElementById('cancel-edit-btn');
+    if (cancelBtn) cancelBtn.remove();
+}
+
+function addMember() {
     const fullNameInput = document.getElementById('new-fullname');
     const nickNameInput = document.getElementById('new-nickname');
     const userCodeInput = document.getElementById('new-usercode');
@@ -1634,25 +1699,36 @@ window.handleInputFromSummary = function(staffId, prodId, day, element) {
         return;
     }
 
-    const newId = new Date().getTime();
-    
-    if (configTeam === 'temp') {
-        const membersList = getTempMembers(currentYear, currentMonth);
+    let membersList = configTeam === 'temp' ? getTempMembers(currentYear, currentMonth) : (TEAMS_CONFIG[configTeam] || []);
+
+    if (editingMemberId !== null) {
+        // กรณีอยู่ในโหมดแก้ไข (อัปเดตข้อมูลทับตัวเดิมโดยใช้ id เดิม)
+        const member = membersList.find(m => m.id === editingMemberId);
+        if (member) {
+            member.fullName = fullName;
+            member.nickName = nickName;
+            if (userCodeInput) member.userCode = userCode;
+            showToast("บันทึกการแก้ไขสำเร็จ", "success");
+        }
+        cancelEditMember();
+    } else {
+        // กรณีเพิ่มใหม่ตามปกติ
+        const newId = new Date().getTime();
         membersList.push({
             id: newId,
             fullName: fullName,
             nickName: nickName,
-            userCode: userCode // บันทึกข้อมูล User
+            userCode: userCode
         });
+        showToast("เพิ่มรายชื่อสำเร็จ");
+    }
+    
+    // บันทึกกลับลงโครงสร้างข้อมูลหลัก
+    if (configTeam === 'temp') {
+        if (!TEAMS_CONFIG['temp_monthly']) TEAMS_CONFIG['temp_monthly'] = {};
+        TEAMS_CONFIG['temp_monthly'][`${currentYear}-${currentMonth}`] = membersList;
     } else {
-        if (!TEAMS_CONFIG[configTeam]) {
-            TEAMS_CONFIG[configTeam] = [];
-        }
-        TEAMS_CONFIG[configTeam].push({
-            id: newId,
-            fullName: fullName,
-            nickName: nickName
-        });
+        TEAMS_CONFIG[configTeam] = membersList;
     }
     
     saveTeamsConfig();
@@ -1660,66 +1736,9 @@ window.handleInputFromSummary = function(staffId, prodId, day, element) {
     
     fullNameInput.value = '';
     nickNameInput.value = '';
-    if(userCodeInput) userCodeInput.value = '';
+    if (userCodeInput) userCodeInput.value = '';
     fullNameInput.focus();
-    
-    showToast("เพิ่มรายชื่อสำเร็จ");
 }
-
-        function deleteMember(memberId) {
-            showCustomPopup("ลบพนักงาน", "คุณต้องการลบรายชื่อพนักงานนี้ออกจากทีม ใช่หรือไม่?", "confirm", 
-                () => {
-                    if (configTeam === 'temp') {
-                        const members = getTempMembers(currentYear, currentMonth);
-                        TEAMS_CONFIG['temp_monthly'][`${currentYear}-${currentMonth}`] = members.filter(m => m.id !== memberId);
-                    } else {
-                        const members = TEAMS_CONFIG[configTeam] || [];
-                        TEAMS_CONFIG[configTeam] = members.filter(m => m.id !== memberId);
-                    }
-                    
-                    saveTeamsConfig();
-                    renderConfigMembersList();
-                    showToast("ลบรายชื่อสำเร็จ", "info");
-                }
-            );
-        }
-
-function deleteSelectedTempMembers() {
-            if (configTeam !== 'temp') return;
-            const checkboxes = document.querySelectorAll('.temp-member-checkbox:checked');
-            if (checkboxes.length === 0) {
-                showToast("กรุณาเลือกรายชื่อที่ต้องการลบอย่างน้อย 1 คน", "error");
-                return;
-            }
-
-            showCustomPopup("ลบพนักงาน", `คุณต้องการลบรายชื่อพนักงานที่เลือกจำนวน ${checkboxes.length} คน ใช่หรือไม่?`, "confirm", 
-                () => {
-                    const selectedIds = Array.from(checkboxes).map(cb => parseInt(cb.getAttribute('data-id')));
-                    const members = getTempMembers(currentYear, currentMonth);
-                    TEAMS_CONFIG['temp_monthly'][`${currentYear}-${currentMonth}`] = members.filter(m => !selectedIds.includes(m.id));
-                    
-                    saveTeamsConfig();
-                    renderConfigMembersList();
-                    showToast("ลบรายชื่อที่เลือกสำเร็จ", "info");
-                }
-            );
-        }
-
-        function clearAllTempMembers() {
-            if (configTeam !== 'temp') return;
-            const members = getTempMembers(currentYear, currentMonth);
-            if (members.length === 0) {
-                showToast("ไม่มีรายชื่อในทีม Temp ของเดือนนี้", "error");
-                return;
-            }
-
-            if (confirm("คุณต้องการเคลียร์ (ลบ) รายชื่อพนักงานทีม Temp ทั้งหมดในเดือนนี้ เพื่อเตรียมเพิ่มใหม่ ใช่หรือไม่?")) {
-                TEAMS_CONFIG['temp_monthly'][`${currentYear}-${currentMonth}`] = [];
-                saveTeamsConfig();
-                renderConfigMembersList();
-                showToast("เคลียร์รายชื่อทีม Temp ทั้งหมดเรียบร้อยแล้ว", "error");
-            }
-        }
 
 function updateTempTarget(val) {
     let targetKey = `temp_target_${currentYear}_${currentMonth}`;
@@ -4209,10 +4228,11 @@ else if (slide.type === 'all_summary_table') {
     }
 }
 
-// ตัวแปรสำหรับเก็บภาพสไลด์ที่สะสมไว้
+// ตัวแปรสำหรับเก็บภาพสไลด์และป้องกันการบันทึกซ้ำ
 window.collectedPdfSlides = window.collectedPdfSlides || [];
+window.lastCapturedSlideHTML = window.lastCapturedSlideHTML || null;
 
-// ระบบสำรองป้องกันกรณีฟังก์ชัน showToast เดิมไม่มีอยู่จริง (ไม่กระทบของเดิม)
+// ระบบสำรองป้องกันกรณีฟังก์ชัน showToast เดิมไม่มีอยู่จริง
 if (typeof window.showToast !== 'function') {
     window.showToast = function(message, type = 'success') {
         const existing = document.getElementById('safe-toast-box');
@@ -4232,16 +4252,31 @@ if (typeof window.showToast !== 'function') {
     };
 }
 
-// 1. ฟังก์ชันเรนเดอร์และบันทึกภาพสไลด์ พร้อมแจ้งเตือนทันทีที่กดปุ่ม
-async function captureCurrentSlideForPDF() {
-    // แจ้งเตือนทันทีเมื่อเริ่มกดปุ่ม
-    showToast("📥 กำลังบันทึกหน้าสไลด์นี้ลง PDF...", "blue");
+// ฟังก์ชันล้างค่าสไลด์ที่สะสมไว้และรีเซ็ตตัวกันซ้ำ
+function clearCollectedPDFSlides() {
+    window.collectedPdfSlides = [];
+    window.lastCapturedSlideHTML = null;
+    const counterEl = document.getElementById('pdf-counter');
+    if (counterEl) counterEl.textContent = '0';
+    showToast("ล้างรายการสไลด์ที่สะสมไว้แล้ว", "blue");
+}
 
+// 1. ฟังก์ชันเรนเดอร์และบันทึกภาพสไลด์ (พร้อมระบบกันเบิ้ล และเปลี่ยนหน้าอัตโนมัติ)
+async function captureCurrentSlideForPDF() {
     const originalSlide = document.getElementById('presentation-slide-container') || document.getElementById('slide-content');
     if (!originalSlide) {
         showToast("ไม่พบข้อมูลสไลด์ในหน้าจอ", "error");
         return;
     }
+
+    // ระบบป้องกันการกดบันทึกหน้าเดิมซ้ำ (Anti-Double Click / Duplicate Check)
+    const currentSlideHTML = originalSlide.innerHTML;
+    if (window.lastCapturedSlideHTML === currentSlideHTML) {
+        showToast("⚠️ หน้านี้ถูกบันทึกไปแล้ว กรุณาไปหน้าถัดไป", "error");
+        return;
+    }
+
+    showToast("📥 กำลังบันทึกหน้าสไลด์นี้ลง PDF...", "blue");
 
     const actualWidth = originalSlide.offsetWidth || originalSlide.clientWidth || 1200;
     const actualHeight = originalSlide.offsetHeight || originalSlide.clientHeight || 800;
@@ -4257,7 +4292,7 @@ async function captureCurrentSlideForPDF() {
     exportContainer.style.fontFamily = 'Sarabun, sans-serif, system-ui';
     exportContainer.style.boxSizing = 'border-box';
     
-    exportContainer.innerHTML = originalSlide.innerHTML;
+    exportContainer.innerHTML = currentSlideHTML;
     
     exportContainer.querySelectorAll('*').forEach(el => {
         el.style.animation = 'none';
@@ -4282,26 +4317,26 @@ async function captureCurrentSlideForPDF() {
             el.style.minHeight = '100%';
         }
 
-        // บังคับจัดกึ่งกลางตัวเลขในวงกลม
-        if (el.classList.contains('rounded-full') || compStyle.borderRadius === '9999px' || compStyle.borderRadius === '50%') {
-            const currentHeight = el.clientHeight || parseFloat(compStyle.height) || 24;
-            el.style.display = 'inline-flex';
+        // ตรวจจับป้ายวงกลมตัวเลข แล้วบังคับยกตำแหน่งขึ้นด้านบนให้กึ่งกลางพอดี
+        const textContent = el.innerText ? el.innerText.trim() : '';
+        const isNumberBadge = /^\d{1,2}$/.test(textContent) && (el.classList.contains('rounded-full') || compStyle.borderRadius === '9999px' || compStyle.borderRadius === '50%');
+
+        if (isNumberBadge) {
+            const currentHeight = el.clientHeight || parseFloat(compStyle.height) || 28;
+            const currentWidth = el.clientWidth || parseFloat(compStyle.width) || 28;
+
+            el.style.display = 'flex';
             el.style.alignItems = 'center';
             el.style.justifyContent = 'center';
+            el.style.width = currentWidth + 'px';
+            el.style.height = currentHeight + 'px';
             el.style.flexShrink = '0';
-            
-            const innerTexts = el.querySelectorAll('*');
-            if (innerTexts.length === 0) {
-                el.style.textAlign = 'center';
-                el.style.lineHeight = currentHeight + 'px';
-            } else {
-                innerTexts.forEach(child => {
-                    child.style.display = 'inline-block';
-                    child.style.verticalAlign = 'middle';
-                    child.style.lineHeight = '1';
-                    child.style.margin = '0';
-                });
-            }
+            el.style.padding = '0';
+            el.style.margin = '0';
+            el.style.position = 'relative';
+
+            const rawText = el.innerText;
+            el.innerHTML = `<span style="display: block; margin: auto; transform: translateY(-8px); line-height: 1; padding: 0;">${rawText}</span>`;
         }
     });
 
@@ -4343,12 +4378,32 @@ async function captureCurrentSlideForPDF() {
             height: canvas.height
         });
 
+        // บันทึกสถานะว่าหน้านี้ถูกแคปเจอร์ไปแล้ว ป้องกันการกดซ้ำ
+        window.lastCapturedSlideHTML = currentSlideHTML;
+
         const totalCaptured = window.collectedPdfSlides.length;
         const counterEl = document.getElementById('pdf-counter');
         if (counterEl) counterEl.textContent = totalCaptured;
 
-        // แจ้งเตือนความสำเร็จพร้อมแสดงจำนวนหน้าที่สะสมทั้งหมด
         showToast(`✅ บันทึกหน้านี้สำเร็จ! (สะสมรวม ${totalCaptured} หน้า)`, "success");
+
+        // 2. ระบบเปลี่ยนไปหน้าถัดไปอัตโนมัติ (พร้อมเช็คว่าถึงหน้าสุดท้ายหรือยัง)
+        setTimeout(() => {
+            const nextBtn = document.getElementById('next-slide-btn') || document.getElementById('btn-next') || document.querySelector('.next-slide');
+            const isAtLastPage = nextBtn && (nextBtn.disabled || nextBtn.classList.contains('opacity-50') || nextBtn.classList.contains('cursor-not-allowed') || nextBtn.getAttribute('aria-disabled') === 'true');
+
+            if (!isAtLastPage) {
+                if (typeof window.nextSlide === 'function') {
+                    window.nextSlide();
+                } else if (typeof window.nextPage === 'function') {
+                    window.nextPage();
+                } else if (nextBtn) {
+                    nextBtn.click();
+                }
+            } else {
+                showToast("🏁 ถึงหน้าสุดท้ายแล้วครับ", "blue");
+            }
+        }, 400);
 
     } catch (err) {
         console.error("Error generating PDF slide:", err);
@@ -4358,7 +4413,7 @@ async function captureCurrentSlideForPDF() {
     }
 }
 
-// 2. ฟังก์ชันรวมไฟล์และดาวน์โหลด PDF
+// 2. ฟังก์ชันรวมไฟล์และดาวน์โหลด PDF (ดึงเดือนจาก #summary-month โดยตรง)
 async function finalizeAndDownloadPDF() {
     if (!window.collectedPdfSlides || window.collectedPdfSlides.length === 0) {
         showToast("ยังไม่มีหน้าสไลด์ที่ถูกบันทึก กรุณากดบันทึกอย่างน้อย 1 หน้า", "error");
@@ -4398,7 +4453,28 @@ async function finalizeAndDownloadPDF() {
         pdf.addImage(slide.data, 'PNG', x, y, renderWidth, renderHeight, undefined, 'FAST');
     }
 
-    pdf.save(`MLPR_Presentation_Report_${currentYear}_${currentMonth + 1}.pdf`);
+    // ดึงค่าปีและเดือนจากฟิลด์ #summary-month (ที่ใช้ดึงข้อมูลจริง)
+    const thaiMonths = [
+        "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+        "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+    ];
+
+    let targetYear = 2026;
+    let targetMonth = 0; // 0-11
+
+    const monthInputVal = document.getElementById('summary-month') ? document.getElementById('summary-month').value : '';
+    if (monthInputVal) {
+        const parts = monthInputVal.split('-');
+        targetYear = parseInt(parts[0], 10);
+        targetMonth = parseInt(parts[1], 10) - 1;
+    } else if (typeof currentYear !== 'undefined' && typeof currentMonth !== 'undefined') {
+        targetYear = currentYear;
+        targetMonth = currentMonth;
+    }
+
+    const monthNameThai = thaiMonths[targetMonth] || "มกราคม";
+
+    pdf.save(`MLPR_Presentation_เดือน${monthNameThai}_${targetYear}.pdf`);
     
     showToast("ดาวน์โหลดไฟล์ PDF สำเร็จ!", "success");
     clearCollectedPDFSlides();
