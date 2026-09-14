@@ -3734,7 +3734,7 @@ else if (slide.type === 't7_other_monthly') {
                                 <span class="font-bold text-slate-700">${s.member.nickName || s.member.fullName.split(' ')[0]}</span>
                             </div>
                             <div class="text-right">
-                                <div class="font-black text-indigo-600 text-lg">${s.avgPerDay.toFixed(1)} งาน/วัน</div>
+                                <div class="font-black text-indigo-600 text-lg">${s.avgPerDay.toLocaleString()} งาน/วัน</div>
                                 <div class="text-xs text-slate-400">รวม ${s.totalTasks.toLocaleString()} งาน (${s.workDays} วันทำงาน)</div>
                             </div>
                         </div>`).join('')}
@@ -3762,6 +3762,15 @@ else if (slide.type === 't7_other_monthly') {
     // 1. หน้าข้อมูลตารางสรุป (ทีม 1-5) -> แสดงผลสำหรับหน้า 1, 3, 5, 7, 9
     if (slide.type === 'team_summary') {
         const tData = presentationData.teams[slide.teamId];
+        
+        const parseNum = (val) => {
+            if (typeof val === 'number') return isNaN(val) ? 0 : val;
+            if (!val) return 0;
+            const cleaned = String(val).replace(/[^0-9.-]+/g, '');
+            const num = parseFloat(cleaned);
+            return isNaN(num) ? 0 : num;
+        };
+
         let html = `
         <div class="h-full flex flex-col gap-6">
             <h3 class="text-xl font-bold text-indigo-700 bg-indigo-50/50 py-3 px-6 rounded-2xl flex items-center gap-3">
@@ -3789,15 +3798,15 @@ else if (slide.type === 't7_other_monthly') {
                         ${tData.list.map(s => `
                         <tr class="hover:bg-slate-50 transition">
                             <td class="${tdClass} text-left pl-6 font-bold text-slate-800">${s.member.nickName || s.member.fullName.split(' ')[0]}</td>
-                            <td class="${tdClass}">${s.sums.ml || s.sums.ML || '0'}</td>
-                            <td class="${tdClass}">${s.sums.mn || s.sums.MN || '0'}</td>
-                            <td class="${tdClass}">${s.sums.rcf || s.sums.RCF || '0'}</td>
-                            <td class="${tdClass}">${s.sums.log || s.sums.LOG || '0'}</td>
-                            <td class="${tdClass}">${s.sums.txn || s.sums.TXN || '0'}</td>
-                            <td class="${tdClass}">${s.sums.cctv || s.sums.CCTV || '0'}</td>
-                            <td class="${tdClass}">${s.sums.inq || s.sums.INQ || '0'}</td>
-                            <td class="${tdClass}">${s.sums.conv || s.sums.CONV || '0'}</td>
-                            <td class="${tdClass} font-bold text-rose-600">${s.sums.qc || s.sums.QC || '0'}</td>
+                            <td class="${tdClass}">${parseNum(s.sums.ml || s.sums.ML).toLocaleString()}</td>
+                            <td class="${tdClass}">${parseNum(s.sums.mn || s.sums.MN).toLocaleString()}</td>
+                            <td class="${tdClass}">${parseNum(s.sums.rcf || s.sums.RCF).toLocaleString()}</td>
+                            <td class="${tdClass}">${parseNum(s.sums.log || s.sums.LOG).toLocaleString()}</td>
+                            <td class="${tdClass}">${parseNum(s.sums.txn || s.sums.TXN).toLocaleString()}</td>
+                            <td class="${tdClass}">${parseNum(s.sums.cctv || s.sums.CCTV).toLocaleString()}</td>
+                            <td class="${tdClass}">${parseNum(s.sums.inq || s.sums.INQ).toLocaleString()}</td>
+                            <td class="${tdClass}">${parseNum(s.sums.conv || s.sums.CONV).toLocaleString()}</td>
+                            <td class="${tdClass} font-bold text-rose-600">${parseNum(s.sums.qc || s.sums.QC).toLocaleString()}</td>
                         </tr>`).join('')}
                     </tbody>
                 </table>
@@ -3814,7 +3823,7 @@ else if (slide.type === 't7_other_monthly') {
                                 <span class="font-bold text-slate-700">${s.member.nickName || s.member.fullName.split(' ')[0]}</span>
                             </div>
                             <div class="text-right">
-                                <div class="font-black text-indigo-600 text-lg">${s.avgPerDay.toFixed(1)} งาน/วัน</div>
+                                <div class="font-black text-indigo-600 text-lg">${s.avgPerDay.toLocaleString()} งาน/วัน</div>
                                 <div class="text-xs text-slate-400">รวม ${s.totalTasks.toLocaleString()} งาน (${s.workDays} วันทำงาน)</div>
                             </div>
                         </div>`).join('')}
@@ -4156,7 +4165,7 @@ else if (slide.type === 'temp_group') {
                     mainValue = `<div class="font-black text-rose-600 text-base">${s.totalQc.toLocaleString()} รายการ</div>`;
                     subValue = `วันทำงาน ${s.workDays} วัน`;
                 } else if (slide.type === 'all_top_perf') {
-                    mainValue = `<div class="font-black text-indigo-600 text-base">${s.avgPerDay.toFixed(1)} งาน/วัน</div>`;
+                    mainValue = `<div class="font-black text-indigo-600 text-base">${s.avgPerDay.toLocaleString()} งาน/วัน</div>`;
                     subValue = `รวม ${s.totalTasks.toLocaleString()} งาน (${s.workDays} วัน)`;
                 } else {
                     mainValue = `<div class="font-black text-rose-600 text-base">${s.totalQc.toLocaleString()} รายการ</div>`;
