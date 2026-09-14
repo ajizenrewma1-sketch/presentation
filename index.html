@@ -4230,15 +4230,14 @@ function clearCollectedPDFSlides() {
     showToast("ล้างรายการสไลด์ที่สะสมไว้แล้ว", "blue");
 }
 
-// 1. ฟังก์ชันเรนเดอร์และบันทึกภาพสไลด์ (พร้อมระบบกันเบิ้ล และเปลี่ยนหน้าอัตโนมัติ)
+// 1. ฟังก์ชันเรนเดอร์และบันทึกภาพสไลด์ (พื้นหลังขาวสะอาดแบบการ์ดจริง)
 async function captureCurrentSlideForPDF() {
-    const originalSlide = document.getElementById('presentation-slide-container') || document.getElementById('slide-content');
+    const originalSlide = document.getElementById('slide-content') || document.getElementById('presentation-slide-container');
     if (!originalSlide) {
         showToast("ไม่พบข้อมูลสไลด์ในหน้าจอ", "error");
         return;
     }
 
-    // ระบบป้องกันการกดบันทึกหน้าเดิมซ้ำ (Anti-Double Click / Duplicate Check)
     const currentSlideHTML = originalSlide.innerHTML;
     if (window.lastCapturedSlideHTML === currentSlideHTML) {
         showToast("⚠️ หน้านี้ถูกบันทึกไปแล้ว กรุณาไปหน้าถัดไป", "error");
@@ -4247,8 +4246,8 @@ async function captureCurrentSlideForPDF() {
 
     showToast("📥 กำลังบันทึกหน้าสไลด์นี้ลง PDF...", "blue");
 
-    const actualWidth = originalSlide.offsetWidth || originalSlide.clientWidth || 1200;
-    const actualHeight = originalSlide.offsetHeight || originalSlide.clientHeight || 800;
+    const actualWidth = 1920;
+    const actualHeight = 1080;
 
     const exportContainer = document.createElement('div');
     exportContainer.style.position = 'absolute';
@@ -4256,8 +4255,11 @@ async function captureCurrentSlideForPDF() {
     exportContainer.style.top = '0';
     exportContainer.style.width = actualWidth + 'px';
     exportContainer.style.height = actualHeight + 'px';
+    
+    // บังคับใช้พื้นหลังสีขาวสะอาดตาเหมือนในหน้าเว็บจริง
     exportContainer.style.background = '#ffffff';
-    exportContainer.style.padding = window.getComputedStyle(originalSlide).padding || '0px';
+    exportContainer.style.overflow = 'hidden'; 
+    exportContainer.style.padding = '30px 40px'; // จัดระยะขอบให้พอดี ไม่แน่นและไม่เหลือพื้นที่ว่างเยอะเกินไป
     exportContainer.style.fontFamily = 'Sarabun, sans-serif, system-ui';
     exportContainer.style.boxSizing = 'border-box';
     
@@ -4268,7 +4270,6 @@ async function captureCurrentSlideForPDF() {
         el.style.transition = 'none';
         el.style.opacity = '1';
 
-        // ป้องกันปัญหา Gradient Text หายกลายเป็นกล่องสีส้ม
         const compStyle = window.getComputedStyle(el);
         if (el.classList.contains('text-transparent') || 
             el.classList.contains('bg-clip-text') || 
@@ -4277,16 +4278,14 @@ async function captureCurrentSlideForPDF() {
             
             el.style.background = 'none';
             el.style.webkitTextFillColor = 'initial';
-            el.style.color = '#e11d48'; 
+            el.style.color = '#2563eb'; 
             el.classList.remove('text-transparent', 'bg-clip-text');
         }
 
-        // ป้องกัน Element ลูกถูกตัดความสูง
         if (el.classList.contains('h-full') || el.classList.contains('h-screen')) {
             el.style.minHeight = '100%';
         }
 
-        // ตรวจจับป้ายวงกลมตัวเลข แล้วบังคับยกตำแหน่งขึ้นด้านบนให้กึ่งกลางพอดี
         const textContent = el.innerText ? el.innerText.trim() : '';
         const isNumberBadge = /^\d{1,2}$/.test(textContent) && (el.classList.contains('rounded-full') || compStyle.borderRadius === '9999px' || compStyle.borderRadius === '50%');
 
@@ -4329,10 +4328,10 @@ async function captureCurrentSlideForPDF() {
 
     try {
         const canvas = await html2canvas(exportContainer, {
-            scale: 3,
+            scale: 2,
             useCORS: true,
             allowTaint: true,
-            backgroundColor: '#ffffff',
+            backgroundColor: '#ffffff', // พื้นหลังแคนวาสสีขาว
             logging: false,
             width: actualWidth,    
             height: actualHeight,  
@@ -4347,7 +4346,6 @@ async function captureCurrentSlideForPDF() {
             height: canvas.height
         });
 
-        // บันทึกสถานะว่าหน้านี้ถูกแคปเจอร์ไปแล้ว ป้องกันการกดซ้ำ
         window.lastCapturedSlideHTML = currentSlideHTML;
 
         const totalCaptured = window.collectedPdfSlides.length;
@@ -4356,7 +4354,6 @@ async function captureCurrentSlideForPDF() {
 
         showToast(`✅ บันทึกหน้านี้สำเร็จ! (สะสมรวม ${totalCaptured} หน้า)`, "success");
 
-        // 2. ระบบเปลี่ยนไปหน้าถัดไปอัตโนมัติ (พร้อมเช็คว่าถึงหน้าสุดท้ายหรือยัง)
         setTimeout(() => {
             const nextBtn = document.getElementById('next-slide-btn') || document.getElementById('btn-next') || document.querySelector('.next-slide');
             const isAtLastPage = nextBtn && (nextBtn.disabled || nextBtn.classList.contains('opacity-50') || nextBtn.classList.contains('cursor-not-allowed') || nextBtn.getAttribute('aria-disabled') === 'true');
@@ -4382,7 +4379,7 @@ async function captureCurrentSlideForPDF() {
     }
 }
 
-// 2. ฟังก์ชันรวมไฟล์และดาวน์โหลด PDF (ดึงเดือนจาก #summary-month โดยตรง)
+// 2. ฟังก์ชันรวมไฟล์และดาวน์โหลด PDF
 async function finalizeAndDownloadPDF() {
     if (!window.collectedPdfSlides || window.collectedPdfSlides.length === 0) {
         showToast("ยังไม่มีหน้าสไลด์ที่ถูกบันทึก กรุณากดบันทึกอย่างน้อย 1 หน้า", "error");
@@ -4392,44 +4389,31 @@ async function finalizeAndDownloadPDF() {
     showToast("กำลังประมวลผลสร้างไฟล์ PDF...", "blue");
 
     const { jsPDF } = window.jspdf;
+    const pdfWidth = 1920;
+    const pdfHeight = 1080;
+
     const pdf = new jsPDF({
         orientation: 'landscape',
-        unit: 'mm',
-        format: 'a4'
+        unit: 'px',
+        format: [pdfWidth, pdfHeight]
     });
-
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
 
     for (let i = 0; i < window.collectedPdfSlides.length; i++) {
         if (i > 0) {
-            pdf.addPage();
+            pdf.addPage([pdfWidth, pdfHeight], 'landscape');
         }
 
         const slide = window.collectedPdfSlides[i];
-        const imgRatio = slide.width / slide.height;
-        let renderWidth = pdfWidth;
-        let renderHeight = pdfWidth / imgRatio;
-
-        if (renderHeight > pdfHeight) {
-            renderHeight = pdfHeight;
-            renderWidth = pdfHeight * imgRatio;
-        }
-
-        const x = (pdfWidth - renderWidth) / 2;
-        const y = (pdfHeight - renderHeight) / 2;
-
-        pdf.addImage(slide.data, 'PNG', x, y, renderWidth, renderHeight, undefined, 'FAST');
+        pdf.addImage(slide.data, 'PNG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
     }
 
-    // ดึงค่าปีและเดือนจากฟิลด์ #summary-month (ที่ใช้ดึงข้อมูลจริง)
     const thaiMonths = [
         "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
         "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
     ];
 
     let targetYear = 2026;
-    let targetMonth = 0; // 0-11
+    let targetMonth = 0; 
 
     const monthInputVal = document.getElementById('summary-month') ? document.getElementById('summary-month').value : '';
     if (monthInputVal) {
