@@ -3098,113 +3098,85 @@ function prepareAllPresentationData() {
     // ==========================================
 
     for (var i = 1; i <= 5; i++) {
-        var members = TEAMS_CONFIG[i] || [];
-        allMembers = allMembers.concat(members);
-        
-        presentationData.teams[i] = buildStatsForTeam(members, currDates);
-
-        var teamStats = presentationData.teams[i];
-        var chartPageNum = (i * 2) + 22;
-        
-        presentationData.chartPairs[chartPageNum] = {
-            mlpr: teamStats.ml || teamStats.ML || 0,
-            mnpr: teamStats.mn || teamStats.MN || 0,
-            reconfirm: teamStats.rcf || teamStats.RCF || 0,
-            qcError: teamStats.qc || teamStats.QC || 0
-        };
-    }
+    var members = TEAMS_CONFIG[i] || [];
+    allMembers = allMembers.concat(members);
     
-    presentationData.all = buildStatsForTeam(allMembers, currDates);
+    presentationData.teams[i] = buildStatsForTeam(members, currDates);
+
+    var teamStats = presentationData.teams[i];
+    var chartPageNum = (i * 2) + 22;
     
-    var startStrFormat = startDate.getFullYear() + "-" + String(startDate.getMonth() + 1).padStart(2, '0') + "-" + String(startDate.getDate()).padStart(2, '0');
-    var endStrFormat = endDate.getFullYear() + "-" + String(endDate.getMonth() + 1).padStart(2, '0') + "-" + String(endDate.getDate()).padStart(2, '0');
-    presentationData.temp = buildTempTeamStats(startStrFormat, endStrFormat);
-
-    var prevAll = buildStatsForTeam(allMembers, prevDates);
-    presentationData.prevRankMapPerf = {};
-    presentationData.prevRankMapQc = {};
-
-    if (prevAll && prevAll.topPerf) {
-        prevAll.topPerf.forEach(function(s, idx) { 
-            presentationData.prevRankMapPerf[s.member.id] = idx + 1; 
-        });
-    }
-    if (prevAll && prevAll.topQc) {
-        prevAll.topQc.forEach(function(s, idx) { 
-            presentationData.prevRankMapQc[s.member.id] = idx + 1; 
-        });
-    }
-
-    var prevStartStrFormat = prevStart.getFullYear() + "-" + String(prevStart.getMonth() + 1).padStart(2, '0') + "-" + String(prevStart.getDate()).padStart(2, '0');
-    var prevEndStrFormat = prevEnd.getFullYear() + "-" + String(prevEnd.getMonth() + 1).padStart(2, '0') + "-" + String(prevEnd.getDate()).padStart(2, '0');
-    
-    var prevTemp = buildTempTeamStats(prevStartStrFormat, prevEndStrFormat);
-    presentationData.prevTemp = prevTemp;
-
-    presentationData.prevRankMapPerfTemp = presentationData.prevRankMapPerfTemp || {};
-    presentationData.prevRankMapQcTemp = presentationData.prevRankMapQcTemp || {};
-
-    var setRankToAllKeys = function(targetMap, s, rank) {
-        if (!targetMap || !s) return;
-        var keys = [
-            s.id,
-            s.userCode,
-            s.fullName,
-            s.member ? s.member.id : null,
-            s.member ? s.member.userCode : null,
-            s.member ? s.member.fullName : null
-        ];
-        for (var k = 0; k < keys.length; k++) {
-            if (keys[k]) {
-                targetMap[keys[k]] = rank;
-            }
-        }
+    presentationData.chartPairs[chartPageNum] = {
+        mlpr: teamStats.ml || teamStats.ML || 0,
+        mnpr: teamStats.mn || teamStats.MN || 0,
+        reconfirm: teamStats.rcf || teamStats.RCF || 0,
+        qcError: teamStats.qc || teamStats.QC || 0
     };
+}
 
-    var prevTempList = [];
-    if (Array.isArray(prevTemp)) {
-        prevTempList = prevTemp;
-    } else if (prevTemp && Array.isArray(prevTemp.members)) {
-        prevTempList = prevTemp.members;
-    } else if (prevTemp && Array.isArray(prevTemp.list)) {
-        prevTempList = prevTemp.list;
-    }
+presentationData.all = buildStatsForTeam(allMembers, currDates);
 
-    if (prevTempList.length > 0) {
-        var sortedPerf = prevTempList.slice().sort(function(a, b) {
-            var valA = (a.totalApprove !== undefined ? a.totalApprove : a.approve) || 0;
-            var valB = (b.totalApprove !== undefined ? b.totalApprove : b.approve) || 0;
-            if (valB !== valA) return valB - valA;
-            return (a.fullName || '').localeCompare(b.fullName || '');
-        });
+var startStrFormat = startDate.getFullYear() + "-" + String(startDate.getMonth() + 1).padStart(2, '0') + "-" + String(startDate.getDate()).padStart(2, '0');
+var endStrFormat = endDate.getFullYear() + "-" + String(endDate.getMonth() + 1).padStart(2, '0') + "-" + String(endDate.getDate()).padStart(2, '0');
+presentationData.temp = buildTempTeamStats(startStrFormat, endStrFormat);
 
-        sortedPerf.forEach(function(s, idx) {
-            var rank = idx + 1;
-            setRankToAllKeys(presentationData.prevRankMapPerfTemp, s, rank);
-            setRankToAllKeys(presentationData.prevRankMapPerf, s, rank);
-        });
+var prevAll = buildStatsForTeam(allMembers, prevDates);
+presentationData.prevRankMapPerf = {};
+presentationData.prevRankMapQc = {};
 
-        var sortedQc = prevTempList.slice().sort(function(a, b) {
-            var valA = (a.totalQc !== undefined ? a.totalQc : a.qc) || 0;
-            var valB = (b.totalQc !== undefined ? b.totalQc : b.qc) || 0;
-            if (valA !== valB) return valB - valA;
-            return (a.fullName || '').localeCompare(b.fullName || '');
-        });
+if (prevAll && prevAll.topPerf) {
+    prevAll.topPerf.forEach(function(s, idx) { 
+        presentationData.prevRankMapPerf[s.member.id] = idx + 1; 
+    });
+}
+if (prevAll && prevAll.topQc) {
+    prevAll.topQc.forEach(function(s, idx) { 
+        presentationData.prevRankMapQc[s.member.id] = idx + 1; 
+    });
+}
 
-        sortedQc.forEach(function(s, idx) {
-            var rank = idx + 1;
-            setRankToAllKeys(presentationData.prevRankMapQcTemp, s, rank);
-            setRankToAllKeys(presentationData.prevRankMapQc, s, rank);
-        });
-    } else if (prevTemp && (prevTemp.topPerf || prevTemp.topQc)) {
-        if (Array.isArray(prevTemp.topPerf)) {
-            prevTemp.topPerf.forEach(function(s, idx) { setRankToAllKeys(presentationData.prevRankMapPerfTemp, s, idx + 1); });
+var prevStartStrFormat = prevStart.getFullYear() + "-" + String(prevStart.getMonth() + 1).padStart(2, '0') + "-" + String(prevStart.getDate()).padStart(2, '0');
+var prevEndStrFormat = prevEnd.getFullYear() + "-" + String(prevEnd.getMonth() + 1).padStart(2, '0') + "-" + String(prevEnd.getDate()).padStart(2, '0');
+
+var prevTemp = buildTempTeamStats(prevStartStrFormat, prevEndStrFormat);
+presentationData.prevTemp = prevTemp;
+
+presentationData.prevRankMapPerfTemp = {};
+presentationData.prevRankMapQcTemp = {};
+
+var setRankToAllKeys = function(targetMap, s, rank) {
+    if (!targetMap || !s) return;
+    var keys = [
+        s.id,
+        s.userCode,
+        s.user,
+        s.fullName,
+        s.member ? s.member.id : null,
+        s.member ? s.member.userCode : null,
+        s.member ? s.member.user : null,
+        s.member ? s.member.fullName : null
+    ];
+    for (var k = 0; k < keys.length; k++) {
+        if (keys[k]) {
+            targetMap[keys[k]] = rank;
         }
-        if (Array.isArray(prevTemp.topQc)) {
-            prevTemp.topQc.forEach(function(s, idx) { setRankToAllKeys(presentationData.prevRankMapQcTemp, s, idx + 1); });
-        }
     }
-} 
+};
+
+// ดึงจาก topPerf และ topQc โดยตรง เพื่อให้อันดับตรงกับหน้าจอแสดงผลจริง 100%
+if (prevTemp) {
+    if (Array.isArray(prevTemp.topPerf)) {
+        prevTemp.topPerf.forEach(function(s, idx) {
+            setRankToAllKeys(presentationData.prevRankMapPerfTemp, s, idx + 1);
+        });
+    }
+    if (Array.isArray(prevTemp.topQc)) {
+        prevTemp.topQc.forEach(function(s, idx) {
+            setRankToAllKeys(presentationData.prevRankMapQcTemp, s, idx + 1);
+        });
+    }
+}
+}
 
 
 function getDatesInRange(start, end) {
@@ -3928,8 +3900,8 @@ else if (slide.type === 't7_other_monthly') {
                             ? { borderColor: '#ef4444', borderWidth: 3, shadowBlur: 8, shadowColor: 'rgba(239, 68, 68, 0.4)' }
                             : { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
                         label: isMax 
-                            ? { color: '#ef4444', fontWeight: 'bold', fontSize: 11, formatter: '{b}\n{c}' }
-                            : { color: '#475569', fontWeight: 'normal', fontSize: 10, formatter: '{b}\n{c}' }
+                            ? { color: '#ef4444', fontWeight: 'bold', fontSize: 11, formatter: (params) => `${params.name}\n${Number(params.value).toLocaleString()}` }
+                            : { color: '#475569', fontWeight: 'normal', fontSize: 10, formatter: (params) => `${params.name}\n${Number(params.value).toLocaleString()}` }
                     };
                 });
             };
@@ -3957,14 +3929,14 @@ else if (slide.type === 't7_other_monthly') {
                     animation: true,
                     animationDuration: 1800,      // ยืดเวลาวาดกราฟให้ค่อยๆ ขยายออกอย่างสมูท
                     animationEasing: 'cubicOut',  // ความเร่งแบบนิ่มนวลตอนจบ
-                    tooltip: { trigger: 'item', formatter: '{b}: <br/>{c} งาน ({d}%)' },
-                    series: [{ 
-                        name, 
-                        type: 'pie', 
-                        radius: ['40%', '70%'], 
+                    tooltip: { trigger: 'item', formatter: (params) => `${params.name}: <br/>${Number(params.value).toLocaleString()} งาน (${params.percent}%)` },
+                    series: [{  
+                        name,  
+                        type: 'pie',  
+                        radius: ['40%', '70%'],  
                         center: ['50%', '50%'],
                         data: seriesData,
-                        label: { show: true, fontSize: 10 }
+                        label: { show: true, fontSize: 10, formatter: (params) => `${params.name}\n${Number(params.value).toLocaleString()}` }
                     }]
                 };
             };
@@ -4000,9 +3972,9 @@ else if (slide.type === 't7_other_monthly') {
 else if (slide.type === 'temp_group') {
     const selectedMonth = parseInt(document.getElementById('monthSelect')?.value) || 3; 
     const selectedYear = parseInt(document.getElementById('yearSelect')?.value) || 2026;
-    const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();          
+    const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();         
 
-    const targetApprovePerDay = 3600; // Target ยอดอนุมัติเฉลี่ยต่อวัน (ปรับเปลี่ยนได้ตามจริง)
+    const targetApprovePerDay = currentTempTarget;
 
     // 1. คำนวณผลรวมค่าเฉลี่ย QC ของทุกคนในทีม Temp (QC_รวมทีม)
     const totalTeamQcAvg = presentationData.temp.list.reduce((sum, item) => sum + (item.avgQc || 0), 0);
@@ -4055,10 +4027,10 @@ else if (slide.type === 'temp_group') {
                         <td class="p-3 text-left font-bold text-slate-800">${s.member.fullName}</td>
                         <td class="p-3 text-center"><div class="font-bold">${s.workDays} วัน</div><div class="text-indigo-500 text-xs">(${s.percentWork.toFixed(1)}%)</div></td>
                         <td class="p-3 text-center font-bold text-indigo-800 text-lg">${s.totalApprove.toLocaleString()}</td>
-                        <td class="p-3 text-center font-bold text-indigo-600">${s.avgApprove.toFixed(1)}</td>
+                        <td class="p-3 text-center font-bold text-indigo-600">${s.avgApprove.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
                         <td class="p-3 text-center font-bold text-blue-500">${s.percentApprove.toFixed(1)}%</td>
                         <td class="p-3 text-center font-bold text-rose-600 text-lg">${s.totalQc.toLocaleString()}</td>
-                        <td class="p-3 text-center font-bold text-rose-500">${s.avgQc.toFixed(2)}</td>
+                        <td class="p-3 text-center font-bold text-rose-500">${s.avgQc.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         <td class="p-3 text-center font-bold text-rose-400">${s.percentQc.toFixed(1)}%</td>
                         <td class="p-3 text-center font-black text-emerald-600 text-lg">${s.totalPercent.toFixed(2)}%</td>
                     </tr>`).join('')}
@@ -4071,24 +4043,23 @@ else if (slide.type === 'temp_group') {
     else if (slide.type === 'temp_top_perf' || slide.type === 'temp_top_qc' || slide.type === 'all_top_perf' || slide.type === 'all_top_qc') {
     let listData = [];
     let isQc = slide.type.includes('qc');
+    let isTemp = slide.type.startsWith('temp_');
     
     if (slide.type === 'temp_top_perf') listData = presentationData.temp.topPerf.slice(0, 10);
     else if (slide.type === 'temp_top_qc') listData = presentationData.temp.topQc.slice(0, 10);
     else if (slide.type === 'all_top_perf') listData = presentationData.all.topPerf.slice(0, 10);
     else if (slide.type === 'all_top_qc') listData = presentationData.all.topQc.slice(0, 10);
 
-    // --- DEBUG ZONE (กด F12 ดูผลลัพธ์ใน Console) ---
+    // --- DEBUG ZONE ---
     console.group(`🔍 [DEBUG] Slide Type: ${slide.type}`);
     console.log("1. presentationData ทั้งหมด:", presentationData);
     console.log("2. presentationData.temp:", presentationData.temp);
     console.log("3. prevRankMapPerf (All):", presentationData.prevRankMapPerf);
     console.log("4. prevRankMapQc (All):", presentationData.prevRankMapQc);
-    if (presentationData.temp) {
-        console.log("5. prevRankMapPerf (Temp):", presentationData.temp.prevRankMapPerf);
-        console.log("6. prevRankMapQc (Temp):", presentationData.temp.prevRankMapQc);
-    }
+    console.log("5. prevRankMapPerf (Temp):", presentationData.prevRankMapPerfTemp);
+    console.log("6. prevRankMapQc (Temp):", presentationData.prevRankMapQcTemp);
     console.groupEnd();
-    // ---------------------------------------------
+    // -----------------
 
     let icon = isQc ? '🚨' : '🏆';
     let bg = isQc ? 'bg-rose-50/50' : 'bg-indigo-50/50';
@@ -4101,38 +4072,27 @@ else if (slide.type === 'temp_group') {
         <div class="flex flex-col gap-1.5 overflow-hidden pr-1 animate-slide delay-100">
             ${listData.map((s, idx) => {
                 let rankNum = idx + 1;
-                
                 let prevRank;
-                const userId = s.member?.user || s.user || s.member?.id; 
-		const fullName = s.member?.fullName || s.fullName;
+                const userId = s.member?.user || s.user || s.member?.id || s.member?.userCode; 
+                const fullName = s.member?.fullName || s.fullName;
                 
-                const sourcesToCheck = [
-                    slide.type.startsWith('temp_') ? presentationData.temp : null,
-                    presentationData.all,
-                    presentationData
-                ].filter(Boolean);
-
-                for (const source of sourcesToCheck) {
-                    const rankMap = isQc ? source?.prevRankMapQc : source?.prevRankMapPerf;
-                    if (rankMap) {
-    // เปลี่ยนมาใช้ userId ในการตรวจสอบเป็นอันดับแรก
-    if (userId && rankMap[userId] !== undefined) {
-        prevRank = rankMap[userId];
-        break;
-    }
-    // สำรองการค้นหาด้วยชื่อเผื่อกรณีที่ไม่มี User
-    if (fullName && rankMap[fullName] !== undefined) {
-        prevRank = rankMap[fullName];
-        break;
-    }
-}
+                let rankMap;
+                if (isTemp) {
+                    rankMap = isQc ? presentationData.prevRankMapQcTemp : presentationData.prevRankMapPerfTemp;
+                } else {
+                    rankMap = isQc ? presentationData.prevRankMapQc : presentationData.prevRankMapPerf;
                 }
 
-                // DEBUG รายชื่อแต่ละคน
-                console.log(`👤 สมาชิก: [${fullName}] (User: ${userId}) -> หาค่า prevRank ได้:`, prevRank);
+                if (rankMap) {
+                    if (userId && rankMap[userId] !== undefined) {
+                        prevRank = rankMap[userId];
+                    } else if (fullName && rankMap[fullName] !== undefined) {
+                        prevRank = rankMap[fullName];
+                    }
+                }
 
                 let rankBadgeHtml = getRankBadge(rankNum, prevRank, isQc);
-                let nickNameStr = s.member.nickName ? '(' + s.member.nickName + ')' : '';
+                let nickNameStr = s.member && s.member.nickName ? '(' + s.member.nickName + ')' : '';
                 
                 if (slide.type === 'temp_top_perf') {
                     const avgApprovePerDay = s.workDays > 0 ? (s.totalApprove / s.workDays).toFixed(1) : 0;
@@ -4142,19 +4102,19 @@ else if (slide.type === 'temp_group') {
                             <div class="w-7 h-7 rounded-full bg-indigo-50 text-indigo-700 font-black flex items-center justify-center text-xs">${rankNum}</div>
                             <div>
                                 <div class="font-bold text-slate-800 text-sm flex items-center gap-2">
-                                    ${s.member.fullName} ${nickNameStr}
+                                    ${s.member?.fullName || s.fullName} ${nickNameStr}
                                     ${rankBadgeHtml}
                                 </div>
                                 <div class="flex items-center gap-4 text-xs text-slate-500 mt-0.5">
-                                    <span>วันทำงาน: <strong class="text-slate-700">${s.workDays} วัน</strong></span>
+                                    <span>วันทำงาน: <strong class="text-slate-700">${s.workDays || 0} วัน</strong></span>
                                     <span>เฉลี่ยอนุมัติ: <strong class="text-indigo-600">${avgApprovePerDay} งาน/วัน</strong></span>
                                     <span>ยอดผิด: <strong class="text-rose-600">${s.totalQc || 0} รายการ</strong></span>
-                                    <span class="text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-medium">รวม: ${s.totalApprove.toLocaleString()} งาน</span>
+                                    <span class="text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-medium">รวม: ${(s.totalApprove || 0).toLocaleString()} งาน</span>
                                 </div>
                             </div>
                         </div>
                         <div class="text-right">
-                            <div class="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-rose-500">${s.totalPercent.toFixed(2)}%</div>
+                            <div class="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-rose-500">${(s.totalPercent || 0).toFixed(2)}%</div>
                             <span class="text-[10px] text-slate-400 font-medium">เปอร์เซ็นต์รวม</span>
                         </div>
                     </div>`;
@@ -4162,13 +4122,13 @@ else if (slide.type === 'temp_group') {
 
                 let mainValue = ''; let subValue = '';
                 if (slide.type === 'temp_top_qc') {
-                    mainValue = `<div class="font-black text-rose-600 text-base">${s.totalQc.toLocaleString()} รายการ</div>`;
-                    subValue = `วันทำงาน ${s.workDays} วัน`;
+                    mainValue = `<div class="font-black text-rose-600 text-base">${(s.totalQc || 0).toLocaleString()} รายการ</div>`;
+                    subValue = `วันทำงาน ${s.workDays || 0} วัน`;
                 } else if (slide.type === 'all_top_perf') {
-                    mainValue = `<div class="font-black text-indigo-600 text-base">${s.avgPerDay.toLocaleString()} งาน/วัน</div>`;
-                    subValue = `รวม ${s.totalTasks.toLocaleString()} งาน (${s.workDays} วัน)`;
+                    mainValue = `<div class="font-black text-indigo-600 text-base">${(s.avgPerDay || 0).toLocaleString()} งาน/วัน</div>`;
+                    subValue = `รวม ${(s.totalTasks || 0).toLocaleString()} งาน (${s.workDays || 0} วัน)`;
                 } else {
-                    mainValue = `<div class="font-black text-rose-600 text-base">${s.totalQc.toLocaleString()} รายการ</div>`;
+                    mainValue = `<div class="font-black text-rose-600 text-base">${(s.totalQc || 0).toLocaleString()} รายการ</div>`;
                 }
 
                 return `
@@ -4177,7 +4137,7 @@ else if (slide.type === 'temp_group') {
                         <div class="w-7 h-7 rounded-full ${bg} ${isQc ? 'text-rose-700' : 'text-indigo-700'} font-black flex items-center justify-center text-xs">${rankNum}</div>
                         <div>
                             <div class="font-bold text-slate-800 text-sm flex items-center gap-2">
-                                ${s.member.fullName} ${nickNameStr}
+                                ${s.member?.fullName || s.fullName} ${nickNameStr}
                                 ${rankBadgeHtml}
                             </div>
                         </div>
@@ -4193,49 +4153,49 @@ else if (slide.type === 'temp_group') {
 }
 
     // หน้าตารางภาพรวมทีม 1-5 (10 อันดับแรก)
-    else if (slide.type === 'all_summary_table') {
-        const top10 = presentationData.all.topPerf.slice(0, 10);
-        contentBox.innerHTML = `
-        <div class="h-full flex flex-col gap-4">
-            <h3 class="text-xl font-bold text-indigo-700 bg-indigo-50/50 py-3 px-6 rounded-2xl flex items-center gap-3">
-                <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                ผลรวมยอดระหว่างวันที่: ${presentationData.rangeText} (สรุปผลรวม 10 อันดับแรก ทีม 1-5)
-            </h3>
-            <div class="overflow-x-auto border border-slate-200 rounded-3xl shadow-sm bg-white animate-slide delay-100">
-                <table class="w-full text-base border-collapse">
-                    <thead class="bg-slate-50 text-slate-600">
-                        <tr>
-                            <th class="${thClass} text-left pl-6 w-48">ชื่อ</th>
-                            <th class="${thClass} text-green-600">ML</th>
-                            <th class="${thClass} text-red-600">MN</th>
-                            <th class="${thClass} text-orange-500">RCF</th>
-                            <th class="${thClass} text-blue-600">LOG</th>
-                            <th class="${thClass} text-purple-600">TXN Manual</th>
-                            <th class="${thClass} text-amber-600">CCTV</th>
-                            <th class="${thClass} text-rose-500">Temp</th>
-                            <th class="${thClass} text-red-700">รถขบวน</th>
-                            <th class="${thClass} text-rose-700">QC</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${top10.map(s => `
-                        <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-                            <td class="p-4 text-left pl-6 font-bold text-slate-800">${s.member.nickName || s.member.fullName.split(' ')[0]}</td>
-                            <td class="${tdClass}">${s.sums.ml || '0'}</td>
-                            <td class="${tdClass}">${s.sums.mn || '0'}</td>
-                            <td class="${tdClass}">${s.sums.rcf || '0'}</td>
-                            <td class="${tdClass}">${s.sums.log || '0'}</td>
-                            <td class="${tdClass}">${s.sums.txn || '0'}</td>
-                            <td class="${tdClass}">${s.sums.cctv || '0'}</td>
-                            <td class="${tdClass}">${s.sums.inq || '0'}</td>
-                            <td class="${tdClass}">${s.sums.conv || '0'}</td>
-                            <td class="${tdClass} font-bold text-rose-600">${s.sums.qc || '0'}</td>
-                        </tr>`).join('')}
-                    </tbody>
-                </table>
-            </div>
-        </div>`;
-    }
+else if (slide.type === 'all_summary_table') {
+    const top10 = presentationData.all.topPerf.slice(0, 10);
+    contentBox.innerHTML = `
+    <div class="h-full flex flex-col gap-4">
+        <h3 class="text-xl font-bold text-indigo-700 bg-indigo-50/50 py-3 px-6 rounded-2xl flex items-center gap-3">
+            <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            ผลรวมยอดระหว่างวันที่: ${presentationData.rangeText} (สรุปผลรวม 10 อันดับแรก ทีม 1-5)
+        </h3>
+        <div class="overflow-x-auto border border-slate-200 rounded-3xl shadow-sm bg-white animate-slide delay-100">
+            <table class="w-full text-base border-collapse">
+                <thead class="bg-slate-50 text-slate-600">
+                    <tr>
+                        <th class="${thClass} text-left pl-6 w-48">ชื่อ</th>
+                        <th class="${thClass} text-green-600">ML</th>
+                        <th class="${thClass} text-red-600">MN</th>
+                        <th class="${thClass} text-orange-500">RCF</th>
+                        <th class="${thClass} text-blue-600">LOG</th>
+                        <th class="${thClass} text-purple-600">TXN Manual</th>
+                        <th class="${thClass} text-amber-600">CCTV</th>
+                        <th class="${thClass} text-rose-500">Temp</th>
+                        <th class="${thClass} text-red-700">รถขบวน</th>
+                        <th class="${thClass} text-rose-700">QC</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${top10.map(s => `
+                    <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                        <td class="p-4 text-left pl-6 font-bold text-slate-800">${s.member.nickName || s.member.fullName.split(' ')[0]}</td>
+                        <td class="${tdClass}">${(s.sums.ml || 0).toLocaleString()}</td>
+                        <td class="${tdClass}">${(s.sums.mn || 0).toLocaleString()}</td>
+                        <td class="${tdClass}">${(s.sums.rcf || 0).toLocaleString()}</td>
+                        <td class="${tdClass}">${(s.sums.log || 0).toLocaleString()}</td>
+                        <td class="${tdClass}">${(s.sums.txn || 0).toLocaleString()}</td>
+                        <td class="${tdClass}">${(s.sums.cctv || 0).toLocaleString()}</td>
+                        <td class="${tdClass}">${(s.sums.inq || 0).toLocaleString()}</td>
+                        <td class="${tdClass}">${(s.sums.conv || 0).toLocaleString()}</td>
+                        <td class="${tdClass} font-bold text-rose-600">${(s.sums.qc || 0).toLocaleString()}</td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>
+        </div>
+    </div>`;
+}
 
     else if (slide.type === 'closing') {
         contentBox.innerHTML = `
@@ -4467,6 +4427,34 @@ function renderSlideDailyMixedChart(memberId, pData, targetPercent) {
     const wrongData = dailyList.map(d => d.wrong || 0);
     const percentData = dailyList.map(d => d.percent || 100);
 
+    const minVal = Math.min(...percentData);
+    const maxVal = Math.max(...percentData);
+    const hasVariation = (minVal !== maxVal);
+
+    const formattedPercentData = percentData.map(val => {
+        const isMin = hasVariation && (val === minVal);
+        const isMax = hasVariation && (val === maxVal);
+        return {
+            value: val,
+            symbolSize: isMin || isMax ? 13 : 7,
+            itemStyle: {
+                color: isMin ? '#dc2626' : (isMax ? '#059669' : '#3b82f6'),
+                borderColor: '#ffffff',
+                borderWidth: isMin || isMax ? 2 : 0,
+                shadowBlur: isMin || isMax ? 6 : 0,
+                shadowColor: isMin ? 'rgba(220, 38, 38, 0.6)' : (isMax ? 'rgba(5, 150, 105, 0.6)' : 'transparent')
+            },
+            label: {
+                show: true,
+                position: 'top',
+                formatter: '{c}%',
+                fontSize: isMin || isMax ? 11 : 10,
+                fontWeight: 'bold',
+                color: isMin ? '#dc2626' : (isMax ? '#059669' : '#475569')
+            }
+        };
+    });
+
     const checkIsT7 = (val) => {
         if (!val) return false;
         const clean = String(val).toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -4496,11 +4484,83 @@ function renderSlideDailyMixedChart(memberId, pData, targetPercent) {
 
     const isT7 = (minPercent === 97);
 
+    // คำนวณสัดส่วนความสูงเพื่อเช็กการชนกันของป้ายยอดผิดกับจุดเปอร์เซ็นต์แบบ Real-time รายวัน
+    const maxLeftVal = Math.max(...correctData.map((c, idx) => c + (wrongData[idx] || 0)));
+    const estimatedAxisMax = Math.ceil(maxLeftVal * 1.2) || 1;
+
+    const formattedWrongData = wrongData.map((val, index) => {
+        const totalBar = correctData[index] + val;
+        const pct = percentData[index];
+        
+        // เทียบสัดส่วนตำแหน่งความสูงบนกราฟ (0 ถึง 1) ของทั้ง 2 แกน
+        const barHeightRatio = totalBar / estimatedAxisMax;
+        const linePosRatio = (pct - minPercent) / (100 - minPercent);
+        
+        // ถ้าจุดเปอร์เซ็นต์อยู่ชิดหรือต่ำกว่ายอดแท่งกราฟ และมีระยะห่างน้อยกว่า 12% ให้ถือว่าชน/ทับซ้อนกัน
+        const isColliding = (linePosRatio >= barHeightRatio) && ((linePosRatio - barHeightRatio) < 0.12);
+
+        return {
+            value: val,
+            label: {
+                show: true,
+                position: isColliding ? 'inside' : 'top',
+                fontSize: 10,
+                fontWeight: 'bold',
+                color: isColliding ? '#ffffff' : '#1e293b',
+                textBorderColor: isColliding ? 'rgba(0, 0, 0, 0.7)' : 'transparent',
+                textBorderWidth: isColliding ? 2 : 0,
+                formatter: function(params) {
+                    return params.value > 99 ? Number(params.value).toLocaleString() : params.value;
+                }
+            }
+        };
+    });
+
     chart.setOption({
         tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-        legend: { data: ['ยอดถูกต้อง', 'ยอดผิด', '% อนุมัติถูก', 'Target'], textStyle: { fontSize: 11 } },
-        grid: { top: '18%', bottom: '12%', left: '6%', right: '5%' },
-        xAxis: [{ type: 'category', data: days, axisLabel: { fontSize: 11, interval: 0, rotate: 30 }, splitLine: { show: false } }],
+        legend: { data: ['ยอดถูกต้อง', 'ยอดผิด', '% อนุมัติถูก', 'Target'], textStyle: { fontSize: 13 } },
+        grid: { top: '18%', bottom: '15%', left: '6%', right: '5%' },
+        xAxis: [{ 
+            type: 'category', 
+            data: days, 
+            axisLabel: { 
+                fontSize: 12, 
+                interval: 0, 
+                rotate: 30,
+                formatter: function (value, index) {
+                    const val = percentData[index];
+                    const isMin = hasVariation && (val === minVal);
+                    const isMax = hasVariation && (val === maxVal);
+                    if (isMin) return `{minText|${value}}`;
+                    if (isMax) return `{maxText|${value}}`;
+                    return `{normalText|${value}}`;
+                },
+                rich: {
+                    minText: {
+                        color: '#b91c1c',
+                        fontWeight: 'bold',
+                        backgroundColor: '#fee2e2',
+                        borderColor: '#f87171',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        padding: [3, 5]
+                    },
+                    maxText: {
+                        color: '#047857',
+                        fontWeight: 'bold',
+                        backgroundColor: '#d1fae5',
+                        borderColor: '#34d399',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        padding: [3, 5]
+                    },
+                    normalText: {
+                        color: '#334155'
+                    }
+                }
+            }, 
+            splitLine: { show: false } 
+        }],
         yAxis: [
             {
                 type: 'value',
@@ -4544,7 +4604,7 @@ function renderSlideDailyMixedChart(memberId, pData, targetPercent) {
                 label: { 
                     show: true, 
                     position: 'inside', 
-                    fontSize: 10, // ขนาดสำหรับรายวัน (พอดีกับช่องที่มีหลายแท่ง)
+                    fontSize: 10, 
                     color: '#ffffff',
                     textBorderColor: 'rgba(0, 0, 0, 0.7)',
                     textBorderWidth: 2,
@@ -4557,7 +4617,7 @@ function renderSlideDailyMixedChart(memberId, pData, targetPercent) {
                 name: 'ยอดผิด', 
                 type: 'bar', 
                 stack: 'total', 
-                data: wrongData, 
+                data: formattedWrongData, 
                 barMinHeight: isT7 ? 7 : 0, 
                 itemStyle: { 
                     color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
@@ -4568,25 +4628,15 @@ function renderSlideDailyMixedChart(memberId, pData, targetPercent) {
                     shadowBlur: 5,
                     shadowOffsetX: 2,
                     shadowOffsetY: 2
-                }, 
-                label: { 
-                    show: true, 
-                    position: 'top', 
-                    fontSize: 10,
-                    formatter: function(params) {
-                        return params.value > 99 ? Number(params.value).toLocaleString() : params.value;
-                    } 
-                } 
+                }
             },
             { 
                 name: '% อนุมัติถูก', 
                 type: 'line', 
                 yAxisIndex: 1, 
-                data: percentData, 
+                data: formattedPercentData, 
                 itemStyle: { color: '#3b82f6' }, 
-                lineStyle: { width: 3, shadowColor: 'rgba(59, 130, 246, 0.4)', shadowBlur: 6 }, 
-                symbolSize: 7, 
-                label: { show: true, position: 'top', formatter: '{c}%', fontSize: 10 } 
+                lineStyle: { width: 3, shadowColor: 'rgba(59, 130, 246, 0.4)', shadowBlur: 6 }
             },
             { 
                 name: 'Target', 
@@ -4862,6 +4912,27 @@ document.addEventListener('keydown', function(event) {
         }
     });
 
+let currentTempTarget = 4000;
+
+function updateTempTarget(inputElement) {
+    const val = inputElement.value;
+    const num = parseFloat(val);
+    
+    if (!isNaN(num) && num > 0) {
+        currentTempTarget = num;
+        
+        // ปลดเคอร์เซอร์ออกจากช่องทันที แต่ตัวเลขยังค้างอยู่
+        if (inputElement && typeof inputElement.blur === 'function') {
+            inputElement.blur();
+        }
+        
+        // สั่งวาดหน้าจอใหม่ทันทีด้วยฟังก์ชัน renderSlide ของคุณ
+        if (typeof renderSlide === 'function') {
+            renderSlide();
+        }
+    }
+}
+
     </script>
 
 <!-- Modal Top Performance -->
@@ -4930,7 +5001,7 @@ document.addEventListener('keydown', function(event) {
 <!-- Modal สำหรับนำเสนอสไลด์ -->
 <div id="presentation-modal" class="fixed inset-0 bg-slate-900 z-[400] hidden flex-col transition-all duration-500 opacity-0">
     <!-- Header / Navigation -->
-    <div class="flex flex-wrap justify-between items-center p-4 text-white bg-slate-800 border-b border-slate-700 shadow-lg gap-4 shrink-0">
+    <div id="presentation-header" class="flex flex-wrap justify-between items-center p-4 text-white bg-slate-800 border-b border-slate-700 shadow-lg gap-4 shrink-0 transition-all duration-300">
         <!-- ฝั่งซ้าย: ตัวบอกหน้า, ช่องกรอกกระโดดหน้า และหัวข้อ -->
         <div class="flex items-center gap-3 flex-wrap">
             <span id="slide-indicator" class="text-sm font-bold bg-slate-700 px-3 py-1.5 rounded-xl text-emerald-300">หน้า 1 / 19</span>
@@ -4957,6 +5028,13 @@ document.addEventListener('keydown', function(event) {
             <button onclick="nextSlide()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg font-bold transition flex items-center gap-1.5 text-sm">
                 ถัดไป <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
             </button>
+<div class="flex items-center gap-1.5 bg-slate-700/80 px-2.5 py-1 rounded-xl border border-slate-600 shadow">
+    <span class="text-xs text-slate-300 font-medium">Target อนุมัติ/วัน:</span>
+    <input type="number" id="temp-target-input" value="4000" step="100" 
+           class="w-16 bg-slate-900 text-white text-center text-xs py-1 px-1 rounded-lg border border-slate-600 focus:outline-none focus:border-emerald-500 font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+           onchange="updateTempTarget(this)" 
+           onkeydown="if(event.key === 'Enter') { this.blur(); updateTempTarget(this); }">
+</div>
 
             <div class="h-6 w-px bg-slate-700 mx-1"></div>
 
@@ -4972,6 +5050,11 @@ document.addEventListener('keydown', function(event) {
 
             <div class="h-6 w-px bg-slate-700 mx-1"></div>
 
+            <!-- ปุ่มย่อเมนูขึ้นไปซ่อน -->
+            <button onclick="togglePresentationHeader()" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-emerald-400 rounded-lg font-bold transition flex items-center gap-1.5 text-sm" title="ย่อแถบเมนู">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg> ย่อเมนู
+            </button>
+
             <button onclick="closePresentation()" class="px-3 py-2 bg-rose-600 hover:bg-rose-500 rounded-lg font-bold transition flex items-center gap-1.5 text-sm">
                 ปิดหน้าต่าง <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
@@ -4985,6 +5068,117 @@ document.addEventListener('keydown', function(event) {
         </div>
     </div>
 </div>
+
+
+<!-- ========================================== -->
+<!-- ย้ายปุ่ม AssistiveTouchให้อยู่นอก Modal ตรงนี้ -->
+<!-- ========================================== -->
+<div id="assistive-touch-btn" class="fixed top-4 right-4 z-[9999] hidden w-12 h-12 bg-slate-800/70 hover:bg-slate-800 backdrop-blur-md border border-white/40 rounded-full shadow-2xl items-center justify-center cursor-pointer transition-colors duration-300 text-white group" title="ลากเพื่อย้ายตำแหน่ง / คลิกเพื่อเปิดเมนู">
+    <svg class="w-6 h-6 text-emerald-400 group-hover:rotate-180 transition-transform duration-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+    </svg>
+</div>
+
+<script>
+// ฟังก์ชันสลับเปิด/ปิดแถบเมนูด้านบน
+function togglePresentationHeader() {
+    const header = document.getElementById('presentation-header');
+    const assistiveBtn = document.getElementById('assistive-touch-btn');
+    const isHidden = header.classList.contains('hidden');
+    
+    if (isHidden) {
+        header.classList.remove('hidden');
+        assistiveBtn.classList.remove('flex');
+        assistiveBtn.classList.add('hidden');
+    } else {
+        header.classList.add('hidden');
+        assistiveBtn.classList.remove('hidden');
+        assistiveBtn.classList.add('flex');
+    }
+}
+
+// ระบบจัดการการลากปุ่ม AssistiveTouch ไปวางได้ทุกจุดบนจอ
+const assistiveBtn = document.getElementById('assistive-touch-btn');
+let isDragging = false;
+let startX, startY, initialLeft, initialTop;
+let hasMoved = false;
+
+if (assistiveBtn) {
+    assistiveBtn.addEventListener('mousedown', startDrag);
+    assistiveBtn.addEventListener('touchstart', startDrag, { passive: false });
+}
+
+function startDrag(e) {
+    isDragging = true;
+    hasMoved = false;
+    
+    const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+
+    startX = clientX;
+    startY = clientY;
+
+    const rect = assistiveBtn.getBoundingClientRect();
+    initialLeft = rect.left;
+    initialTop = rect.top;
+
+    assistiveBtn.style.position = 'fixed';
+    assistiveBtn.style.left = initialLeft + 'px';
+    assistiveBtn.style.top = initialTop + 'px';
+    assistiveBtn.style.right = 'auto';
+    assistiveBtn.style.bottom = 'auto';
+
+    document.addEventListener('mousemove', onDrag);
+    document.addEventListener('touchmove', onDrag, { passive: false });
+    document.addEventListener('mouseup', endDrag);
+    document.addEventListener('touchend', endDrag);
+}
+
+function onDrag(e) {
+    if (!isDragging) return;
+    
+    const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+
+    const deltaX = clientX - startX;
+    const deltaY = clientY - startY;
+
+    // ถ้าขยับเกิน 5 พิกเซล ให้ถือว่าเป็นการลาก
+    if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+        hasMoved = true;
+    }
+
+    let newLeft = initialLeft + deltaX;
+    let newTop = initialTop + deltaY;
+
+    // จำกัดขอบเขตไม่ให้ลากตกขอบจอ
+    const maxX = window.innerWidth - assistiveBtn.offsetWidth;
+    const maxY = window.innerHeight - assistiveBtn.offsetHeight;
+
+    newLeft = Math.max(10, Math.min(newLeft, maxX - 10));
+    newTop = Math.max(10, Math.min(newTop, maxY - 10));
+
+    assistiveBtn.style.left = newLeft + 'px';
+    assistiveBtn.style.top = newTop + 'px';
+
+    e.preventDefault();
+}
+
+function endDrag(e) {
+    if (!isDragging) return;
+    isDragging = false;
+
+    document.removeEventListener('mousemove', onDrag);
+    document.removeEventListener('touchmove', onDrag);
+    document.removeEventListener('mouseup', endDrag);
+    document.removeEventListener('touchend', endDrag);
+
+    // ถ้าไม่มีการลาก (เป็นการคลิก/แตะธรรมดา) ให้สั่งเปิดเมนูกลับขึ้นมา
+    if (!hasMoved) {
+        togglePresentationHeader();
+    }
+}
+</script>
 
 </body>
 </html>
