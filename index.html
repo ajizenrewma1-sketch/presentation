@@ -3358,7 +3358,8 @@ function renderSlide() {
     document.getElementById('slide-title').textContent = slide.title;
     const contentBox = document.getElementById('slide-content');
     contentBox.innerHTML = '';
-    contentBox.className = "w-full h-full max-w-[1400px] bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-100/40 backdrop-blur-md rounded-[2rem] shadow-2xl p-6 md:p-8 overflow-y-auto border border-slate-200/80 animate-slide";
+    // เอา max-w-[1400px], rounded, shadow และ border ออก เพื่อให้ขยายเต็มจอซ้าย-ขวา
+    contentBox.className = "w-full h-full bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-100/40 backdrop-blur-md p-0 overflow-y-auto animate-slide";
 
     const thClass = "p-3 font-bold border-b border-slate-200";
     const tdClass = "p-3 border-b border-slate-100 text-center";
@@ -3369,7 +3370,7 @@ if (currentSlideIndex === 0) {
     const displayYear = presentationData.year || '';
 
     contentBox.innerHTML = `
-    <div class="relative flex flex-col items-center justify-center h-full p-8 text-center overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-900 text-white rounded-[2rem] shadow-2xl">
+    <div class="relative flex flex-col items-center justify-center w-full h-full p-8 text-center overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-900 text-white">
         <!-- แสงตกแต่งพื้นหลัง -->
         <div class="absolute -top-24 -left-24 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
         <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -3382,11 +3383,11 @@ if (currentSlideIndex === 0) {
             <p class="text-lg text-slate-300 font-medium tracking-wide">รายงานและสรุปผลการปฏิบัติงาน Temp และ TG</p>
         </div>
 
-        <!-- ถนนจำลองและอนิเมชั่นรถวิ่งด้านล่าง (ขยายพื้นที่ถนนให้ใหญ่ขึ้น h-24) -->
+        <!-- ถนนจำลองและอนิเมชั่นรถวิ่งด้านล่าง -->
         <div class="absolute bottom-0 left-0 w-full h-24 overflow-hidden border-t-2 border-slate-700/60 bg-slate-950/80 backdrop-blur-md flex items-center shadow-inner">
             <!-- เส้นประกลางถนน -->
             <div class="absolute w-full border-b-4 border-dashed border-amber-400/80 top-1/2 -translate-y-1/2"></div>
-            <!-- รถวิ่งอนิเมชั่น (เพิ่มขนาดเป็น text-5xl และใช้ scaleX(-1) กลับด้านหันหน้าถูกฝั่ง) -->
+            <!-- รถวิ่งอนิเมชั่น -->
             <div class="absolute text-5xl filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)]" style="animation: carDrive 8s linear infinite;">
                 🚗
             </div>
@@ -3405,7 +3406,7 @@ if (currentSlideIndex === 0) {
 // --- หน้าผลปฏิบัติงานทีม TG ---
 else if (slide.type === 'tg_performance') {
     contentBox.innerHTML = `
-    <div class="relative flex flex-col items-center justify-center h-full p-8 text-center overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-900 text-white rounded-[2rem] shadow-2xl">
+    <div class="relative flex flex-col items-center justify-center w-full h-full p-8 text-center overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-900 text-white">
         <!-- แสงตกแต่งพื้นหลัง -->
         <div class="absolute -top-24 -left-24 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
         <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -3422,7 +3423,7 @@ else if (slide.type === 'tg_performance') {
 // --- หน้าผลปฏิบัติงานทีม Temp ---
 else if (slide.type === 'temp_performance') {
     contentBox.innerHTML = `
-    <div class="relative flex flex-col items-center justify-center h-full p-8 text-center overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-900 text-white rounded-[2rem] shadow-2xl">
+    <div class="relative flex flex-col items-center justify-center w-full h-full p-8 text-center overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-900 text-white">
         <!-- แสงตกแต่งพื้นหลัง -->
         <div class="absolute -top-24 -left-24 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
         <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -3439,7 +3440,7 @@ else if (slide.type === 'temp_performance') {
 // --- หน้าสรุปผล Top Performance ---
 else if (slide.type === 'summary_top_perf') {
     contentBox.innerHTML = `
-    <div class="relative flex flex-col items-center justify-center h-full p-8 text-center overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-900 text-white rounded-[2rem] shadow-2xl">
+    <div class="relative flex flex-col items-center justify-center w-full h-full p-8 text-center overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-900 text-white">
         <!-- แสงตกแต่งพื้นหลัง -->
         <div class="absolute -top-24 -left-24 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
         <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -3481,61 +3482,72 @@ else if (slide.type === 't7_other_daily') {
     let nickDisplay = member.nickName ? `(${member.nickName})` : '';
 
     contentBox.innerHTML = `
-    <div class="h-full flex flex-col gap-4">
-        <!-- การ์ดตารางข้อมูล -->
-        <div class="bg-white/90 backdrop-blur-md rounded-2xl p-5 border border-slate-200/80 shadow-xl shadow-indigo-500/5">
+    <div class="h-full flex flex-col gap-4 overflow-y-auto p-4 w-full">
+        <!-- การ์ดหลัก: ขยายเต็มจอแบบ Responsive เต็มพื้นที่ -->
+        <div class="bg-white/90 backdrop-blur-md rounded-2xl p-5 border border-slate-200/80 shadow-xl shadow-indigo-500/5 w-full">
+            <!-- ส่วนหัวชื่อพนักงาน -->
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
-                <h3 class="text-lg lg:text-xl font-black text-slate-900 flex items-center gap-3">
-                    <span class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-violet-600 text-white flex items-center justify-center shadow-lg shadow-indigo-500/30 text-lg">📊</span>
+                <h3 class="text-lg font-black text-slate-900 flex items-center gap-3">
+                    <span class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-violet-600 text-white flex items-center justify-center shadow-md text-base">📊</span>
                     <span class="bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-800 bg-clip-text text-transparent">${member.fullName || member.name || 'หมวดงาน'} <span class="text-indigo-600 font-bold">${nickDisplay}</span></span>
                 </h3>
-                <!-- สไตล์ป้ายตราสแตรมป์ (Rubber Stamp Style) -->
-                <div class="px-3 py-1 rounded-lg border-2 font-black text-sm tracking-widest uppercase select-none shadow-sm ${isPass ? 'border-emerald-600 text-emerald-600 bg-emerald-50/50 rotate-2' : 'border-rose-600 text-rose-600 bg-rose-50/50 -rotate-2'}">
-                    ${isPass ? 'PASS' : 'FAIL'}
-                </div>
             </div>
-            <div class="overflow-hidden rounded-xl border border-slate-200/70 shadow-sm">
-                <table class="w-full text-sm border-collapse">
-                    <!-- ปรับโทนสีหัวตารางให้มีสีสันละมุนขึ้น -->
-                    <thead class="bg-gradient-to-r from-indigo-50/80 via-blue-50/50 to-slate-50 text-slate-700 font-bold uppercase tracking-wider text-xs">
-                        <tr>
-                            <th class="p-3 text-left pl-5 border-b border-slate-200">Product</th>
-                            <th class="p-3 text-right pr-5 border-b border-slate-200">รวมงาน</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100 bg-white">
-                        <tr class="hover:bg-slate-50/80 transition-colors bg-slate-50/30">
-                            <td class="p-3 pl-5 font-semibold text-slate-600 flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-slate-400"></span>จำนวนที่ตรวจสอบ
-                            </td>
-                            <td class="p-3 pr-5 text-right font-black text-slate-800 text-base">${totalInspected.toLocaleString()}</td>
-                        </tr>
-                        <tr class="hover:bg-slate-50/80 transition-colors bg-emerald-50/20">
-                            <td class="p-3 pl-5 font-semibold text-emerald-700 flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>อนุมัติถูกต้อง
-                            </td>
-                            <td class="p-3 pr-5 text-right font-black text-emerald-600 text-base">${totalCorrect.toLocaleString()}</td>
-                        </tr>
-                        <tr class="hover:bg-slate-50/80 transition-colors bg-rose-50/20">
-                            <td class="p-3 pl-5 font-semibold text-rose-700 flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-rose-500"></span>อนุมัติผิด
-                            </td>
-                            <td class="p-3 pr-5 text-right font-black text-rose-600 text-base">${totalWrong.toLocaleString()}</td>
-                        </tr>
-                        <tr class="hover:bg-slate-50/80 transition-colors bg-indigo-50/30">
-                            <td class="p-3 pl-5 font-bold text-indigo-900 flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-indigo-500"></span>% อนุมัติถูก
-                            </td>
-                            <td class="p-3 pr-5 text-right font-black text-indigo-700 text-base">${avgPercent}%</td>
-                        </tr>
-                        <tr class="hover:bg-slate-50/80 transition-colors bg-amber-50/20">
-                            <td class="p-3 pl-5 font-bold text-amber-800 flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-amber-500"></span>% Target
-                            </td>
-                            <td class="p-3 pr-5 text-right font-black text-amber-600 text-base">${targetPercent}%</td>
-                        </tr>
-                    </tbody>
-                </table>
+
+            <!-- ส่วนเนื้อหาแบ่งซ้าย-ขวา เต็มหน้าจอ (ตาราง 8 ส่วน, ป้ายสถานะ 4 ส่วน) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center w-full">
+                <!-- ตารางข้อมูล -->
+                <div class="lg:col-span-8 overflow-hidden rounded-xl border border-slate-200/70 shadow-sm bg-white">
+                    <table class="w-full text-sm border-collapse">
+                        <thead class="bg-gradient-to-r from-indigo-50/80 via-blue-50/50 to-slate-50 text-slate-700 font-bold uppercase tracking-wider text-xs">
+                            <tr>
+                                <th class="p-3 text-left pl-5 border-b border-slate-200">Product</th>
+                                <th class="p-3 text-right pr-5 border-b border-slate-200">รวมงาน</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 bg-white">
+                            <tr class="hover:bg-slate-50/80 transition-colors bg-slate-50/30">
+                                <td class="p-3 pl-5 font-semibold text-slate-600 flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-slate-400"></span>จำนวนที่ตรวจสอบ
+                                </td>
+                                <td class="p-3 pr-5 text-right font-black text-slate-800 text-base">${totalInspected.toLocaleString()}</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/80 transition-colors bg-emerald-50/20">
+                                <td class="p-3 pl-5 font-semibold text-emerald-700 flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>อนุมัติถูกต้อง
+                                </td>
+                                <td class="p-3 pr-5 text-right font-black text-emerald-600 text-base">${totalCorrect.toLocaleString()}</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/80 transition-colors bg-rose-50/20">
+                                <td class="p-3 pl-5 font-semibold text-rose-700 flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-rose-500"></span>อนุมัติผิด
+                                </td>
+                                <td class="p-3 pr-5 text-right font-black text-rose-600 text-base">${totalWrong.toLocaleString()}</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/80 transition-colors bg-indigo-50/30">
+                                <td class="p-3 pl-5 font-bold text-indigo-900 flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-indigo-500"></span>% อนุมัติถูก
+                                </td>
+                                <td class="p-3 pr-5 text-right font-black text-indigo-700 text-base">${avgPercent}%</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/80 transition-colors bg-amber-50/20">
+                                <td class="p-3 pl-5 font-bold text-amber-800 flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-amber-500"></span>% Target
+                                </td>
+                                <td class="p-3 pr-5 text-right font-black text-amber-600 text-base">${targetPercent}%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- พื้นที่ว่างด้านขวา: ป้าย PASS / FAIL -->
+                <div class="lg:col-span-4 bg-slate-50/60 rounded-2xl p-6 border border-slate-200/60 flex flex-col items-center justify-center text-center gap-3 h-full">
+                 <div class="px-8 py-4 rounded-2xl border-4 font-black text-3xl tracking-widest uppercase select-none shadow-md ${isPass ? 'border-emerald-600 text-emerald-600 bg-emerald-50/90 rotate-1' : 'border-rose-600 text-rose-600 bg-rose-50/90 -rotate-1'}">
+                        ${isPass ? 'PASS' : 'FAIL'}
+                    </div>
+                    <p class="text-xs text-slate-500 font-medium mt-1">
+                        ${isPass ? 'ผลการปฏิบัติงานผ่านเกณฑ์ที่กำหนด' : 'ผลการปฏิบัติงานยังไม่ถึงเกณฑ์ที่กำหนด'}
+                    </p>
+                </div>
             </div>
         </div>
 
@@ -3670,87 +3682,7 @@ else if (slide.type === 't7_other_monthly') {
     }, 300);
 }
 
-    // 1. หน้าข้อมูลตารางสรุป (ทีม 1-5) -> แสดงผลสำหรับหน้า 1, 3, 5, 7, 9
-    if (slide.type === 'team_summary') {
-        const tData = presentationData.teams[slide.teamId];
-        let html = `
-        <div class="h-full flex flex-col gap-6">
-            <h3 class="text-xl font-bold text-indigo-700 bg-indigo-50/50 py-3 px-6 rounded-2xl flex items-center gap-3">
-                <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                ผลรวมยอดระหว่างวันที่: ${presentationData.rangeText} (ทีม ${slide.teamId})
-            </h3>
-            
-            <div class="overflow-x-auto border border-slate-200 rounded-2xl shadow-sm bg-white animate-slide delay-100">
-                <table class="w-full text-sm border-collapse">
-                    <thead class="bg-slate-50 text-slate-600">
-                        <tr>
-                            <th class="${thClass} text-left pl-6">ชื่อ</th>
-                            <th class="${thClass} text-green-600">ML</th>
-                            <th class="${thClass} text-red-600">MN</th>
-                            <th class="${thClass} text-orange-500">RCF</th>
-                            <th class="${thClass} text-blue-600">LOG</th>
-                            <th class="${thClass} text-purple-600">TXN Manual</th>
-                            <th class="${thClass} text-amber-600">CCTV (Audit)</th>
-                            <th class="${thClass} text-rose-500">Temp สอบถาม</th>
-                            <th class="${thClass} text-red-700">รถขบวนเสด็จ</th>
-                            <th class="${thClass} text-rose-700">QC</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${tData.list.map(s => `
-                        <tr class="hover:bg-slate-50 transition">
-                            <td class="${tdClass} text-left pl-6 font-bold text-slate-800">${s.member.nickName || s.member.fullName.split(' ')[0]}</td>
-                            <td class="${tdClass}">${s.sums.ml || '0'}</td>
-                            <td class="${tdClass}">${s.sums.mn || '0'}</td>
-                            <td class="${tdClass}">${s.sums.rcf || '0'}</td>
-                            <td class="${tdClass}">${s.sums.log || '0'}</td>
-                            <td class="${tdClass}">${s.sums.txn || '0'}</td>
-                            <td class="${tdClass}">${s.sums.cctv || '0'}</td>
-                            <td class="${tdClass}">${s.sums.inq || '0'}</td>
-                            <td class="${tdClass}">${s.sums.conv || '0'}</td>
-                            <td class="${tdClass} font-bold text-rose-600">${s.sums.qc || '0'}</td>
-                        </tr>`).join('')}
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="flex-1 flex flex-col lg:flex-row gap-6 min-h-[300px]">
-                <div class="flex-1 bg-indigo-50/30 border border-indigo-100 rounded-3xl p-6 shadow-sm overflow-y-auto animate-slide delay-200">
-                    <h4 class="font-bold text-indigo-800 mb-4 flex items-center gap-2 text-lg">🏆 Top Performance (เฉลี่ยต่อวันทำงาน)</h4>
-                    <div class="flex flex-col gap-3">
-                        ${tData.topPerf.slice(0, 5).map((s, idx) => `
-                        <div class="bg-white rounded-2xl p-4 flex items-center justify-between border border-indigo-50 shadow-sm">
-                            <div class="flex items-center gap-4">
-                                <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-sm">${idx+1}</div>
-                                <span class="font-bold text-slate-700">${s.member.nickName || s.member.fullName.split(' ')[0]}</span>
-                            </div>
-                            <div class="text-right">
-                                <div class="font-black text-indigo-600 text-lg">${s.avgPerDay.toLocaleString()} งาน/วัน</div>
-                                <div class="text-xs text-slate-400">รวม ${s.totalTasks.toLocaleString()} งาน (${s.workDays} วันทำงาน)</div>
-                            </div>
-                        </div>`).join('')}
-                    </div>
-                </div>
-                
-                <div class="flex-1 bg-rose-50/30 border border-rose-100 rounded-3xl p-6 shadow-sm overflow-y-auto animate-slide delay-200">
-                    <h4 class="font-bold text-rose-800 mb-4 flex items-center gap-2 text-lg">🚨 Top การอนุมัติผิด (QC)</h4>
-                    <div class="flex flex-col gap-3">
-                        ${tData.topQc.slice(0, 5).map((s, idx) => `
-                        <div class="bg-white rounded-2xl p-4 flex items-center justify-between border border-rose-50 shadow-sm">
-                            <div class="flex items-center gap-4">
-                                <div class="w-8 h-8 rounded-full bg-rose-100 text-rose-700 font-bold flex items-center justify-center text-sm">${idx+1}</div>
-                                <span class="font-bold text-slate-700">${s.member.nickName || s.member.fullName.split(' ')[0]}</span>
-                            </div>
-                            <div class="font-black text-rose-600 text-lg">${s.totalQc.toLocaleString()} รายการ</div>
-                        </div>`).join('')}
-                    </div>
-                </div>
-            </div>
-        </div>`;
-        contentBox.innerHTML = html;
-    }
-
-    // 1. หน้าข้อมูลตารางสรุป (ทีม 1-5) -> แสดงผลสำหรับหน้า 1, 3, 5, 7, 9
+   // 1. หน้าข้อมูลตารางสรุป (ทีม 1-5) -> แสดงผลสำหรับหน้า 1, 3, 5, 7, 9
     if (slide.type === 'team_summary') {
         const tData = presentationData.teams[slide.teamId];
         
@@ -3763,75 +3695,80 @@ else if (slide.type === 't7_other_monthly') {
         };
 
         let html = `
-        <div class="h-full flex flex-col gap-6">
-            <h3 class="text-xl font-bold text-indigo-700 bg-indigo-50/50 py-3 px-6 rounded-2xl flex items-center gap-3">
-                <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                ผลรวมยอดระหว่างวันที่: ${presentationData.rangeText} (ทีม ${slide.teamId})
-            </h3>
-            
-            <div class="overflow-x-auto border border-slate-200 rounded-2xl shadow-sm bg-white animate-slide delay-100">
-                <table class="w-full text-sm border-collapse">
-                    <thead class="bg-slate-50 text-slate-600">
-                        <tr>
-                            <th class="${thClass} text-left pl-6">ชื่อ</th>
-                            <th class="${thClass} text-green-600">ML</th>
-                            <th class="${thClass} text-red-600">MN</th>
-                            <th class="${thClass} text-orange-500">RCF</th>
-                            <th class="${thClass} text-blue-600">LOG</th>
-                            <th class="${thClass} text-purple-600">TXN Manual</th>
-                            <th class="${thClass} text-amber-600">CCTV (Audit)</th>
-                            <th class="${thClass} text-rose-500">Temp สอบถาม</th>
-                            <th class="${thClass} text-red-700">รถขบวนเสด็จ</th>
-                            <th class="${thClass} text-rose-700">QC</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${tData.list.map(s => `
-                        <tr class="hover:bg-slate-50 transition">
-                            <td class="${tdClass} text-left pl-6 font-bold text-slate-800">${s.member.nickName || s.member.fullName.split(' ')[0]}</td>
-                            <td class="${tdClass}">${parseNum(s.sums.ml || s.sums.ML).toLocaleString()}</td>
-                            <td class="${tdClass}">${parseNum(s.sums.mn || s.sums.MN).toLocaleString()}</td>
-                            <td class="${tdClass}">${parseNum(s.sums.rcf || s.sums.RCF).toLocaleString()}</td>
-                            <td class="${tdClass}">${parseNum(s.sums.log || s.sums.LOG).toLocaleString()}</td>
-                            <td class="${tdClass}">${parseNum(s.sums.txn || s.sums.TXN).toLocaleString()}</td>
-                            <td class="${tdClass}">${parseNum(s.sums.cctv || s.sums.CCTV).toLocaleString()}</td>
-                            <td class="${tdClass}">${parseNum(s.sums.inq || s.sums.INQ).toLocaleString()}</td>
-                            <td class="${tdClass}">${parseNum(s.sums.conv || s.sums.CONV).toLocaleString()}</td>
-                            <td class="${tdClass} font-bold text-rose-600">${parseNum(s.sums.qc || s.sums.QC).toLocaleString()}</td>
-                        </tr>`).join('')}
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="flex-1 flex flex-col lg:flex-row gap-6 min-h-[300px]">
-                <div class="flex-1 bg-indigo-50/30 border border-indigo-100 rounded-3xl p-6 shadow-sm overflow-y-auto animate-slide delay-200">
-                    <h4 class="font-bold text-indigo-800 mb-4 flex items-center gap-2 text-lg">🏆 Top Performance (เฉลี่ยต่อวันทำงาน)</h4>
-                    <div class="flex flex-col gap-3">
-                        ${tData.topPerf.slice(0, 5).map((s, idx) => `
-                        <div class="bg-white rounded-2xl p-4 flex items-center justify-between border border-indigo-50 shadow-sm">
-                            <div class="flex items-center gap-4">
-                                <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-sm">${idx+1}</div>
-                                <span class="font-bold text-slate-700">${s.member.nickName || s.member.fullName.split(' ')[0]}</span>
-                            </div>
-                            <div class="text-right">
-                                <div class="font-black text-indigo-600 text-lg">${s.avgPerDay.toLocaleString()} งาน/วัน</div>
-                                <div class="text-xs text-slate-400">รวม ${s.totalTasks.toLocaleString()} งาน (${s.workDays} วันทำงาน)</div>
-                            </div>
-                        </div>`).join('')}
-                    </div>
+        <div class="h-full flex flex-col items-center overflow-y-auto p-6">
+            <div class="w-full max-w-7xl mx-auto flex flex-col pt-6 md:pt-8 gap-6">
+                <!-- หัวเรื่องหลัก -->
+                <div class="w-full">
+                    <h3 class="text-xl font-bold text-indigo-700 bg-indigo-50/50 py-3 px-6 rounded-2xl flex items-center gap-3 shadow-sm">
+                        <svg class="w-6 h-6 text-indigo-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        ผลรวมยอดระหว่างวันที่: ${presentationData.rangeText} (ทีม ${slide.teamId})
+                    </h3>
                 </div>
                 
-                <div class="flex-1 bg-rose-50/30 border border-rose-100 rounded-3xl p-6 shadow-sm overflow-y-auto animate-slide delay-200">
-                    <h4 class="font-bold text-rose-800 mb-4 flex items-center gap-2 text-lg">🚨 Top การอนุมัติผิด (QC)</h4>
-                    <div class="flex flex-col gap-3">
-                        ${tData.topQc.slice(0, 5).map((s, idx) => `
-                        <div class="bg-white rounded-2xl p-4 flex items-center justify-between border border-rose-50 shadow-sm">
-                            <div class="flex items-center gap-4">
-                                <div class="w-8 h-8 rounded-full bg-rose-100 text-rose-700 font-bold flex items-center justify-center text-sm">${idx+1}</div>
-                                <span class="font-bold text-slate-700">${s.member.nickName || s.member.fullName.split(' ')[0]}</span>
-                            </div>
-                            <div class="font-black text-rose-600 text-lg">${s.totalQc.toLocaleString()} รายการ</div>
-                        </div>`).join('')}
+                <div class="w-full overflow-x-auto border border-slate-200 rounded-3xl shadow-sm bg-white animate-slide delay-100">
+                    <table class="w-full text-sm border-collapse">
+                        <thead class="bg-slate-50 text-slate-600">
+                            <tr>
+                                <th class="px-6 py-4 text-left font-bold w-48 text-slate-600">ชื่อ</th>
+                                <th class="${thClass} text-green-600">ML</th>
+                                <th class="${thClass} text-red-600">MN</th>
+                                <th class="${thClass} text-orange-500">RCF</th>
+                                <th class="${thClass} text-blue-600">LOG</th>
+                                <th class="${thClass} text-purple-600">TXN Manual</th>
+                                <th class="${thClass} text-amber-600">CCTV (Audit)</th>
+                                <th class="${thClass} text-rose-500">Temp สอบถาม</th>
+                                <th class="${thClass} text-red-700">รถขบวนเสด็จ</th>
+                                <th class="${thClass} text-rose-700">QC</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tData.list.map(s => `
+                            <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                                <td class="px-6 py-4 text-left font-bold text-slate-800 w-48">${s.member.nickName || s.member.fullName.split(' ')[0]}</td>
+                                <td class="${tdClass}">${parseNum(s.sums.ml || s.sums.ML).toLocaleString()}</td>
+                                <td class="${tdClass}">${parseNum(s.sums.mn || s.sums.MN).toLocaleString()}</td>
+                                <td class="${tdClass}">${parseNum(s.sums.rcf || s.sums.RCF).toLocaleString()}</td>
+                                <td class="${tdClass}">${parseNum(s.sums.log || s.sums.LOG).toLocaleString()}</td>
+                                <td class="${tdClass}">${parseNum(s.sums.txn || s.sums.TXN).toLocaleString()}</td>
+                                <td class="${tdClass}">${parseNum(s.sums.cctv || s.sums.CCTV).toLocaleString()}</td>
+                                <td class="${tdClass}">${parseNum(s.sums.inq || s.sums.INQ).toLocaleString()}</td>
+                                <td class="${tdClass}">${parseNum(s.sums.conv || s.sums.CONV).toLocaleString()}</td>
+                                <td class="${tdClass} font-bold text-rose-600">${parseNum(s.sums.qc || s.sums.QC).toLocaleString()}</td>
+                            </tr>`).join('')}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="w-full flex flex-col lg:flex-row gap-6 min-h-[300px] pb-6">
+                    <div class="flex-1 bg-indigo-50/30 border border-indigo-100 rounded-3xl p-6 shadow-sm overflow-y-auto animate-slide delay-200">
+                        <h4 class="font-bold text-indigo-800 mb-4 flex items-center gap-2 text-lg">🏆 Top Performance (เฉลี่ยต่อวันทำงาน)</h4>
+                        <div class="flex flex-col gap-3">
+                            ${tData.topPerf.slice(0, 5).map((s, idx) => `
+                            <div class="bg-white rounded-2xl p-4 flex items-center justify-between border border-indigo-50 shadow-sm">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-sm">${idx+1}</div>
+                                    <span class="font-bold text-slate-700">${s.member.nickName || s.member.fullName.split(' ')[0]}</span>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-black text-indigo-600 text-lg">${s.avgPerDay.toLocaleString()} งาน/วัน</div>
+                                    <div class="text-xs text-slate-400">รวม ${s.totalTasks.toLocaleString()} งาน (${s.workDays} วันทำงาน)</div>
+                                </div>
+                            </div>`).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 bg-rose-50/30 border border-rose-100 rounded-3xl p-6 shadow-sm overflow-y-auto animate-slide delay-200">
+                        <h4 class="font-bold text-rose-800 mb-4 flex items-center gap-2 text-lg">🚨 Top การอนุมัติผิด (QC)</h4>
+                        <div class="flex flex-col gap-3">
+                            ${tData.topQc.slice(0, 5).map((s, idx) => `
+                            <div class="bg-white rounded-2xl p-4 flex items-center justify-between border border-rose-50 shadow-sm">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-8 h-8 rounded-full bg-rose-100 text-rose-700 font-bold flex items-center justify-center text-sm">${idx+1}</div>
+                                    <span class="font-bold text-slate-700">${s.member.nickName || s.member.fullName.split(' ')[0]}</span>
+                                </div>
+                                <div class="font-black text-rose-600 text-lg">${s.totalQc.toLocaleString()} รายการ</div>
+                            </div>`).join('')}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -3843,29 +3780,34 @@ else if (slide.type === 't7_other_monthly') {
         const tId = slide.teamId; // ดึงหมายเลขทีมมาต่อท้าย ID ป้องกันซ้ำกัน
         
         contentBox.innerHTML = `
-        <div class="h-full flex flex-col gap-3 overflow-y-auto p-1">
-            <h3 class="text-xl font-bold text-slate-700 flex items-center gap-2">📊 กราฟผลการปฏิบัติงานแต่ละด้าน (ทีม ${tId})</h3>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div class="chart-card bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col opacity-0 scale-95 transition-all duration-500 ease-out">
-                    <div class="text-center font-bold text-slate-600 mb-1 text-sm">MLPR</div>
-                    <div id="chart-ml-${tId}" style="width: 100%; height: 280px;"></div>
+        <div class="h-full flex flex-col items-center overflow-y-auto p-6">
+            <div class="w-full max-w-6xl mx-auto flex flex-col pt-6 md:pt-8">
+                <!-- หัวเรื่องหลัก -->
+                <div class="w-full mb-6">
+                    <h3 class="text-2xl font-bold text-slate-800 flex items-center gap-2">📊 กราฟผลการปฏิบัติงานแต่ละด้าน (ทีม ${tId})</h3>
                 </div>
-                <div class="chart-card bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col opacity-0 scale-95 transition-all duration-500 ease-out">
-                    <div class="text-center font-bold text-slate-600 mb-1 text-sm">MNPR</div>
-                    <div id="chart-mn-${tId}" style="width: 100%; height: 280px;"></div>
-                </div>
-                <div class="chart-card bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col opacity-0 scale-95 transition-all duration-500 ease-out">
-                    <div class="text-center font-bold text-slate-600 mb-1 text-sm">Reconfirm</div>
-                    <div id="chart-rcf-${tId}" style="width: 100%; height: 280px;"></div>
-                </div>
-                <div class="chart-card bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col opacity-0 scale-95 transition-all duration-500 ease-out">
-                    <div class="text-center font-bold text-slate-600 mb-1 text-sm">ยอดอนุมัติผิด (QC)</div>
-                    <div id="chart-qc-${tId}" style="width: 100%; height: 280px;"></div>
-                </div>
-                <div class="chart-card bg-slate-50 p-3 rounded-2xl border border-slate-100 lg:col-span-2 flex flex-col opacity-0 scale-95 transition-all duration-500 ease-out">
-                    <div class="text-center font-bold text-slate-600 mb-1 text-sm">งานอื่นๆ</div>
-                    <div id="chart-oth-${tId}" style="width: 100%; height: 280px;"></div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full mx-auto pb-6">
+                    <div class="chart-card bg-slate-50/90 backdrop-blur p-5 rounded-2xl border border-slate-200/80 shadow-md flex flex-col opacity-0 scale-95 transition-all duration-500 ease-out">
+                        <div class="text-center font-bold text-slate-800 mb-3 text-base">MLPR</div>
+                        <div id="chart-ml-${tId}" style="width: 100%; height: 370px;"></div>
+                    </div>
+                    <div class="chart-card bg-slate-50/90 backdrop-blur p-5 rounded-2xl border border-slate-200/80 shadow-md flex flex-col opacity-0 scale-95 transition-all duration-500 ease-out">
+                        <div class="text-center font-bold text-slate-800 mb-3 text-base">MNPR</div>
+                        <div id="chart-mn-${tId}" style="width: 100%; height: 370px;"></div>
+                    </div>
+                    <div class="chart-card bg-slate-50/90 backdrop-blur p-5 rounded-2xl border border-slate-200/80 shadow-md flex flex-col opacity-0 scale-95 transition-all duration-500 ease-out">
+                        <div class="text-center font-bold text-slate-800 mb-3 text-base">Reconfirm</div>
+                        <div id="chart-rcf-${tId}" style="width: 100%; height: 370px;"></div>
+                    </div>
+                    <div class="chart-card bg-slate-50/90 backdrop-blur p-5 rounded-2xl border border-slate-200/80 shadow-md flex flex-col opacity-0 scale-95 transition-all duration-500 ease-out">
+                        <div class="text-center font-bold text-slate-800 mb-3 text-base">ยอดอนุมัติผิด (QC)</div>
+                        <div id="chart-qc-${tId}" style="width: 100%; height: 370px;"></div>
+                    </div>
+                    <div class="chart-card bg-slate-50/90 backdrop-blur p-5 rounded-2xl border border-slate-200/80 shadow-md lg:col-span-2 flex flex-col opacity-0 scale-95 transition-all duration-500 ease-out">
+                        <div class="text-center font-bold text-slate-800 mb-3 text-base">งานอื่นๆ</div>
+                        <div id="chart-oth-${tId}" style="width: 100%; height: 370px;"></div>
+                    </div>
                 </div>
             </div>
         </div>`;
@@ -3916,11 +3858,11 @@ else if (slide.type === 't7_other_monthly') {
                         name: d.name,
                         value: d[key],
                         itemStyle: isMax 
-                            ? { borderColor: '#ef4444', borderWidth: 3, shadowBlur: 8, shadowColor: 'rgba(239, 68, 68, 0.4)' }
-                            : { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
+                            ? { borderColor: '#ef4444', borderWidth: 3.5, shadowBlur: 10, shadowColor: 'rgba(239, 68, 68, 0.5)' }
+                            : { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
                         label: isMax 
-                            ? { color: '#ef4444', fontWeight: 'bold', fontSize: 11, formatter: (params) => `${params.name}\n${Number(params.value).toLocaleString()}` }
-                            : { color: '#475569', fontWeight: 'normal', fontSize: 10, formatter: (params) => `${params.name}\n${Number(params.value).toLocaleString()}` }
+                            ? { color: '#ef4444', fontWeight: 'bold', fontSize: 13, formatter: (params) => `${params.name}\n${Number(params.value).toLocaleString()}` }
+                            : { color: '#334155', fontWeight: '600', fontSize: 12, formatter: (params) => `${params.name}\n${Number(params.value).toLocaleString()}` }
                     };
                 });
             };
@@ -3934,11 +3876,11 @@ else if (slide.type === 't7_other_monthly') {
                             text: 'ไม่มีข้อมูลในด้านนี้',
                             left: 'center',
                             top: 'center',
-                            textStyle: { color: '#94a3b8', fontSize: 13, fontWeight: 'normal' }
+                            textStyle: { color: '#94a3b8', fontSize: 14, fontWeight: 'normal' }
                         },
                         series: [{
                             type: 'pie',
-                            radius: ['40%', '70%'],
+                            radius: ['28%', '52%'],
                             data: [{ value: 1, name: 'ไม่มีข้อมูล', itemStyle: { color: '#f1f5f9' } }],
                             label: { show: false }
                         }]
@@ -3946,16 +3888,32 @@ else if (slide.type === 't7_other_monthly') {
                 }
                 return {
                     animation: true,
-                    animationDuration: 1800,      // ยืดเวลาวาดกราฟให้ค่อยๆ ขยายออกอย่างสมูท
-                    animationEasing: 'cubicOut',  // ความเร่งแบบนิ่มนวลตอนจบ
-                    tooltip: { trigger: 'item', formatter: (params) => `${params.name}: <br/>${Number(params.value).toLocaleString()} งาน (${params.percent}%)` },
+                    animationDuration: 1800,
+                    animationEasing: 'cubicOut',
+                    tooltip: { 
+                        trigger: 'item', 
+                        textStyle: { fontSize: 13 },
+                        formatter: (params) => `${params.name}: <br/><b>${Number(params.value).toLocaleString()}</b> งาน (${params.percent}%)` 
+                    },
                     series: [{  
                         name,  
                         type: 'pie',  
-                        radius: ['40%', '70%'],  
-                        center: ['50%', '50%'],
+                        radius: ['28%', '52%'],  // ลดขนาดวงล้อพายลงเหลือ 52% เพื่อให้มีพื้นที่รอบข้างแสดงชื่อและตัวเลขครบถ้วนไม่ถูกตัด
+                        center: ['50%', '52%'],  
+                        avoidLabelOverlap: true,
                         data: seriesData,
-                        label: { show: true, fontSize: 10, formatter: (params) => `${params.name}\n${Number(params.value).toLocaleString()}` }
+                        label: { 
+                            show: true, 
+                            fontSize: 11, 
+                            fontWeight: '600', 
+                            overflow: 'none',   // ป้องกันการตัดข้อความ
+                            formatter: (params) => `${params.name}\n${Number(params.value).toLocaleString()}` 
+                        },
+                        labelLine: {
+                            show: true,
+                            length: 12,
+                            length2: 8
+                        }
                     }]
                 };
             };
@@ -3987,8 +3945,7 @@ else if (slide.type === 't7_other_monthly') {
         }, 500);
     }
 
-    // 3. หน้าจัดกลุ่ม Temp
-else if (slide.type === 'temp_group') {
+    else if (slide.type === 'temp_group') {
     const selectedMonth = parseInt(document.getElementById('monthSelect')?.value) || 3; 
     const selectedYear = parseInt(document.getElementById('yearSelect')?.value) || 2026;
     const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();         
@@ -4019,42 +3976,48 @@ else if (slide.type === 'temp_group') {
     const filtered = presentationData.temp.list.filter(s => s.workDays >= slide.min && s.workDays <= slide.max).sort((a,b) => b.totalPercent - a.totalPercent);
     
     contentBox.innerHTML = `
-    <div class="h-full flex flex-col gap-4">
-        <h3 class="text-2xl font-bold text-indigo-800 flex items-center gap-3">
-            ${slide.badge} กลุ่ม ${slide.min} - ${slide.max} วัน <span class="text-slate-500 text-lg font-medium">(${filtered.length} คน)</span>
-        </h3>
-        <div class="flex-1 overflow-y-auto border border-slate-200 rounded-3xl shadow-sm bg-white animate-slide delay-100">
-            <table class="w-full text-sm border-collapse">
-                <thead class="bg-slate-50 text-slate-600 sticky top-0 shadow-sm">
-                    <tr>
-                        <th class="${thClass} text-center w-16">ลำดับ</th>
-                        <th class="${thClass} text-left">ชื่อจริง</th>
-                        <th class="${thClass} text-center">วันทำงาน<br>(%)</th>
-                        <th class="${thClass} text-center text-indigo-600">ยอดรวม<br>อนุมัติ</th>
-                        <th class="${thClass} text-center text-indigo-600">ค่าเฉลี่ย/<br>วัน</th>
-                        <th class="${thClass} text-center text-blue-500">อนุมัติ<br>(%)</th>
-                        <th class="${thClass} text-center text-rose-500">ยอดรวม<br>ผิด</th>
-                        <th class="${thClass} text-center text-rose-500">ค่าเฉลี่ย/<br>วัน</th>
-                        <th class="${thClass} text-center text-rose-500">QC<br>(%)</th>
-                        <th class="${thClass} text-center text-emerald-600">% รวม</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${filtered.map((s, idx) => `
-                    <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-                        <td class="p-3 text-center font-bold text-slate-500">${idx+1}</td>
-                        <td class="p-3 text-left font-bold text-slate-800">${s.member.fullName}</td>
-                        <td class="p-3 text-center"><div class="font-bold">${s.workDays} วัน</div><div class="text-indigo-500 text-xs">(${s.percentWork.toFixed(1)}%)</div></td>
-                        <td class="p-3 text-center font-bold text-indigo-800 text-lg">${s.totalApprove.toLocaleString()}</td>
-                        <td class="p-3 text-center font-bold text-indigo-600">${s.avgApprove.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
-                        <td class="p-3 text-center font-bold text-blue-500">${s.percentApprove.toFixed(1)}%</td>
-                        <td class="p-3 text-center font-bold text-rose-600 text-lg">${s.totalQc.toLocaleString()}</td>
-                        <td class="p-3 text-center font-bold text-rose-500">${s.avgQc.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                        <td class="p-3 text-center font-bold text-rose-400">${s.percentQc.toFixed(1)}%</td>
-                        <td class="p-3 text-center font-black text-emerald-600 text-lg">${s.totalPercent.toFixed(2)}%</td>
-                    </tr>`).join('')}
-                </tbody>
-            </table>
+    <div class="h-full flex flex-col items-center overflow-y-auto p-6">
+        <div class="w-full max-w-7xl mx-auto flex flex-col pt-6 md:pt-8">
+            <!-- หัวเรื่องหลัก -->
+            <div class="w-full mb-6">
+                <h3 class="text-2xl font-bold text-indigo-800 flex items-center gap-3">
+                    ${slide.badge} กลุ่ม ${slide.min} - ${slide.max} วัน <span class="text-slate-500 text-lg font-medium">(${filtered.length} คน)</span>
+                </h3>
+            </div>
+            
+            <div class="w-full overflow-hidden border border-slate-200 rounded-3xl shadow-sm bg-white animate-slide delay-100">
+                <table class="w-full text-sm border-collapse">
+                    <thead class="bg-slate-50 text-slate-600 sticky top-0 shadow-sm">
+                        <tr>
+                            <th class="${thClass} text-center w-16">ลำดับ</th>
+                            <th class="${thClass} text-left">ชื่อจริง</th>
+                            <th class="${thClass} text-center">วันทำงาน<br>(%)</th>
+                            <th class="${thClass} text-center text-indigo-600">ยอดรวม<br>อนุมัติ</th>
+                            <th class="${thClass} text-center text-indigo-600">ค่าเฉลี่ย/<br>วัน</th>
+                            <th class="${thClass} text-center text-blue-500">อนุมัติ<br>(%)</th>
+                            <th class="${thClass} text-center text-rose-500">ยอดรวม<br>ผิด</th>
+                            <th class="${thClass} text-center text-rose-500">ค่าเฉลี่ย/<br>วัน</th>
+                            <th class="${thClass} text-center text-rose-500">QC<br>(%)</th>
+                            <th class="${thClass} text-center text-emerald-600">% รวม</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${filtered.map((s, idx) => `
+                        <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                            <td class="p-3 text-center font-bold text-slate-500">${idx+1}</td>
+                            <td class="p-3 text-left font-bold text-slate-800">${s.member.fullName}</td>
+                            <td class="p-3 text-center"><div class="font-bold">${s.workDays} วัน</div><div class="text-indigo-500 text-xs">(${s.percentWork.toFixed(1)}%)</div></td>
+                            <td class="p-3 text-center font-bold text-indigo-800 text-lg">${s.totalApprove.toLocaleString()}</td>
+                            <td class="p-3 text-center font-bold text-indigo-600">${s.avgApprove.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
+                            <td class="p-3 text-center font-bold text-blue-500">${s.percentApprove.toFixed(1)}%</td>
+                            <td class="p-3 text-center font-bold text-rose-600 text-lg">${s.totalQc.toLocaleString()}</td>
+                            <td class="p-3 text-center font-bold text-rose-500">${s.avgQc.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            <td class="p-3 text-center font-bold text-rose-400">${s.percentQc.toFixed(1)}%</td>
+                            <td class="p-3 text-center font-black text-emerald-600 text-lg">${s.totalPercent.toFixed(2)}%</td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>`;
 }
@@ -4084,11 +4047,11 @@ else if (slide.type === 'temp_group') {
     let bg = isQc ? 'bg-rose-50/50' : 'bg-indigo-50/50';
     
     contentBox.innerHTML = `
-    <div class="h-full flex flex-col gap-2 max-w-5xl mx-auto w-full justify-center">
-        <h3 class="text-xl font-bold flex items-center gap-3 ${isQc ? 'text-rose-800' : 'text-indigo-800'} mb-1">
+    <div class="h-full flex flex-col gap-4 max-w-5xl mx-auto w-full justify-center">
+        <h3 class="text-2xl font-bold flex items-center gap-3 ${isQc ? 'text-rose-800' : 'text-indigo-800'} mb-2">
             ${icon} ${slide.title}
         </h3>
-        <div class="flex flex-col gap-1.5 overflow-hidden pr-1 animate-slide delay-100">
+        <div class="flex flex-col gap-3 overflow-hidden pr-1 animate-slide delay-100">
             ${listData.map((s, idx) => {
                 let rankNum = idx + 1;
                 let prevRank;
@@ -4116,46 +4079,46 @@ else if (slide.type === 'temp_group') {
                 if (slide.type === 'temp_top_perf') {
                     const avgApprovePerDay = s.workDays > 0 ? (s.totalApprove / s.workDays).toFixed(1) : 0;
                     return `
-                    <div class="bg-white rounded-xl py-2 px-4 flex items-center justify-between border border-indigo-100 shadow-sm">
-                        <div class="flex items-center gap-3.5">
-                            <div class="w-7 h-7 rounded-full bg-indigo-50 text-indigo-700 font-black flex items-center justify-center text-xs">${rankNum}</div>
+                    <div class="bg-white rounded-2xl py-4 px-6 flex items-center justify-between border border-indigo-100 shadow-sm">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-700 font-black flex items-center justify-center text-sm">${rankNum}</div>
                             <div>
-                                <div class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                <div class="font-bold text-slate-800 text-base flex items-center gap-2">
                                     ${s.member?.fullName || s.fullName} ${nickNameStr}
                                     ${rankBadgeHtml}
                                 </div>
-                                <div class="flex items-center gap-4 text-xs text-slate-500 mt-0.5">
+                                <div class="flex items-center gap-5 text-xs text-slate-500 mt-1">
                                     <span>วันทำงาน: <strong class="text-slate-700">${s.workDays || 0} วัน</strong></span>
                                     <span>เฉลี่ยอนุมัติ: <strong class="text-indigo-600">${avgApprovePerDay} งาน/วัน</strong></span>
                                     <span>ยอดผิด: <strong class="text-rose-600">${s.totalQc || 0} รายการ</strong></span>
-                                    <span class="text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-medium">รวม: ${(s.totalApprove || 0).toLocaleString()} งาน</span>
+                                    <span class="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-medium">รวม: ${(s.totalApprove || 0).toLocaleString()} งาน</span>
                                 </div>
                             </div>
                         </div>
                         <div class="text-right">
-                            <div class="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-rose-500">${(s.totalPercent || 0).toFixed(2)}%</div>
-                            <span class="text-[10px] text-slate-400 font-medium">เปอร์เซ็นต์รวม</span>
+                            <div class="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-rose-500">${(s.totalPercent || 0).toFixed(2)}%</div>
+                            <span class="text-xs text-slate-400 font-medium">เปอร์เซ็นต์รวม</span>
                         </div>
                     </div>`;
                 }
 
                 let mainValue = ''; let subValue = '';
                 if (slide.type === 'temp_top_qc') {
-                    mainValue = `<div class="font-black text-rose-600 text-base">${(s.totalQc || 0).toLocaleString()} รายการ</div>`;
+                    mainValue = `<div class="font-black text-rose-600 text-lg">${(s.totalQc || 0).toLocaleString()} รายการ</div>`;
                     subValue = `วันทำงาน ${s.workDays || 0} วัน`;
                 } else if (slide.type === 'all_top_perf') {
-                    mainValue = `<div class="font-black text-indigo-600 text-base">${(s.avgPerDay || 0).toLocaleString()} งาน/วัน</div>`;
+                    mainValue = `<div class="font-black text-indigo-600 text-lg">${(s.avgPerDay || 0).toLocaleString()} งาน/วัน</div>`;
                     subValue = `รวม ${(s.totalTasks || 0).toLocaleString()} งาน (${s.workDays || 0} วัน)`;
                 } else {
-                    mainValue = `<div class="font-black text-rose-600 text-base">${(s.totalQc || 0).toLocaleString()} รายการ</div>`;
+                    mainValue = `<div class="font-black text-rose-600 text-lg">${(s.totalQc || 0).toLocaleString()} รายการ</div>`;
                 }
 
                 return `
-                <div class="bg-white rounded-xl py-1.5 px-4 flex items-center justify-between border ${isQc ? 'border-rose-100' : 'border-indigo-100'} shadow-sm">
+                <div class="bg-white rounded-2xl py-4 px-6 flex items-center justify-between border ${isQc ? 'border-rose-100' : 'border-indigo-100'} shadow-sm">
                     <div class="flex items-center gap-4">
-                        <div class="w-7 h-7 rounded-full ${bg} ${isQc ? 'text-rose-700' : 'text-indigo-700'} font-black flex items-center justify-center text-xs">${rankNum}</div>
+                        <div class="w-10 h-10 rounded-full ${bg} ${isQc ? 'text-rose-700' : 'text-indigo-700'} font-black flex items-center justify-center text-sm">${rankNum}</div>
                         <div>
-                            <div class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                            <div class="font-bold text-slate-800 text-base flex items-center gap-2">
                                 ${s.member?.fullName || s.fullName} ${nickNameStr}
                                 ${rankBadgeHtml}
                             </div>
@@ -4163,7 +4126,7 @@ else if (slide.type === 'temp_group') {
                     </div>
                     <div class="text-right">
                         ${mainValue}
-                        <div class="text-[11px] text-slate-400 font-medium">${subValue}</div>
+                        <div class="text-xs text-slate-400 font-medium">${subValue}</div>
                     </div>
                 </div>`;
             }).join('')}
@@ -4175,43 +4138,49 @@ else if (slide.type === 'temp_group') {
 else if (slide.type === 'all_summary_table') {
     const top10 = presentationData.all.topPerf.slice(0, 10);
     contentBox.innerHTML = `
-    <div class="h-full flex flex-col gap-4">
-        <h3 class="text-xl font-bold text-indigo-700 bg-indigo-50/50 py-3 px-6 rounded-2xl flex items-center gap-3">
-            <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-            ผลรวมยอดระหว่างวันที่: ${presentationData.rangeText} (สรุปผลรวม 10 อันดับแรก ทีม 1-5)
-        </h3>
-        <div class="overflow-x-auto border border-slate-200 rounded-3xl shadow-sm bg-white animate-slide delay-100">
-            <table class="w-full text-base border-collapse">
-                <thead class="bg-slate-50 text-slate-600">
-                    <tr>
-                        <th class="${thClass} text-left pl-6 w-48">ชื่อ</th>
-                        <th class="${thClass} text-green-600">ML</th>
-                        <th class="${thClass} text-red-600">MN</th>
-                        <th class="${thClass} text-orange-500">RCF</th>
-                        <th class="${thClass} text-blue-600">LOG</th>
-                        <th class="${thClass} text-purple-600">TXN Manual</th>
-                        <th class="${thClass} text-amber-600">CCTV</th>
-                        <th class="${thClass} text-rose-500">Temp</th>
-                        <th class="${thClass} text-red-700">รถขบวน</th>
-                        <th class="${thClass} text-rose-700">QC</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${top10.map(s => `
-                    <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-                        <td class="p-4 text-left pl-6 font-bold text-slate-800">${s.member.nickName || s.member.fullName.split(' ')[0]}</td>
-                        <td class="${tdClass}">${(s.sums.ml || 0).toLocaleString()}</td>
-                        <td class="${tdClass}">${(s.sums.mn || 0).toLocaleString()}</td>
-                        <td class="${tdClass}">${(s.sums.rcf || 0).toLocaleString()}</td>
-                        <td class="${tdClass}">${(s.sums.log || 0).toLocaleString()}</td>
-                        <td class="${tdClass}">${(s.sums.txn || 0).toLocaleString()}</td>
-                        <td class="${tdClass}">${(s.sums.cctv || 0).toLocaleString()}</td>
-                        <td class="${tdClass}">${(s.sums.inq || 0).toLocaleString()}</td>
-                        <td class="${tdClass}">${(s.sums.conv || 0).toLocaleString()}</td>
-                        <td class="${tdClass} font-bold text-rose-600">${(s.sums.qc || 0).toLocaleString()}</td>
-                    </tr>`).join('')}
-                </tbody>
-            </table>
+    <div class="h-full flex flex-col items-center overflow-y-auto p-6">
+        <div class="w-full max-w-7xl mx-auto flex flex-col pt-6 md:pt-8">
+            <!-- หัวเรื่องหลัก -->
+            <div class="w-full mb-6">
+                <h3 class="text-xl font-bold text-indigo-700 bg-indigo-50/50 py-3 px-6 rounded-2xl flex items-center gap-3 shadow-sm">
+                    <svg class="w-6 h-6 text-indigo-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    ผลรวมยอดระหว่างวันที่: ${presentationData.rangeText} (สรุปผลรวม 10 อันดับแรก ทีม 1-5)
+                </h3>
+            </div>
+            
+            <div class="w-full overflow-x-auto border border-slate-200 rounded-3xl shadow-sm bg-white animate-slide delay-100">
+                <table class="w-full text-base border-collapse">
+                    <thead class="bg-slate-50 text-slate-600">
+                        <tr>
+                            <th class="${thClass} text-left pl-6 w-48">ชื่อ</th>
+                            <th class="${thClass} text-green-600">ML</th>
+                            <th class="${thClass} text-red-600">MN</th>
+                            <th class="${thClass} text-orange-500">RCF</th>
+                            <th class="${thClass} text-blue-600">LOG</th>
+                            <th class="${thClass} text-purple-600">TXN Manual</th>
+                            <th class="${thClass} text-amber-600">CCTV</th>
+                            <th class="${thClass} text-rose-500">Temp</th>
+                            <th class="${thClass} text-red-700">รถขบวน</th>
+                            <th class="${thClass} text-rose-700">QC</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${top10.map(s => `
+                        <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                            <td class="p-4 text-left pl-6 font-bold text-slate-800">${s.member.nickName || s.member.fullName.split(' ')[0]}</td>
+                            <td class="${tdClass}">${(s.sums.ml || 0).toLocaleString()}</td>
+                            <td class="${tdClass}">${(s.sums.mn || 0).toLocaleString()}</td>
+                            <td class="${tdClass}">${(s.sums.rcf || 0).toLocaleString()}</td>
+                            <td class="${tdClass}">${(s.sums.log || 0).toLocaleString()}</td>
+                            <td class="${tdClass}">${(s.sums.txn || 0).toLocaleString()}</td>
+                            <td class="${tdClass}">${(s.sums.cctv || 0).toLocaleString()}</td>
+                            <td class="${tdClass}">${(s.sums.inq || 0).toLocaleString()}</td>
+                            <td class="${tdClass}">${(s.sums.conv || 0).toLocaleString()}</td>
+                            <td class="${tdClass} font-bold text-rose-600">${(s.sums.qc || 0).toLocaleString()}</td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>`;
 }
@@ -5138,11 +5107,11 @@ function updateTempTarget(inputElement) {
     </div>
 
     <!-- Slide Content Area -->
-    <div class="flex-1 overflow-hidden relative flex items-center justify-center p-1 md:p-2" style="background-color: #f8fafc; background-image: radial-gradient(at 10% 20%, hsla(28,100%,74%,0.15) 0px, transparent 50%), radial-gradient(at 80% 10%, hsla(189,100%,56%,0.15) 0px, transparent 50%), radial-gradient(at 90% 90%, hsla(343,100%,76%,0.15) 0px, transparent 50%);">
-        <div id="slide-content" class="w-full h-full max-w-[99.5vw] bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl p-4 md:p-6 overflow-y-auto border border-white/60 flex flex-col">
-            <!-- ข้อมูลสไลด์จะถูกเติมที่นี่ด้วย JavaScript -->
-        </div>
+<div class="flex-1 overflow-hidden relative flex items-center justify-center p-0 m-0 bg-white">
+    <div id="slide-content" class="w-full h-full bg-white text-slate-900 overflow-y-auto flex flex-col p-4 md:p-8">
+        <!-- ข้อมูลสไลด์จะถูกเติมที่นี่ด้วย JavaScript -->
     </div>
+</div>
 </div>
 
 
