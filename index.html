@@ -299,7 +299,8 @@ div::-webkit-scrollbar {
                                     <th class="p-2 border-r border-slate-200 text-amber-700">CCTV (Audit)</th>
                                     <th class="p-2 border-r border-slate-200 text-red-700">Temp สอบถาม</th>
                                     <th class="p-2 border-r border-slate-200 text-red-700">รถขบวนเสด็จ</th>
-                                    <th class="p-2 text-rose-700">QC</th>
+                                    <th class="p-2 text-rose-700">ยอดผิด</th>
+			     	    <th class="p-2 text-rose-700">ยอดผิด(อนุโลม)</th>
                                 </tr>
                             </thead>
                             <tbody id="new-summary-tbody" class="bg-white/80"></tbody>
@@ -494,13 +495,16 @@ let tempGroupDataStore = {}; // เก็บข้อมูลตารางเ
             { id: 8, label: "CCTV (Audit)", short: "CCTV", class: "col-audit" },
             { id: 4, label: "Temp สอบถาม", short: "สอบถาม", class: "col-inq" },
             { id: 6, label: "รถขบวนเสด็จ", short: "ขบวน", class: "col-conv" },
-            { id: 7, label: "QC", short: "QC Temp", class: "col-qc" }
+            { id: 7, label: "QC", short: "QC Temp", class: "col-qc" },
+	    { id: 9, label: "QC(อนุโลม)", short: "QC(อนุโลม)", class: "col-qc-anu" }
         ];
 
 	const T7R_PRODUCT_MAP = [
             { id: 't7rtotal', label: "จำนวนที่ตรวจสอบ", class: "col-t7r-1" },
             { id: 't7rcorrect', label: "อนุมัติถูกต้อง", class: "col-t7r-2" },
             { id: 't7rwrong', label: "อนุมัติผิด", class: "col-t7r-3" },
+	    { id: 't7rwronganu', label: "อนุมัติผิด(อนุโลม)", class: "col-t7r-6" },
+	    { id: 't7rsumwrong', label: "ยอดรวมอนุมัติผิด", class: "col-t7r-7" },
             { id: 't7rpctcorrect', label: "% อนุมัติถูก", class: "col-t7r-4" },
             { id: 't7rpcttagget', label: "% Tagget", class: "col-t7r-5" }
         ];
@@ -1164,7 +1168,7 @@ function renderSummaryTable() {
             }
 
             rowHTML += `
-                <td class="sticky-col-2 ${prod.label === 'QC' || prod.label === 'อนุมัติผิด' ? 'qc-text' : 'font-medium text-slate-700'} ${rowBgClass}">${prod.label}</td>
+                <td class="sticky-col-2 ${prod.label.includes('QC') || prod.label.includes('อนุมัติผิด') ? 'qc-text' : 'font-medium text-slate-700'} ${rowBgClass}">${prod.label}</td>
                 <td class="sticky-col-3 font-bold text-blue-600 text-center" id="sum-${staff.id}-${prod.id}">${calculateSum(staff.id, prod.id)}</td>`;
 
             for (let d = 1; d <= daysInMonth; d++) {
@@ -1177,30 +1181,43 @@ function renderSummaryTable() {
 
                 // เงื่อนไขพิเศษเฉพาะทีม T+7 และ Rอื่นๆ (t7r)
                 if (currentTeam === 't7r') {
-    if (prod.id === 't7rpctcorrect') {
-        // 1.1 คำนวณ % อนุมัติถูกอัตโนมัติ: หากยอดตรวจเป็น 0 ให้แสดง 100.00%
-        const totalVal = parseFloat(masterData[getKey(staff.id, 't7rtotal', d)]) || 0;
-        const correctVal = parseFloat(masterData[getKey(staff.id, 't7rcorrect', d)]) || 0;
-        
-        if (totalVal === 0) {
-            val = '100.00%';
-        } else {
-            val = ((correctVal / totalVal) * 100).toFixed(2) + '%';
-        }
-        
-        masterData[key] = val;
-        textColorClass = "font-bold text-blue-600";
-        cellBgClass = `${rowBgClass} bg-slate-50/80`;
-        isReadOnly = true;
-    } else if (prod.id === 't7rpcttagget') {
-        // 1.2 ฟิกค่า % Tagget: T+7 ได้ 99.50%, นอกนั้นได้ 85.00%
-        val = (staff.fullName === 'T+7' || staff.id === 2001) ? '99.50%' : '85.00%';
-        masterData[key] = val;
-        textColorClass = "font-bold text-emerald-600";
-        cellBgClass = `${rowBgClass} bg-slate-50/80`;
-        isReadOnly = true;
-    }
-} else {
+                    if (prod.id === 't7rpctcorrect') {
+                        // 1.1 คำนวณ % อนุมัติถูกอัตโนมัติ
+                        const totalVal = parseFloat(masterData[getKey(staff.id, 't7rtotal', d)]) || 0;
+                        const correctVal = parseFloat(masterData[getKey(staff.id, 't7rcorrect', d)]) || 0;
+                        
+                        if (totalVal === 0) {
+                            val = '100.00%';
+                        } else {
+                            val = ((correctVal / totalVal) * 100).toFixed(2) + '%';
+                        }
+                        
+                        masterData[key] = val;
+                        textColorClass = "font-bold text-blue-600";
+                        cellBgClass = `${rowBgClass} bg-slate-50/80`;
+                        isReadOnly = true;
+                    } else if (prod.id === 't7rpcttagget') {
+                        // 1.2 ฟิกค่า % Tagget
+                        val = (staff.fullName === 'T+7' || staff.id === 2001) ? '99.50%' : '85.00%';
+                        masterData[key] = val;
+                        textColorClass = "font-bold text-emerald-600";
+                        cellBgClass = `${rowBgClass} bg-slate-50/80`;
+                        isReadOnly = true;
+                    } else if (prod.id === 't7rwronganu') {
+                        // 1.3 คำนวณ "อนุมัติผิด(อนุโลม)" อัตโนมัติ = ยอดรวมอนุมัติผิด - อนุมัติผิด
+                        const wrongVal = parseFloat(String(masterData[getKey(staff.id, 't7rwrong', d)] || '').replace(/,/g, '')) || 0;
+                        const sumWrongVal = parseFloat(String(masterData[getKey(staff.id, 't7rsumwrong', d)] || '').replace(/,/g, '')) || 0;
+                        const wrongAnuVal = Math.max(0, sumWrongVal - wrongVal); // ป้องกันค่าติดลบ
+                        
+                        val = wrongAnuVal === 0 ? '0' : (wrongAnuVal >= 100 ? wrongAnuVal.toLocaleString() : wrongAnuVal.toString());
+                        masterData[key] = val;
+                        textColorClass = "font-bold text-rose-600";
+                        cellBgClass = `${rowBgClass} bg-slate-50/80`;
+                        isReadOnly = true; // ล็อกไม่ให้พิมพ์เอง ให้ระบบคำนวณให้
+                    }
+                }
+ 
+else {
     if(val === 'วันหยุด') textColorClass = "holiday-text";
     else if(val !== '' && val !== '0' && val !== '-') textColorClass = "font-bold text-indigo-700";
 }
@@ -1229,22 +1246,49 @@ window.handleInputFromSummary = function(staffId, prodId, day, element) {
         originalHandleInputFromSummary(staffId, prodId, day, element);
     }
 
-    if (currentTeam === 't7r' && (prodId === 't7rtotal' || prodId === 't7rcorrect')) {
-        const totalInput = document.getElementById(`summary-${staffId}-t7rtotal-${day}`);
-        const correctInput = document.getElementById(`summary-${staffId}-t7rcorrect-${day}`);
-        const pctInput = document.getElementById(`summary-${staffId}-t7rpctcorrect-${day}`);
+    if (currentTeam === 't7r') {
+        // อัปเดต % อนุมัติถูก
+        if (prodId === 't7rtotal' || prodId === 't7rcorrect') {
+            const totalInput = document.getElementById(`summary-${staffId}-t7rtotal-${day}`);
+            const correctInput = document.getElementById(`summary-${staffId}-t7rcorrect-${day}`);
+            const pctInput = document.getElementById(`summary-${staffId}-t7rpctcorrect-${day}`);
 
-        if (totalInput && correctInput && pctInput) {
-            const totalVal = parseFloat(totalInput.value) || 0;
-            const correctVal = parseFloat(correctInput.value) || 0;
-            
-            let calcPct = '100.00%';
-            if (totalVal > 0) {
-                calcPct = ((correctVal / totalVal) * 100).toFixed(2) + '%';
+            if (totalInput && correctInput && pctInput) {
+                const totalVal = parseFloat(totalInput.value) || 0;
+                const correctVal = parseFloat(correctInput.value) || 0;
+                
+                let calcPct = '100.00%';
+                if (totalVal > 0) {
+                    calcPct = ((correctVal / totalVal) * 100).toFixed(2) + '%';
+                }
+                
+                pctInput.value = calcPct;
+                masterData[getKey(staffId, 't7rpctcorrect', day)] = calcPct;
             }
-            
-            pctInput.value = calcPct;
-            masterData[getKey(staffId, 't7rpctcorrect', day)] = calcPct;
+        }
+
+        // คำนวณ อนุมัติผิด(อนุโลม) เมื่อมีการพิมพ์ ยอดอนุมัติผิด หรือ ยอดรวมอนุมัติผิด
+        if (prodId === 't7rwrong' || prodId === 't7rsumwrong') {
+            const wrongInput = document.getElementById(`summary-${staffId}-t7rwrong-${day}`);
+            const sumWrongInput = document.getElementById(`summary-${staffId}-t7rsumwrong-${day}`);
+            const wrongAnuInput = document.getElementById(`summary-${staffId}-t7rwronganu-${day}`);
+
+            const wrongVal = wrongInput ? (parseFloat(String(wrongInput.value).replace(/,/g, '')) || 0) : 0;
+            const sumWrongVal = sumWrongInput ? (parseFloat(String(sumWrongInput.value).replace(/,/g, '')) || 0) : 0;
+            const wrongAnuVal = Math.max(0, sumWrongVal - wrongVal);
+
+            const formattedWrongAnu = wrongAnuVal === 0 ? '0' : (wrongAnuVal >= 100 ? wrongAnuVal.toLocaleString() : wrongAnuVal.toString());
+
+            if (wrongAnuInput) {
+                wrongAnuInput.value = formattedWrongAnu;
+            }
+            masterData[getKey(staffId, 't7rwronganu', day)] = formattedWrongAnu;
+
+            // อัปเดตช่อง "รวมงาน" ของช่อง อนุมัติผิด(อนุโลม)
+            const sumWrongAnuEl = document.getElementById(`sum-${staffId}-t7rwronganu`);
+            if (sumWrongAnuEl) {
+                sumWrongAnuEl.textContent = calculateSum(staffId, 't7rwronganu');
+            }
         }
     }
 };
@@ -1513,7 +1557,7 @@ window.handleInputFromSummary = function(staffId, prodId, day, element) {
                                 const sId = parseInt(parts[1]);
                                 const pId = isNaN(parts[2]) ? parts[2] : parseInt(parts[2]);                                 					const day = parseInt(parts[3]);
                                 
-                                if (pId === 7) {
+                                if (pId === 7 || pId === 9) {
                                     if (cleanVal === '' || cleanVal === '0' || cleanVal === '-') {
                                         // Keep as is
                                     } else if (isNaN(cleanVal)) {
@@ -1899,13 +1943,15 @@ function updateTempTarget(val) {
         members = TEAMS_CONFIG[summaryCurrentTeam] || [];
     }
 
-    // กรณีเลือกทีม T+7 และ Rอื่นๆ: แสดงเฉพาะคอลัมน์เฉพาะกิจ
+    // กรณีเลือกทีม T+7 และ Rอื่นๆ ในหน้าสรุปผล
     if (summaryCurrentTeam === 't7r') {
         thead.innerHTML = `
             <th class="p-2 border-r border-slate-200 text-left pl-4">ชื่อ</th>
             <th class="p-2 border-r border-slate-200 text-slate-700">จำนวนที่ตรวจสอบ</th>
             <th class="p-2 border-r border-slate-200 text-green-700">อนุมัติถูกต้อง</th>
             <th class="p-2 border-r border-slate-200 text-rose-700">อนุมัติผิด</th>
+            <th class="p-2 border-r border-slate-200 text-rose-700 font-bold">ยอดรวมอนุมัติผิด</th>
+            <th class="p-2 border-r border-slate-200 text-rose-600">อนุมัติผิด(อนุโลม)</th>
             <th class="p-2 border-r border-slate-200 text-blue-700">% อนุมัติถูก</th>
             <th class="p-2 text-emerald-700">% Tagget</th>
         `;
@@ -1915,15 +1961,21 @@ function updateTempTarget(val) {
             let sumTotal = 0;
             let sumCorrect = 0;
             let sumWrong = 0;
+            let sumTotalWrong = 0;
+            let sumWrongAnu = 0;
 
             for (let d = 1; d <= days; d++) {
                 const totalKey = `${targetYear}-${targetMonth}-${staff.id}-t7rtotal-${d}`;
                 const correctKey = `${targetYear}-${targetMonth}-${staff.id}-t7rcorrect-${d}`;
                 const wrongKey = `${targetYear}-${targetMonth}-${staff.id}-t7rwrong-${d}`;
+                const sumWrongKey = `${targetYear}-${targetMonth}-${staff.id}-t7rsumwrong-${d}`;
+                const wrongAnuKey = `${targetYear}-${targetMonth}-${staff.id}-t7rwronganu-${d}`;
 
                 sumTotal += parseFloat(masterData[totalKey]) || 0;
                 sumCorrect += parseFloat(masterData[correctKey]) || 0;
                 sumWrong += parseFloat(masterData[wrongKey]) || 0;
+                sumTotalWrong += parseFloat(masterData[sumWrongKey]) || 0;
+                sumWrongAnu += parseFloat(masterData[wrongAnuKey]) || 0;
             }
 
             const pctCorrect = sumTotal > 0 ? ((sumCorrect / sumTotal) * 100).toFixed(2) + '%' : '100.00%';
@@ -1937,12 +1989,14 @@ function updateTempTarget(val) {
                 <td class="p-2 border-r border-slate-200 font-bold">${sumTotal.toLocaleString()}</td>
                 <td class="p-2 border-r border-slate-200 text-green-700 font-bold">${sumCorrect.toLocaleString()}</td>
                 <td class="p-2 border-r border-slate-200 text-rose-700 font-bold">${sumWrong.toLocaleString()}</td>
+                <td class="p-2 border-r border-slate-200 text-rose-800 font-bold bg-rose-50/50">${sumTotalWrong.toLocaleString()}</td>
+                <td class="p-2 border-r border-slate-200 text-rose-600 font-bold">${sumWrongAnu.toLocaleString()}</td>
                 <td class="p-2 border-r border-slate-200 text-blue-600 font-bold">${pctCorrect}</td>
                 <td class="p-2 text-emerald-600 font-bold">${pctTagget}</td>
             `;
             tbody.appendChild(tr);
         });
-        return; // จบการทำงานสำหรับ t7r ไม่ให้รันโค้ดตารางปกติทับ
+        return;
     }
 
     // กรณีทีมอื่นๆ ให้เรียกฟังก์ชันเรนเดอร์ปกติของคุณตามเดิม
@@ -3210,10 +3264,11 @@ function getDatesInRange(start, end) {
 
 function buildStatsForTeam(members, dates) {
     let list = [];
-    const pIds = { ml:0, mn:1, rcf:2, log:5, txn:3, cctv:8, inq:4, conv:6, qc:7 };
+    // เพิ่ม qcAllow เข้าไป (กำหนด Product ID เป็น 9 ตามโครงสร้างระบบ M-Flow ทั่วไป หากไม่ใช่สามารถปรับเปลี่ยนตัวเลขได้ครับ)
+    const pIds = { ml:0, mn:1, rcf:2, log:5, txn:3, cctv:8, inq:4, conv:6, qc:7, qcAllow: 9 };
     
     members.forEach(m => {
-        let sums = { ml:0, mn:0, rcf:0, log:0, txn:0, cctv:0, inq:0, conv:0, qc:0 };
+        let sums = { ml:0, mn:0, rcf:0, log:0, txn:0, cctv:0, inq:0, conv:0, qc:0, qcAllow: 0 };
         let workDays = 0;
 
         dates.forEach(dt => {
@@ -3223,7 +3278,8 @@ function buildStatsForTeam(members, dates) {
                 let val = parseFloat(masterData[dKey]);
                 if (!isNaN(val) && val > 0) {
                     sums[key] += val;
-                    if (key !== 'qc') hasWorkToday = true;
+                    // แยกไม่ให้งาน QC และ QC อนุโลม มานับเป็นวันทำงานปกติเดี่ยวๆ
+                    if (key !== 'qc' && key !== 'qcAllow') hasWorkToday = true;
                 }
             }
             if (hasWorkToday) workDays++;
@@ -3232,13 +3288,27 @@ function buildStatsForTeam(members, dates) {
         let total = sums.ml + sums.mn + sums.rcf + sums.log + sums.txn + sums.cctv + sums.inq + sums.conv;
         let avgPerDay = workDays > 0 ? (total / workDays) : 0;
         let otherTasks = sums.log + sums.txn + sums.cctv + sums.inq + sums.conv;
-        list.push({ member: m, sums, totalTasks: total, totalQc: sums.qc, workDays, avgPerDay, otherTasks });
+        
+        let totalQc = sums.qc;
+        let totalQcAllow = sums.qcAllow; // ยอดรวม QC อนุโลมของสมาชิกคนนี้
+
+        list.push({ 
+            member: m, 
+            sums, 
+            totalTasks: total, 
+            totalQc: totalQc, 
+            totalQcAllow: totalQcAllow, 
+            workDays, 
+            avgPerDay, 
+            otherTasks 
+        });
     });
 
     let topPerf = [...list].filter(s => s.totalTasks > 0).sort((a, b) => b.avgPerDay - a.avgPerDay);
     let topQc = [...list].filter(s => s.totalQc > 0).sort((a, b) => b.totalQc - a.totalQc);
+    let topQcAllow = [...list].filter(s => s.totalQcAllow > 0).sort((a, b) => b.totalQcAllow - a.totalQcAllow);
     
-    return { list, topPerf, topQc };
+    return { list, topPerf, topQc, topQcAllow };
 }
 
 function buildTempTeamStats(startStr, endStr) {
@@ -3694,6 +3764,36 @@ else if (slide.type === 't7_other_monthly') {
             return isNaN(num) ? 0 : num;
         };
 
+        // ฟังก์ชันเสริมช่วยดึงยอด QC (อนุโลม) แบบครอบคลุมทุกรูปแบบคีย์และค้นหาแบบอัตโนมัติ
+        // ฟังก์ชันเสริมดึงยอด QC (อนุโลม) เชื่อมกับ masterData โดยตรงผ่าน id: 9
+        const getQcAllowVal = (s) => {
+            if (!s || !s.member) return 0;
+            
+            // 1. ลองดึงจากฟังก์ชัน calculateSum โดยตรงตาม id: 9 (จาก PRODUCT_MAP)
+            if (typeof calculateSum === 'function') {
+                const directSum = parseFloat(calculateSum(s.member.id, 9)) || 0;
+                if (directSum > 0) return directSum;
+            }
+
+            // 2. เผื่อกรณีเก็บไว้ใน s.sums แล้ว (รองรับทุกชื่อคีย์ที่เป็นไปได้)
+            const sums = s.sums || s; 
+            const possibleValues = [
+                sums.qcAllow, sums.qc_allow, sums[9], sums['9'],
+                sums['QC(อนุโลม)'], sums['qc(อนุโลม)'], sums['QC (อนุโลม)'], sums['qc (อนุโลม)'],
+                sums.qc_anu, sums.qcAnu, sums.qc_tol, sums.qcTolerance
+            ];
+
+            for (let val of possibleValues) {
+                if (val !== undefined && val !== null && val !== '') {
+                    const cleaned = String(val).replace(/[^0-9.-]+/g, '');
+                    const num = parseFloat(cleaned);
+                    if (!isNaN(num) && num !== 0) return num;
+                }
+            }
+
+            return 0;
+        };
+
         let html = `
         <div class="h-full flex flex-col items-center overflow-y-auto p-6">
             <div class="w-full max-w-7xl mx-auto flex flex-col pt-6 md:pt-8 gap-6">
@@ -3718,7 +3818,8 @@ else if (slide.type === 't7_other_monthly') {
                                 <th class="${thClass} text-amber-600">CCTV (Audit)</th>
                                 <th class="${thClass} text-rose-500">Temp สอบถาม</th>
                                 <th class="${thClass} text-red-700">รถขบวนเสด็จ</th>
-                                <th class="${thClass} text-rose-700">QC</th>
+                                <th class="${thClass} text-rose-700">อนุมัติผิด</th>
+                                <th class="${thClass} text-rose-500">อนุมัติผิด(อนุโลม)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -3734,6 +3835,7 @@ else if (slide.type === 't7_other_monthly') {
                                 <td class="${tdClass}">${parseNum(s.sums.inq || s.sums.INQ).toLocaleString()}</td>
                                 <td class="${tdClass}">${parseNum(s.sums.conv || s.sums.CONV).toLocaleString()}</td>
                                 <td class="${tdClass} font-bold text-rose-600">${parseNum(s.sums.qc || s.sums.QC).toLocaleString()}</td>
+                                <td class="${tdClass} text-rose-500">${getQcAllowVal(s).toLocaleString()}</td>
                             </tr>`).join('')}
                         </tbody>
                     </table>
@@ -3766,7 +3868,10 @@ else if (slide.type === 't7_other_monthly') {
                                     <div class="w-8 h-8 rounded-full bg-rose-100 text-rose-700 font-bold flex items-center justify-center text-sm">${idx+1}</div>
                                     <span class="font-bold text-slate-700">${s.member.nickName || s.member.fullName.split(' ')[0]}</span>
                                 </div>
-                                <div class="font-black text-rose-600 text-lg">${s.totalQc.toLocaleString()} รายการ</div>
+                                <div class="text-right">
+                                    <div class="font-black text-rose-600 text-lg">${s.totalQc.toLocaleString()} รายการ</div>
+                                    <div class="text-xs text-slate-400">อนุโลม ${getQcAllowVal(s).toLocaleString()} รายการ</div>
+                                </div>
                             </div>`).join('')}
                         </div>
                     </div>
@@ -3804,7 +3909,11 @@ else if (slide.type === 't7_other_monthly') {
                         <div class="text-center font-bold text-slate-800 mb-3 text-base">ยอดอนุมัติผิด (QC)</div>
                         <div id="chart-qc-${tId}" style="width: 100%; height: 370px;"></div>
                     </div>
-                    <div class="chart-card bg-slate-50/90 backdrop-blur p-5 rounded-2xl border border-slate-200/80 shadow-md lg:col-span-2 flex flex-col opacity-0 scale-95 transition-all duration-500 ease-out">
+                    <div class="chart-card bg-slate-50/90 backdrop-blur p-5 rounded-2xl border border-slate-200/80 shadow-md flex flex-col opacity-0 scale-95 transition-all duration-500 ease-out">
+                        <div class="text-center font-bold text-slate-800 mb-3 text-base">ยอดอนุมัติผิด (อนุโลม)</div>
+                        <div id="chart-qc-allow-${tId}" style="width: 100%; height: 370px;"></div>
+                    </div>
+                    <div class="chart-card bg-slate-50/90 backdrop-blur p-5 rounded-2xl border border-slate-200/80 shadow-md flex flex-col opacity-0 scale-95 transition-all duration-500 ease-out">
                         <div class="text-center font-bold text-slate-800 mb-3 text-base">งานอื่นๆ</div>
                         <div id="chart-oth-${tId}" style="width: 100%; height: 370px;"></div>
                     </div>
@@ -3830,6 +3939,20 @@ else if (slide.type === 't7_other_monthly') {
                 return isNaN(num) ? 0 : num;
             };
 
+            // ฟังก์ชันช่วยดึงค่า QC (อนุโลม) ให้ครอบคลุมทุกรูปแบบคีย์
+            const getQcAllowVal = (sums) => {
+                return parseNum(
+                    sums.qcAllow || 
+                    sums.qc_allow || 
+                    sums.QC_Allow || 
+                    sums['QC(อนุโลม)'] || 
+                    sums['qc(อนุโลม)'] || 
+                    sums['qc-anu'] || 
+                    sums[9] || 
+                    0
+                );
+            };
+
             const chartData = (tData?.list || []).map(s => {
                 const sums = s.sums || {};
                 const name = s.member?.nickName || s.member?.fullName?.split(' ')[0] || 'ไม่ระบุ';
@@ -3839,6 +3962,7 @@ else if (slide.type === 't7_other_monthly') {
                     mn: parseNum(sums.mn !== undefined ? sums.mn : sums.MN),
                     rcf: parseNum(sums.rcf !== undefined ? sums.rcf : sums.RCF),
                     qc: parseNum(sums.qc !== undefined ? sums.qc : sums.QC),
+                    qcAllow: getQcAllowVal(sums),
                     others: parseNum(sums.log || sums.LOG) + 
                             parseNum(sums.txn || sums.TXN) + 
                             parseNum(sums.cctv || sums.CCTV) + 
@@ -3898,7 +4022,7 @@ else if (slide.type === 't7_other_monthly') {
                     series: [{  
                         name,  
                         type: 'pie',  
-                        radius: ['28%', '52%'],  // ลดขนาดวงล้อพายลงเหลือ 52% เพื่อให้มีพื้นที่รอบข้างแสดงชื่อและตัวเลขครบถ้วนไม่ถูกตัด
+                        radius: ['28%', '52%'],  
                         center: ['50%', '52%'],  
                         avoidLabelOverlap: true,
                         data: seriesData,
@@ -3906,7 +4030,7 @@ else if (slide.type === 't7_other_monthly') {
                             show: true, 
                             fontSize: 11, 
                             fontWeight: '600', 
-                            overflow: 'none',   // ป้องกันการตัดข้อความ
+                            overflow: 'none',   
                             formatter: (params) => `${params.name}\n${Number(params.value).toLocaleString()}` 
                         },
                         labelLine: {
@@ -3935,6 +4059,7 @@ else if (slide.type === 't7_other_monthly') {
             drawPie(`chart-mn-${tId}`, generateSeriesData(chartData, 'mn'), 'MNPR');
             drawPie(`chart-rcf-${tId}`, generateSeriesData(chartData, 'rcf'), 'Reconfirm');
             drawPie(`chart-qc-${tId}`, generateSeriesData(chartData, 'qc'), 'QC');
+            drawPie(`chart-qc-allow-${tId}`, generateSeriesData(chartData, 'qcAllow'), 'QC (อนุโลม)');
             drawPie(`chart-oth-${tId}`, generateSeriesData(chartData, 'others'), 'งานอื่นๆ');
 
             setTimeout(() => {
@@ -4159,9 +4284,10 @@ else if (slide.type === 'all_summary_table') {
                             <th class="${thClass} text-blue-600">LOG</th>
                             <th class="${thClass} text-purple-600">TXN Manual</th>
                             <th class="${thClass} text-amber-600">CCTV</th>
-                            <th class="${thClass} text-rose-500">Temp</th>
+                            <th class="${thClass} text-rose-500">Temp สอบถาม</th>
                             <th class="${thClass} text-red-700">รถขบวน</th>
-                            <th class="${thClass} text-rose-700">QC</th>
+                            <th class="${thClass} text-rose-700">อนุมัติผิด</th>
+                            <th class="${thClass} text-amber-700">อนุมัติผิด(อนุโลม)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -4177,6 +4303,7 @@ else if (slide.type === 'all_summary_table') {
                             <td class="${tdClass}">${(s.sums.inq || 0).toLocaleString()}</td>
                             <td class="${tdClass}">${(s.sums.conv || 0).toLocaleString()}</td>
                             <td class="${tdClass} font-bold text-rose-600">${(s.sums.qc || 0).toLocaleString()}</td>
+                            <td class="${tdClass} font-bold text-amber-600">${(s.sums.qcAllow || 0).toLocaleString()}</td>
                         </tr>`).join('')}
                     </tbody>
                 </table>
