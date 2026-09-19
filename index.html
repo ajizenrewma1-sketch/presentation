@@ -11,15 +11,36 @@
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
     <style>
 
-/* ซ่อน Scrollbar ด้านข้างแต่ยังสามารถเลื่อนดูข้อมูลได้ปกติ */
-.table-wrapper, body, div {
-    scrollbar-width: none; /* สำหรับ Firefox */
-    -ms-overflow-style: none;  /* สำหรับ IE และ Edge */
+/* ซ่อน Scrollbar ทั่วไป แต่คงไว้เฉพาะ .table-wrapper ให้แสดงแถบเลื่อนด้านล่าง */
+body, div:not(.table-wrapper) {
+    scrollbar-width: none; 
+    -ms-overflow-style: none;  
 }
-.table-wrapper::-webkit-scrollbar,
 body::-webkit-scrollbar,
-div::-webkit-scrollbar {
-    display: none; /* สำหรับ Chrome, Safari และ Opera */
+div:not(.table-wrapper)::-webkit-scrollbar {
+    display: none; 
+}
+
+/* ตั้งค่าให้ตาราง (table-wrapper) มี Scrollbar แนวนอนด้านล่างสวยงาม */
+.table-wrapper {
+    scrollbar-width: thin; 
+    scrollbar-color: #cbd5e1 #f8fafc;
+    overflow-x: auto;
+}
+.table-wrapper::-webkit-scrollbar {
+    display: block !important;
+    height: 8px; /* ความหนาของแถบเลื่อนแนวนอน */
+}
+.table-wrapper::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+.table-wrapper::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }
 
         body { 
@@ -1204,9 +1225,17 @@ function renderSummaryTable() {
                         cellBgClass = `${rowBgClass} bg-slate-50/80`;
                         isReadOnly = true;
                     } else if (prod.id === 't7rwronganu') {
-                        // 1.3 คำนวณ "อนุมัติผิด(อนุโลม)" อัตโนมัติ = ยอดรวมอนุมัติผิด - อนุมัติผิด
+                        // 1.3 คำนวณ "อนุมัติผิด(อนุโลม)" อัตโนมัติ = ยอดรวมอนุมัติผิด - ยอดอนุมัติผิด
                         const wrongVal = parseFloat(String(masterData[getKey(staff.id, 't7rwrong', d)] || '').replace(/,/g, '')) || 0;
-                        const sumWrongVal = parseFloat(String(masterData[getKey(staff.id, 't7rsumwrong', d)] || '').replace(/,/g, '')) || 0;
+                        let sumWrongVal = parseFloat(String(masterData[getKey(staff.id, 't7rsumwrong', d)] || '').replace(/,/g, '')) || 0;
+                        
+                        // [ป้องกันบั๊ก] หากผู้ใช้กรอกยอดอนุมัติผิด แต่ยังไม่ได้กรอกยอดรวมอนุมัติผิด (ยอดรวมน้อยกว่ายอดผิด) 
+                        // ให้ปรับยอดรวมให้เท่ากับยอดผิดไปก่อนเพื่อไม่ให้ผลลัพธ์เพี้ยนเป็น 0
+                        if (sumWrongVal < wrongVal) {
+                            sumWrongVal = wrongVal;
+                            masterData[getKey(staff.id, 't7rsumwrong', d)] = wrongVal === 0 ? '0' : wrongVal.toString();
+                        }
+
                         const wrongAnuVal = Math.max(0, sumWrongVal - wrongVal); // ป้องกันค่าติดลบ
                         
                         val = wrongAnuVal === 0 ? '0' : (wrongAnuVal >= 100 ? wrongAnuVal.toLocaleString() : wrongAnuVal.toString());
@@ -1214,8 +1243,20 @@ function renderSummaryTable() {
                         textColorClass = "font-bold text-rose-600";
                         cellBgClass = `${rowBgClass} bg-slate-50/80`;
                         isReadOnly = true; // ล็อกไม่ให้พิมพ์เอง ให้ระบบคำนวณให้
+
+                        // เพิ่มส่วนนี้เพื่อให้ช่อง "รวมงาน" อัปเดตยอดทันทีเมื่อเปิดตารางหรือโหลดข้อมูล
+                        setTimeout(() => {
+                            const sumEl = document.getElementById(`sum-${staff.id}-t7rwronganu`);
+                            if (sumEl) {
+                                sumEl.textContent = calculateSum(staff.id, 't7rwronganu');
+                            }
+                            const sumTotalEl = document.getElementById(`sum-${staff.id}-t7rsumwrong`);
+                            if (sumTotalEl) {
+                                sumTotalEl.textContent = calculateSum(staff.id, 't7rsumwrong');
+                            }
+                        }, 0);
                     }
-                }
+                 } 
  
 else {
     if(val === 'วันหยุด') textColorClass = "holiday-text";
@@ -1273,10 +1314,20 @@ window.handleInputFromSummary = function(staffId, prodId, day, element) {
             const sumWrongInput = document.getElementById(`summary-${staffId}-t7rsumwrong-${day}`);
             const wrongAnuInput = document.getElementById(`summary-${staffId}-t7rwronganu-${day}`);
 
-            const wrongVal = wrongInput ? (parseFloat(String(wrongInput.value).replace(/,/g, '')) || 0) : 0;
-            const sumWrongVal = sumWrongInput ? (parseFloat(String(sumWrongInput.value).replace(/,/g, '')) || 0) : 0;
-            const wrongAnuVal = Math.max(0, sumWrongVal - wrongVal);
+            let wrongVal = wrongInput ? (parseFloat(String(wrongInput.value).replace(/,/g, '')) || 0) : 0;
+            let sumWrongVal = sumWrongInput ? (parseFloat(String(sumWrongInput.value).replace(/,/g, '')) || 0) : 0;
 
+            // [ป้องกันบั๊ก] หากพิมพ์ช่องยอดอนุมัติผิด แต่ยอดรวมอนุมัติผิดน้อยกว่ายอดผิด (เช่น ยอดรวมยังเป็น 0)
+            // ให้ปรับยอดรวมให้เท่ากับยอดผิดไปก่อนอัตโนมัติ เพื่อให้คำนวณช่องอนุโลมได้อย่างถูกต้อง ไม่ติดลบหรือเพี้ยนเป็น 0
+            if (sumWrongVal < wrongVal && prodId === 't7rwrong') {
+                sumWrongVal = wrongVal;
+                if (sumWrongInput) {
+                    sumWrongInput.value = wrongVal === 0 ? '0' : wrongVal.toString();
+                }
+                masterData[getKey(staffId, 't7rsumwrong', day)] = wrongVal === 0 ? '0' : wrongVal.toString();
+            }
+
+            const wrongAnuVal = Math.max(0, sumWrongVal - wrongVal);
             const formattedWrongAnu = wrongAnuVal === 0 ? '0' : (wrongAnuVal >= 100 ? wrongAnuVal.toLocaleString() : wrongAnuVal.toString());
 
             if (wrongAnuInput) {
@@ -1284,10 +1335,22 @@ window.handleInputFromSummary = function(staffId, prodId, day, element) {
             }
             masterData[getKey(staffId, 't7rwronganu', day)] = formattedWrongAnu;
 
-            // อัปเดตช่อง "รวมงาน" ของช่อง อนุมัติผิด(อนุโลม)
+            // 1. อัปเดตช่อง "รวมงาน" ของ อนุมัติผิด(อนุโลม)
             const sumWrongAnuEl = document.getElementById(`sum-${staffId}-t7rwronganu`);
             if (sumWrongAnuEl) {
                 sumWrongAnuEl.textContent = calculateSum(staffId, 't7rwronganu');
+            }
+
+            // 2. อัปเดตช่อง "รวมงาน" ของ ยอดอนุมัติผิด
+            const sumWrongEl = document.getElementById(`sum-${staffId}-t7rwrong`);
+            if (sumWrongEl) {
+                sumWrongEl.textContent = calculateSum(staffId, 't7rwrong');
+            }
+
+            // 3. อัปเดตช่อง "รวมงาน" ของ ยอดรวมอนุมัติผิด
+            const sumWrongTotalEl = document.getElementById(`sum-${staffId}-t7rsumwrong`);
+            if (sumWrongTotalEl) {
+                sumWrongTotalEl.textContent = calculateSum(staffId, 't7rsumwrong');
             }
         }
     }
@@ -1405,6 +1468,7 @@ window.handleInputFromSummary = function(staffId, prodId, day, element) {
         }
 
         function calculateSum(sId, pId) { 
+            // 1. เงื่อนไขพิเศษสำหรับทีม T+7 และ Rอื่นๆ (t7r)
             if (currentTeam === 't7r') {
                 if (pId === 't7rpctcorrect') {
                     let totalInspected = 0;
@@ -1426,6 +1490,15 @@ window.handleInputFromSummary = function(staffId, prodId, day, element) {
                 }
             }
 
+            // 2. เงื่อนไขพิเศษสำหรับทีม Temp (คำนวณค่าเฉลี่ยหรือยอดรวมตามฟิลด์ Temp)
+            if (currentTeam === 'temp') {
+                // สมมติว่า masterData ของ temp เก็บค่าตรงๆ ด้วย key ของพนักงานและฟิลด์นั้นๆ
+                let rawVal = masterData[`temp_${sId}_${pId}`] || masterData[getKey(sId, pId, 1)];
+                let t = parseFloat(String(rawVal || '').replace(/,/g, '')) || 0;
+                return t === 0 ? '0' : (t >= 100 ? t.toLocaleString() : t);
+            }
+
+            // 3. ลูปปกติสำหรับทีมทั่วไป (รายวัน 1 ถึง daysInMonth)
             let t = 0; 
             for (let d = 1; d <= daysInMonth; d++) {
                 let rawVal = masterData[getKey(sId, pId, d)];
@@ -1538,7 +1611,16 @@ window.handleInputFromSummary = function(staffId, prodId, day, element) {
                 }
                 if (cols.length === 0) return;
                 
-                const targetTr = tbody.children[startRowIdx + rIdx];
+                // เงื่อนไข: ถ้าก๊อปปี้มาหลายแถว (>= 9 แถว) ให้วาง 9 แถวแล้วข้าม 1 แถว (QC อนุโลม)
+                // แต่ถ้าก๊อปปี้มาไม่ถึง 9 แถว (เช่น แถวเดียว) ให้วางเรียงปกติทีละแถวโดยไม่ข้าม
+                let currentStaffRowIdx;
+                if (rows.length >= 9) {
+                    currentStaffRowIdx = startRowIdx + rIdx + Math.floor(rIdx / 9);
+                } else {
+                    currentStaffRowIdx = startRowIdx + rIdx;
+                }
+
+                const targetTr = tbody.children[currentStaffRowIdx];
                 if (!targetTr) return;
 
                 const targetHasName = !!targetTr.querySelector('.sticky-col-1');
@@ -1555,8 +1637,14 @@ window.handleInputFromSummary = function(staffId, prodId, day, element) {
                                 
                                 const parts = input.id.split('-');
                                 const sId = parseInt(parts[1]);
-                                const pId = isNaN(parts[2]) ? parts[2] : parseInt(parts[2]);                                 					const day = parseInt(parts[3]);
+                                const pId = isNaN(parts[2]) ? parts[2] : parseInt(parts[2]);
+                                const day = parseInt(parts[3]);
                                 
+                                // ป้องกันไม่ให้วางทับช่องที่เป็นช่องคำนวณอัตโนมัติ (เช่น qc_anu)
+                                if (pId === 'qc_anu') {
+                                    return; 
+                                }
+
                                 if (pId === 7 || pId === 9) {
                                     if (cleanVal === '' || cleanVal === '0' || cleanVal === '-') {
                                         // Keep as is
@@ -1568,7 +1656,7 @@ window.handleInputFromSummary = function(staffId, prodId, day, element) {
                                         cleanVal = 'วันหยุด';
                                     } else if (cleanVal === '-') {
                                         cleanVal = '-';
-                                    } else if (cleanVal === '0') {
+                                    } else if (cleanVal === '0' || cleanVal === 0) {
                                         cleanVal = '0';
                                     }
                                 }
@@ -1835,6 +1923,44 @@ function updateTempTarget(val) {
                 showToast("คัดลอกตารางแล้ว", "blue");
             });
         }
+
+// ฟังก์ชันลบข้อมูลสมาชิก Temp ทั้งหมด
+window.clearAllTempMembers = function() {
+    if (confirm("คุณต้องการล้างข้อมูลสมาชิก Temp ทั้งหมดประจำเดือนนี้ใช่หรือไม่?")) {
+        const storageKey = `temp_members_${currentYear}_${currentMonth}`;
+        localStorage.removeItem(storageKey);
+        
+        if (typeof renderSummaryTable === 'function') {
+            renderSummaryTable();
+        }
+        showToast("ล้างข้อมูลสมาชิก Temp ทั้งหมดเรียบร้อยแล้ว", "rose");
+    }
+};
+
+// ฟังก์ชันลบสมาชิก Temp ที่เลือก (ผ่าน Checkbox ในตาราง)
+window.deleteSelectedTempMembers = function() {
+    const checkboxes = document.querySelectorAll('input[name="temp-select"]:checked');
+    if (checkboxes.length === 0) {
+        showToast("กรุณาเลือกรายการที่ต้องการลบก่อน", "orange");
+        return;
+    }
+
+    if (confirm(`คุณต้องการลบรายการที่เลือกจำนวน ${checkboxes.length} รายการใช่หรือไม่?`)) {
+        const selectedIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+        let members = getTempMembers(currentYear, currentMonth);
+        
+        // กรองเก็บเฉพาะสมาชิกที่ไม่ได้ถูกเลือกไว้
+        const updatedMembers = members.filter(m => !selectedIds.includes(m.id));
+        
+        const storageKey = `temp_members_${currentYear}_${currentMonth}`;
+        localStorage.setItem(storageKey, JSON.stringify(updatedMembers));
+
+        if (typeof renderSummaryTable === 'function') {
+            renderSummaryTable();
+        }
+        showToast("ลบรายการที่เลือกเรียบร้อยแล้ว", "blue");
+    }
+};
 
         let chartsInstance = {};
 
