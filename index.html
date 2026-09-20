@@ -100,6 +100,15 @@ div:not(.table-wrapper)::-webkit-scrollbar {
         .input-cell { width: 100%; height: 100%; min-height: 30px; text-align: center; font-size: 11px; outline: none; border: none; background: transparent;}
         .input-cell:focus { background-color: #e0e7ff; box-shadow: inset 0 0 0 2px #6366f1; }
 
+	input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    input[type="number"] {
+        -moz-appearance: textfield; /* รองรับ Firefox */
+    }
+
         @media print {
             .no-print { display: none !important; }
             .glass-card { background: white !important; backdrop-filter: none; box-shadow: none; border: 1px solid black; }
@@ -137,19 +146,28 @@ div:not(.table-wrapper)::-webkit-scrollbar {
                 </h1>
                 <p id="dashboard-subtitle" class="text-slate-500 font-medium mt-1 pl-1 text-sm">ระบบบันทึกและสรุปยอดงานประจำเดือน</p>
             </div>
-            <div class="flex gap-3">
-<button onclick="exportDataJson()" class="btn-pop bg-white text-emerald-700 border border-emerald-200 px-4 py-2.5 rounded-2xl font-bold flex items-center gap-2 text-sm shadow-sm hover:bg-emerald-50">
+            <div class="flex gap-3 items-center">
+    <!-- ปุ่มสำรองข้อมูล (Export) -->
+    <button onclick="exportDataToJsonFile()" class="btn-pop bg-white text-emerald-700 border border-emerald-200 px-4 py-2.5 rounded-2xl font-bold flex items-center gap-2 text-sm shadow-sm hover:bg-emerald-50">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
         สำรองข้อมูล
     </button>
-    <button onclick="triggerRestoreJson()" class="btn-pop bg-white text-blue-700 border border-blue-200 px-4 py-2.5 rounded-2xl font-bold flex items-center gap-2 text-sm shadow-sm hover:bg-blue-50">
+
+    <!-- ปุ่มกู้คืนข้อมูล (Import) -->
+    <button onclick="triggerImportJsonFile()" class="btn-pop bg-white text-blue-700 border border-blue-200 px-4 py-2.5 rounded-2xl font-bold flex items-center gap-2 text-sm shadow-sm hover:bg-blue-50">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
         กู้คืนข้อมูล
     </button>
-                <button onclick="openTeamConfig()" class="btn-pop bg-white text-slate-700 border border-slate-200 px-5 py-2.5 rounded-2xl font-bold flex items-center gap-2 text-sm shadow-sm hover:text-indigo-600 hover:border-indigo-200">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    ตั้งค่าทีม
-                </button>
+
+    <!-- Input สำหรับซ่อนไว้รอรับไฟล์ JSON ตอนกดกู้คืน (สำคัญมาก) -->
+    <input type="file" id="importJsonInput" accept=".json" style="display: none;" onchange="handleFileImport(event)">
+
+    <!-- ปุ่มตั้งค่าทีม (อันเดิม) -->
+    <button onclick="openTeamConfig()" class="btn-pop bg-white text-slate-700 border border-slate-200 px-5 py-2.5 rounded-2xl font-bold flex items-center gap-2 text-sm shadow-sm hover:text-indigo-600 hover:border-indigo-200">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        ตั้งค่าทีม
+    </button>
+</div>
                 <button onclick="openSummaryPage()" class="btn-pop bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-5 py-2.5 rounded-2xl shadow-md hover:shadow-indigo-500/30 font-bold text-sm transition-all flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     หน้าสรุปผล
@@ -442,35 +460,6 @@ div:not(.table-wrapper)::-webkit-scrollbar {
     <script>
 
 let editingMemberId = null;
-
-async function backupDataToDrive() {
-    showToast("กำลังสำรองข้อมูลขึ้น Google Drive...", "blue");
-    try {
-        const payload = {
-            teamsConfig: TEAMS_CONFIG,
-            masterData: masterData
-        };
-
-        const response = await fetch(APPS_SCRIPT_URL, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" }, // ป้องกันปัญหา CORS
-            body: JSON.stringify(payload)
-        });
-        
-        const result = await response.json();
-        
-        if (result.status === "success") {
-            hasUnsavedChanges = false;
-            showToast("สำรองข้อมูลขึ้น Google Drive สำเร็จ", "success");
-        } else {
-            showToast("สำรองข้อมูลไม่สำเร็จ: " + (result.message || "Unknown error"), "error");
-        }
-    } catch (err) {
-        console.error("Backup error:", err);
-        showToast("เกิดข้อผิดพลาดในการเชื่อมต่อเพื่อสำรองข้อมูล", "error");
-    }
-}
-
 let tempGroupDataStore = {}; // เก็บข้อมูลตารางเพื่อส่งไปแสดงใน Popup
 
         function openTempGroupModal(groupId) {
@@ -493,6 +482,165 @@ let tempGroupDataStore = {}; // เก็บข้อมูลตารางเ
                 content.classList.add('scale-100', 'opacity-100');
             }, 10);
         }
+
+// ฟังก์ชันพื้นฐานสำหรับสร้าง Key จัดเก็บข้อมูล
+function getKey(sId, pId, day) {    
+    return `${currentYear}-${currentMonth}-${sId}-${pId}-${day}`;    
+}
+
+function getTempKey(staffId, field) {
+    return `${currentYear}-${currentMonth}-${staffId}-temp-${field}`;
+}
+
+// โหลดข้อมูลเมื่อเปิดหน้าเว็บ
+window.onload = function() {    
+    loadLocalData();
+    setupMonthPicker();
+    updateLabels();
+    renderTeamButtons('main');
+    renderSummaryTable();
+};
+
+// ==========================================
+// ระบบ Custom Popup (สำหรับยืนยันการทำรายการ)
+// ==========================================
+function showCustomPopup(title, message, type, onConfirm, onCancel) {
+    const popup = document.getElementById('custom-popup');
+    document.getElementById('custom-popup-title').textContent = title;
+    document.getElementById('custom-popup-message').textContent = message;
+    
+    const icon = document.getElementById('custom-popup-icon');
+    const actions = document.getElementById('custom-popup-actions');
+    actions.innerHTML = '';
+
+    if (type === 'confirm') {
+        icon.innerHTML = '<svg class="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>';
+        icon.className = "mx-auto w-16 h-16 mb-4 flex items-center justify-center rounded-full bg-orange-100";
+        
+        const btnCancel = document.createElement('button');
+        btnCancel.className = "px-4 py-2 bg-slate-200 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-300";
+        btnCancel.textContent = "ยกเลิก";
+        btnCancel.onclick = () => { popup.classList.replace('flex', 'hidden'); if(onCancel) onCancel(); };
+        
+        const btnConfirm = document.createElement('button');
+        btnConfirm.className = "px-4 py-2 bg-gradient-to-r from-orange-500 to-rose-500 text-white rounded-xl font-bold text-sm shadow-md";
+        btnConfirm.textContent = "ยืนยัน";
+        btnConfirm.onclick = () => { popup.classList.replace('flex', 'hidden'); if(onConfirm) onConfirm(); };
+        
+        actions.append(btnCancel, btnConfirm);
+    } else {
+        icon.innerHTML = '<svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+        icon.className = "mx-auto w-16 h-16 mb-4 flex items-center justify-center rounded-full bg-blue-100";
+        
+        const btnOk = document.createElement('button');
+        btnOk.className = "px-6 py-2 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-md";
+        btnOk.textContent = "ตกลง";
+        btnOk.onclick = () => { popup.classList.replace('flex', 'hidden'); if(onConfirm) onConfirm(); };
+        actions.append(btnOk);
+    }
+    popup.classList.replace('hidden', 'flex');
+}
+
+// ==========================================
+// 1. ระบบสำรองข้อมูล (Export JSON ลงเครื่องคอมพิวเตอร์)
+// ==========================================
+function exportDataToJsonFile() {
+    // 1. รวบรวมข้อมูลทั้งหมดที่ต้องการสำรอง
+    const exportData = {
+        teamsConfig: TEAMS_CONFIG,
+        masterData: masterData
+    };
+
+    // 2. แปลงข้อมูลเป็น JSON string
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+    
+    // 3. ดึงวันที่ปัจจุบัน (แปลงเป็นปี ค.ศ. อัตโนมัติ)
+    const now = new Date();
+    const year = now.getFullYear(); // ปี ค.ศ. (เช่น 2026)
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const dateStr = `${day}-${month}-${year}`; // รูปแบบ วันเดือนปี เช่น 2026-06-20
+
+    // 4. กำหนดชื่อ "ชื่อ" ที่ต้องการ (สามารถเปลี่ยนคำว่า "ข้อมูล" เป็นชื่อที่ต้องการ หรือใช้ชื่อทีมปัจจุบันได้ครับ)
+    const customName = "อัพเดทเมื่อวันที่"; 
+
+    // 5. สร้างลิงก์จำลองเพื่อดาวน์โหลดไฟล์ตามรูปแบบที่ต้องการ
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `พรีเซ็น_backup_${customName}_${dateStr}.json`);
+    
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+
+    // แสดงข้อความแจ้งเตือน (ถ้ามีฟังก์ชัน Toast)
+    if (typeof showToast === 'function') {
+        showToast("สำรองข้อมูลไฟล์ JSON สำเร็จ", "success");
+    }
+}
+
+// ==========================================
+// 2. ระบบกู้คืนข้อมูล (Trigger คลิกเลือกไฟล์)
+// ==========================================
+function triggerImportJsonFile() {
+    document.getElementById('importJsonInput').click();
+}
+
+// ==========================================
+// 3. ระบบประมวลผลไฟล์ที่นำเข้า (Import JSON)
+// ==========================================
+function handleFileImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    showCustomPopup(
+        "ยืนยันการนำเข้าข้อมูล", 
+        "การนำเข้าไฟล์สำรองจะแทนที่ข้อมูลปัจจุบันทั้งหมด คุณต้องการดำเนินการต่อหรือไม่?", 
+        "confirm", 
+        () => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const result = JSON.parse(e.target.result);
+                    
+                    if (result && result.masterData && typeof result.masterData === 'object') {
+                        TEAMS_CONFIG = result.teamsConfig || {};
+                        
+                        // ป้องกัน Error กรณีไฟล์เก่าไม่มีโครงสร้างทีม T+7
+                        if (!TEAMS_CONFIG['t7r'] || TEAMS_CONFIG['t7r'].length === 0) {
+                            if (typeof DEFAULT_T7R_MEMBERS !== 'undefined') {
+                                TEAMS_CONFIG['t7r'] = JSON.parse(JSON.stringify(DEFAULT_T7R_MEMBERS));
+                            }
+                        }
+                        
+                        masterData = result.masterData;
+                        
+                        // บันทึกลง LocalStorage ของเบราว์เซอร์
+                        saveTeamsConfig();
+                        saveDataLocally();
+                        
+                        // วาดหน้าจอใหม่ทั้งหมด
+                        if (typeof renderTeamButtons === 'function') renderTeamButtons('main');
+                        if (typeof renderSummaryTable === 'function') renderSummaryTable();
+                        
+                        showToast("กู้คืนข้อมูลจากไฟล์สำเร็จ ระบบเป็นปัจจุบันแล้ว", "success");
+                    } else {
+                        showToast("โครงสร้างไฟล์ JSON ไม่ถูกต้อง", "error");
+                    }
+                } catch (parseErr) {
+                    console.error("Invalid JSON file:", parseErr);
+                    showToast("ไม่สามารถอ่านไฟล์ JSON ได้ (ไฟล์อาจเสียหาย)", "error");
+                }
+            };
+            reader.readAsText(file);
+        }, 
+        () => {
+            showToast("ยกเลิกการนำเข้าข้อมูล", "info");
+        }
+    );
+
+    event.target.value = '';
+}
 
         function closeTempGroupModal() {
             const modal = document.getElementById('temp-group-modal');
@@ -569,194 +717,6 @@ let tempGroupDataStore = {}; // เก็บข้อมูลตารางเ
         
         const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
 
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkb-fcFnbrN0p7dimux_ZO6-z482gMwDCxV0yXd501PYymCSF-4-txjSUNySZd0keQ/exec";
-        let hasUnsavedChanges = false;
-        let cancelAutoBackup = false;
-
-        // ดักจับการแก้ไขข้อมูลเพื่อแจ้งเตือน
-        const originalSaveData = saveDataLocally;
-        saveDataLocally = function() {
-            hasUnsavedChanges = true;
-            cancelAutoBackup = false;
-            originalSaveData();
-        };
-        const originalSaveTeams = saveTeamsConfig;
-        saveTeamsConfig = function() {
-            hasUnsavedChanges = true;
-            cancelAutoBackup = false;
-            originalSaveTeams();
-        };
-
-        function getKey(sId, pId, day) { 
-            return `${currentYear}-${currentMonth}-${sId}-${pId}-${day}`; 
-        }
-
-        function getTempKey(staffId, field) {
-            return `${currentYear}-${currentMonth}-${staffId}-temp-${field}`;
-        }
-
-        window.onload = function() { 
-            loadLocalData();
-            setupMonthPicker();
-            updateLabels();
-            renderTeamButtons('main');
-            renderSummaryTable();
-        };
-// ระบบ Custom Popup
-        function showCustomPopup(title, message, type, onConfirm, onCancel) {
-            const popup = document.getElementById('custom-popup');
-            document.getElementById('custom-popup-title').textContent = title;
-            document.getElementById('custom-popup-message').textContent = message;
-            
-            const icon = document.getElementById('custom-popup-icon');
-            const actions = document.getElementById('custom-popup-actions');
-            actions.innerHTML = '';
-
-            if (type === 'confirm') {
-                icon.innerHTML = '<svg class="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>';
-                icon.className = "mx-auto w-16 h-16 mb-4 flex items-center justify-center rounded-full bg-orange-100";
-                
-                const btnCancel = document.createElement('button');
-                btnCancel.className = "px-4 py-2 bg-slate-200 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-300";
-                btnCancel.textContent = "ยกเลิก";
-                btnCancel.onclick = () => { popup.classList.replace('flex', 'hidden'); if(onCancel) onCancel(); };
-                
-                const btnConfirm = document.createElement('button');
-                btnConfirm.className = "px-4 py-2 bg-gradient-to-r from-orange-500 to-rose-500 text-white rounded-xl font-bold text-sm shadow-md";
-                btnConfirm.textContent = "ยืนยัน";
-                btnConfirm.onclick = () => { popup.classList.replace('flex', 'hidden'); if(onConfirm) onConfirm(); };
-                
-                actions.append(btnCancel, btnConfirm);
-            } else {
-                icon.innerHTML = '<svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
-                icon.className = "mx-auto w-16 h-16 mb-4 flex items-center justify-center rounded-full bg-blue-100";
-                
-                const btnOk = document.createElement('button');
-                btnOk.className = "px-6 py-2 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-md";
-                btnOk.textContent = "ตกลง";
-                btnOk.onclick = () => { popup.classList.replace('flex', 'hidden'); if(onConfirm) onConfirm(); };
-                actions.append(btnOk);
-            }
-            popup.classList.replace('hidden', 'flex');
-        }
-
-        // ระบบสำรองข้อมูลขึ้น Google Drive
-        async function exportDataJson(isAuto = false, bypassCooldown = false) {
-            const now = new Date().getTime();
-            const lastBackup = parseInt(localStorage.getItem('mlpr_last_backup_time')) || 0;
-            const timeDiffMin = (now - lastBackup) / (1000 * 60);
-
-            // ตรวจสอบเงื่อนไข 5 นาที
-            if (!isAuto && !bypassCooldown && timeDiffMin < 5) {
-                showCustomPopup("แจ้งเตือนการบันทึกซ้ำ", "เพิ่งมีการสำรองข้อมูลไปเมื่อไม่ถึง 5 นาทีที่ผ่านมา คุณต้องการสำรองข้อมูลซ้ำลงไปหรือไม่?", "confirm", 
-                    () => { exportDataJson(false, true); }, 
-                    () => { cancelAutoBackup = true; showToast("ยกเลิกการสำรองข้อมูลแล้ว", "info"); }
-                );
-                return;
-            }
-
-            if (!isAuto) showToast("กำลังสำรองข้อมูลขึ้น Google Drive...", "blue");
-
-            const backupData = {
-                timestamp: new Date().toISOString(),
-                teamsConfig: TEAMS_CONFIG,
-                masterData: masterData
-            };
-
-            try {
-                const response = await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(backupData),
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-                });
-                
-                const result = await response.json();
-                if (result.status === 'success') {
-                    localStorage.setItem('mlpr_last_backup_time', now.toString());
-                    hasUnsavedChanges = false;
-                    if (!isAuto) showToast("สำรองข้อมูลขึ้น Google Drive สำเร็จ", "success");
-                }
-            } catch (err) {
-                if (!isAuto) showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error");
-            }
-        }
-
-        // ระบบกู้คืนข้อมูลจาก Google Drive
-        function triggerRestoreJson() {
-    showCustomPopup("ยืนยันการกู้คืนระบบ", "ระบบจะดึงไฟล์ล่าสุดจาก Google Drive มาทับข้อมูลปัจจุบันทั้งหมด แน่ใจหรือไม่?", "confirm", 
-        async () => {
-            showToast("กำลังดึงข้อมูลจาก Google Drive...", "blue");
-            try {
-                const response = await fetch(APPS_SCRIPT_URL);
-                const rawText = await response.text();
-                
-                let result;
-                try {
-                    result = JSON.parse(rawText);
-                } catch (parseErr) {
-                    console.error("Invalid JSON response:", rawText);
-                    showToast("ไม่สามารถอ่านข้อมูลจาก Google Drive ได้", "error");
-                    return;
-                }
-                
-                if (result.status === 'not_found') {
-                    showToast("ไม่พบไฟล์สำรองบน Google Drive", "error");
-                    return;
-                }
-                if (result.status === 'error') {
-                    showToast("กู้คืนไม่สำเร็จ: " + (result.message || "Unknown error"), "error");
-                    return;
-                }
-                
-                // ตรวจสอบว่ามี result.masterData ที่เป็น Object จริงๆ เท่านั้น ห้ามใช้ || result
-                if (result && result.masterData && typeof result.masterData === 'object' && !result.masterData.status) {
-                    TEAMS_CONFIG = result.teamsConfig || {};
-		     // ป้องกัน Error ทีมใหม่เมื่อดึง Cloud Backup เก่า
-                        if (!TEAMS_CONFIG['t7r'] || TEAMS_CONFIG['t7r'].length === 0) {
-                            TEAMS_CONFIG['t7r'] = JSON.parse(JSON.stringify(DEFAULT_T7R_MEMBERS));
-                        }
-                    masterData = result.masterData;
-                    
-                    saveTeamsConfig();
-                    saveDataLocally();
-                    hasUnsavedChanges = false;
-                    
-                    renderTeamButtons('main');
-                    renderSummaryTable();
-                    
-                    showToast("กู้คืนข้อมูลสำเร็จ ระบบเป็นปัจจุบันแล้ว", "success");
-                } else {
-                    showToast("โครงสร้างข้อมูลในไฟล์สำรองไม่ถูกต้อง (ไฟล์บน Drive เสียหาย)", "error");
-                }
-            } catch (err) {
-                console.error("Restore error:", err);
-                showToast("เกิดข้อผิดพลาดในการเชื่อมต่อเพื่อกู้คืนข้อมูล", "error");
-            }
-        }
-    );
-}
-
-        // แจ้งเตือนก่อนปิดแท็บ และ Auto Backup หากลืมสำรองข้อมูล
-        window.addEventListener('beforeunload', function (e) {
-            if (hasUnsavedChanges && !cancelAutoBackup) {
-                // เบราว์เซอร์จะแสดงข้อความ Default เสมอ สำหรับการปิดแท็บ (ไม่สามารถใช้ Custom Popup ดักการปิดแท็บได้ด้วยเหตุผลด้านความปลอดภัยของ Browser)
-                e.preventDefault();
-                e.returnValue = ''; 
-            }
-        });
-
-        window.addEventListener('unload', function () {
-            if (hasUnsavedChanges && !cancelAutoBackup) {
-                const backupData = { timestamp: new Date().toISOString(), teamsConfig: TEAMS_CONFIG, masterData: masterData };
-                // keepalive: true สำคัญมาก ทำให้เบราว์เซอร์ส่งข้อมูลให้เสร็จแม้แท็บจะถูกปิดไปแล้ว
-                fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(backupData),
-                    keepalive: true,
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-                });
-            }
-        });
 
 function getTempMembers(year, month) {
     if (!TEAMS_CONFIG['temp_monthly']) TEAMS_CONFIG['temp_monthly'] = {};
@@ -1439,7 +1399,7 @@ window.handleInputFromSummary = function(staffId, prodId, day, element) {
     masterData[key] = val;
     saveDataLocally();
     
-    // คำนวณค่าเฉลี่ยตามปกติ
+    // 1. คำนวณค่าเฉลี่ยตามปกติ
     const workDaysVal = parseFloat(masterData[getTempKey(staffId, 'workDays')]) || 0;
     const totalApproveVal = parseFloat(masterData[getTempKey(staffId, 'totalApprove')]) || 0;
     const totalQcVal = parseFloat(masterData[getTempKey(staffId, 'totalQc')]) || 0;
@@ -1447,8 +1407,22 @@ window.handleInputFromSummary = function(staffId, prodId, day, element) {
     const avgApprove = workDaysVal > 0 ? (totalApproveVal / workDaysVal).toFixed(2) : '0';
     const avgQc = workDaysVal > 0 ? (totalQcVal / workDaysVal).toFixed(2) : '0';
 
-    document.getElementById(`temp-avg-app-${staffId}`).textContent = avgApprove;
-    document.getElementById(`temp-avg-qc-${staffId}`).textContent = avgQc;
+    const avgAppEl = document.getElementById(`temp-avg-app-${staffId}`);
+    if (avgAppEl) avgAppEl.textContent = avgApprove;
+    
+    const avgQcEl = document.getElementById(`temp-avg-qc-${staffId}`);
+    if (avgQcEl) avgQcEl.textContent = avgQc;
+
+    // 2. **เพิ่มส่วนนี้:** อัปเดตช่องผลลัพธ์/ยอดคำนวณทุกช่องในแถวของพนักงานคนนี้ทันทีโดยไม่ต้องรีเฟรช
+    const sumElements = document.querySelectorAll(`[id^="sum-${staffId}-"]`);
+    sumElements.forEach(sumEl => {
+        // ดึง pId ออกจาก ID ของช่องผลลัพธ์ (เช่น sum-staffId-pId)
+        const parts = sumEl.id.split('-');
+        if (parts.length >= 3) {
+            const pId = parts.slice(2).join('-');
+            sumEl.textContent = calculateSum(staffId, pId);
+        }
+    });
 }
 
         function handleInputFromSummary(staffId, prodId, day, inputEl) {
@@ -1924,43 +1898,25 @@ function updateTempTarget(val) {
             });
         }
 
-// ฟังก์ชันลบข้อมูลสมาชิก Temp ทั้งหมด
-window.clearAllTempMembers = function() {
-    if (confirm("คุณต้องการล้างข้อมูลสมาชิก Temp ทั้งหมดประจำเดือนนี้ใช่หรือไม่?")) {
-        const storageKey = `temp_members_${currentYear}_${currentMonth}`;
-        localStorage.removeItem(storageKey);
-        
-        if (typeof renderSummaryTable === 'function') {
+function clearAllTempMembers() {
+    const monthName = thaiMonths[currentMonth];
+    showCustomPopup(
+        "ยืนยันการเคลียร์รายชื่อ", 
+        `คุณต้องการล้างรายชื่อสมาชิกทีม Temp ทั้งหมดประจำเดือน ${monthName} ${currentYear} ใช่หรือไม่?`, 
+        "confirm", 
+        () => {
+            const key = `${currentYear}-${currentMonth}`;
+            if (TEAMS_CONFIG['temp_monthly']) {
+                TEAMS_CONFIG['temp_monthly'][key] = [];
+            }
+            TEAMS_CONFIG['temp'] = [];
+            saveTeamsConfig();
+            renderConfigMembersList();
             renderSummaryTable();
+            showToast("เคลียร์รายชื่อสมาชิกทีม Temp ทั้งหมดเรียบร้อยแล้ว", "success");
         }
-        showToast("ล้างข้อมูลสมาชิก Temp ทั้งหมดเรียบร้อยแล้ว", "rose");
-    }
-};
-
-// ฟังก์ชันลบสมาชิก Temp ที่เลือก (ผ่าน Checkbox ในตาราง)
-window.deleteSelectedTempMembers = function() {
-    const checkboxes = document.querySelectorAll('input[name="temp-select"]:checked');
-    if (checkboxes.length === 0) {
-        showToast("กรุณาเลือกรายการที่ต้องการลบก่อน", "orange");
-        return;
-    }
-
-    if (confirm(`คุณต้องการลบรายการที่เลือกจำนวน ${checkboxes.length} รายการใช่หรือไม่?`)) {
-        const selectedIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
-        let members = getTempMembers(currentYear, currentMonth);
-        
-        // กรองเก็บเฉพาะสมาชิกที่ไม่ได้ถูกเลือกไว้
-        const updatedMembers = members.filter(m => !selectedIds.includes(m.id));
-        
-        const storageKey = `temp_members_${currentYear}_${currentMonth}`;
-        localStorage.setItem(storageKey, JSON.stringify(updatedMembers));
-
-        if (typeof renderSummaryTable === 'function') {
-            renderSummaryTable();
-        }
-        showToast("ลบรายการที่เลือกเรียบร้อยแล้ว", "blue");
-    }
-};
+    );
+}
 
         let chartsInstance = {};
 
@@ -3023,45 +2979,6 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// เพิ่มฟังก์ชันกู้คืนข้อมูลอัตโนมัติเมื่อเปิดโปรแกรม[cite: 9]
-async function autoRestoreData() {
-    try {
-        const response = await fetch(APPS_SCRIPT_URL);
-        const rawText = await response.text();
-        let result;
-        try {
-            result = JSON.parse(rawText);
-        } catch (parseErr) {
-            return; // หากไม่สามารถแปลง JSON ได้ ให้ข้ามไปใช้ข้อมูล Local เดิม
-        }
-        
-        if (result && result.status !== 'not_found' && result.status !== 'error' && result.masterData && typeof result.masterData === 'object') {
-            TEAMS_CONFIG = result.teamsConfig || TEAMS_CONFIG;
-            masterData = result.masterData;
-            
-            saveTeamsConfig();
-            saveDataLocally();
-            hasUnsavedChanges = false;
-            
-            renderTeamButtons('main');
-            renderSummaryTable();
-            showToast("กู้คืนข้อมูลอัตโนมัติสำเร็จ ข้อมูลเป็นปัจจุบันแล้ว", "success");
-        }
-    } catch (err) {
-        console.error("Auto restore error:", err);
-    }
-}
-
-// ปรับปรุง window.onload ให้เรียกใช้งาน autoRestoreData ทุกครั้งที่เปิดโปรแกรม[cite: 9]
-window.onload = async function() { 
-    loadLocalData();
-    await autoRestoreData(); // ทำการกู้คืนข้อมูลอัตโนมัติทุกครั้งที่เปิดโปรแกรม[cite: 9]
-    setupMonthPicker();
-    updateLabels();
-    renderTeamButtons('main');
-    renderSummaryTable();
-};
-
 // ==========================================
 // ระบบการนำเสนอสไลด์ (Presentation System) - อัปเดตเพิ่ม 22 หน้าแรก + 19 หน้าเดิม
 // ==========================================
@@ -3168,7 +3085,7 @@ function prepareAllPresentationData() {
     presentationData.rangeText = "ประจำเดือน " + formattedMonthName;
 
     presentationData.monthName = startDate.toLocaleDateString('th-TH', { month: 'long' });
-    presentationData.year = targetYear + 543; //
+    presentationData.year = targetYear + 543;
 
     const currDates = getDatesInRange(startDate, endDate);
     
@@ -3210,13 +3127,19 @@ function prepareAllPresentationData() {
             var totalKey = targetYear + "-" + targetMonth + "-" + m.id + "-t7rtotal-" + d;
             var correctKey = targetYear + "-" + targetMonth + "-" + m.id + "-t7rcorrect-" + d;
             var wrongKey = targetYear + "-" + targetMonth + "-" + m.id + "-t7rwrong-" + d;
+            var wrongAllowKey = targetYear + "-" + targetMonth + "-" + m.id + "-t7rwronganu-" + d;
 
             var total = (typeof masterData !== 'undefined' && masterData[totalKey]) ? parseFloat(masterData[totalKey]) : 0;
             var correct = (typeof masterData !== 'undefined' && masterData[correctKey]) ? parseFloat(masterData[correctKey]) : 0;
             var wrong = (typeof masterData !== 'undefined' && masterData[wrongKey]) ? parseFloat(masterData[wrongKey]) : 0;
-            var percent = total > 0 ? parseFloat(((correct / total) * 100).toFixed(2)) : 100.00;
+            var wrongAllow = (typeof masterData !== 'undefined') ? (parseFloat(masterData[wrongAllowKey] || masterData[wrongAllowKeyAlt]) || 0) : 0;
 
-            if (total > 0 || correct > 0 || wrong > 0) {
+            // รวมยอด อนุมัติผิด + อนุมัติผิด(อนุโลม) ก่อนคำนวณ %
+            var totalWrongAll = wrong + wrongAllow;
+            var effectiveTotal = (total > 0) ? total : (correct + totalWrongAll);
+            var percent = effectiveTotal > 0 ? parseFloat(((correct / effectiveTotal) * 100).toFixed(2)) : 100.00;
+
+            if (total > 0 || correct > 0 || wrong > 0 || wrongAllow > 0) {
                 matchCount++;
             }
 
@@ -3224,6 +3147,7 @@ function prepareAllPresentationData() {
                 date: d + "/" + (targetMonth + 1) + "/" + (targetYear + 543),
                 correct: correct,
                 wrong: wrong,
+                wrongAllow: wrongAllow,
                 total: total,
                 percent: percent
             });
@@ -3237,7 +3161,12 @@ function prepareAllPresentationData() {
         var sumTotalWork = dailyStats.reduce(function(sum, item) { return sum + item.total; }, 0);
         var sumCorrectWork = dailyStats.reduce(function(sum, item) { return sum + item.correct; }, 0);
         var sumWrongWork = dailyStats.reduce(function(sum, item) { return sum + item.wrong; }, 0);
-        var avgPct = sumTotalWork > 0 ? parseFloat(((sumCorrectWork / sumTotalWork) * 100).toFixed(2)) : 100.00;
+        var sumWrongAllowWork = dailyStats.reduce(function(sum, item) { return sum + item.wrongAllow; }, 0);
+        
+        // รวมยอดผิดทั้งหมด (ผิด + อนุโลม) ก่อนนำไปคิด % สรุปประจำเดือน
+        var sumTotalWrongAll = sumWrongWork + sumWrongAllowWork;
+        var sumEffectiveTotal = (sumTotalWork > 0) ? sumTotalWork : (sumCorrectWork + sumTotalWrongAll);
+        var avgPct = sumEffectiveTotal > 0 ? parseFloat(((sumCorrectWork / sumEffectiveTotal) * 100).toFixed(2)) : 100.00;
 
         var monthlyStats = [];
         for (var i = 2; i >= 0; i--) {
@@ -3249,22 +3178,28 @@ function prepareAllPresentationData() {
             
             // หาจำนวนวันในเดือนนั้นๆ
             var daysInMonthCount = new Date(pYear, pMonth + 1, 0).getDate();
-            var pTotal = 0, pCorrect = 0, pWrong = 0;
+            var pTotal = 0, pCorrect = 0, pWrong = 0, pWrongAllow = 0;
 
-            // วนลูปดึงข้อมูลจาก masterData ของเดือนนั้นๆ (ถ้ามี)
+            // วนลูปดึงข้อมูลจาก masterData ของเดือนนั้นๆ
             for (var d = 1; d <= daysInMonthCount; d++) {
                 var totalKey = pYear + "-" + pMonth + "-" + m.id + "-t7rtotal-" + d;
                 var correctKey = pYear + "-" + pMonth + "-" + m.id + "-t7rcorrect-" + d;
                 var wrongKey = pYear + "-" + pMonth + "-" + m.id + "-t7rwrong-" + d;
+                var wrongAllowKey = pYear + "-" + pMonth + "-" + m.id + "-t7rwronganu-" + d;
 
                 if (typeof masterData !== 'undefined') {
                     if (masterData[totalKey]) pTotal += parseFloat(masterData[totalKey]) || 0;
                     if (masterData[correctKey]) pCorrect += parseFloat(masterData[correctKey]) || 0;
                     if (masterData[wrongKey]) pWrong += parseFloat(masterData[wrongKey]) || 0;
+                    if (masterData[wrongAllowKey] || masterData[wrongAllowKeyAlt]) {
+                        pWrongAllow += parseFloat(masterData[wrongAllowKey] || masterData[wrongAllowKeyAlt]) || 0;
+                    }
                 }
             }
 
-            var pPct = pTotal > 0 ? parseFloat(((pCorrect / pTotal) * 100).toFixed(2)) : 100.00;
+            var pTotalWrongAll = pWrong + pWrongAllow;
+            var pEffectiveTotal = (pTotal > 0) ? pTotal : (pCorrect + pTotalWrongAll);
+            var pPct = pEffectiveTotal > 0 ? parseFloat(((pCorrect / pEffectiveTotal) * 100).toFixed(2)) : 100.00;
 
             monthlyStats.push({
                 monthName: mName,
@@ -3272,6 +3207,7 @@ function prepareAllPresentationData() {
                     { productId: 't7rtotal', productName: 'จำนวนที่ตรวจสอบ', work: pTotal },
                     { productId: 't7rcorrect', productName: 'อนุมัติถูกต้อง', work: pCorrect },
                     { productId: 't7rwrong', productName: 'อนุมัติผิด', work: pWrong },
+                    { productId: 't7rwrongallow', productName: 'อนุมัติผิด (อนุโลม)', work: pWrongAllow },
                     { productId: 't7rpctcorrect', productName: '% อนุมัติถูก', work: pPct },
                     { productId: 't7rpcttagget', productName: '% Target', work: memberTarget }
                 ]
@@ -3284,6 +3220,7 @@ function prepareAllPresentationData() {
                 totalChecked: sumTotalWork,
                 correct: sumCorrectWork,
                 wrong: sumWrongWork,
+                wrongAllow: sumWrongAllowWork,
                 pctCorrect: avgPct,
                 target: memberTarget
             },
@@ -3297,84 +3234,84 @@ function prepareAllPresentationData() {
     // ==========================================
 
     for (var i = 1; i <= 5; i++) {
-    var members = TEAMS_CONFIG[i] || [];
-    allMembers = allMembers.concat(members);
-    
-    presentationData.teams[i] = buildStatsForTeam(members, currDates);
+        var members = TEAMS_CONFIG[i] || [];
+        allMembers = allMembers.concat(members);
+        
+        presentationData.teams[i] = buildStatsForTeam(members, currDates);
 
-    var teamStats = presentationData.teams[i];
-    var chartPageNum = (i * 2) + 22;
-    
-    presentationData.chartPairs[chartPageNum] = {
-        mlpr: teamStats.ml || teamStats.ML || 0,
-        mnpr: teamStats.mn || teamStats.MN || 0,
-        reconfirm: teamStats.rcf || teamStats.RCF || 0,
-        qcError: teamStats.qc || teamStats.QC || 0
+        var teamStats = presentationData.teams[i];
+        var chartPageNum = (i * 2) + 22;
+        
+        presentationData.chartPairs[chartPageNum] = {
+            mlpr: teamStats.ml || teamStats.ML || 0,
+            mnpr: teamStats.mn || teamStats.MN || 0,
+            reconfirm: teamStats.rcf || teamStats.RCF || 0,
+            qcError: teamStats.qc || teamStats.QC || 0
+        };
+    }
+
+    presentationData.all = buildStatsForTeam(allMembers, currDates);
+
+    var startStrFormat = startDate.getFullYear() + "-" + String(startDate.getMonth() + 1).padStart(2, '0') + "-" + String(startDate.getDate()).padStart(2, '0');
+    var endStrFormat = endDate.getFullYear() + "-" + String(endDate.getMonth() + 1).padStart(2, '0') + "-" + String(endDate.getDate()).padStart(2, '0');
+    presentationData.temp = buildTempTeamStats(startStrFormat, endStrFormat);
+
+    var prevAll = buildStatsForTeam(allMembers, prevDates);
+    presentationData.prevRankMapPerf = {};
+    presentationData.prevRankMapQc = {};
+
+    if (prevAll && prevAll.topPerf) {
+        prevAll.topPerf.forEach(function(s, idx) { 
+            presentationData.prevRankMapPerf[s.member.id] = idx + 1; 
+        });
+    }
+    if (prevAll && prevAll.topQc) {
+        prevAll.topQc.forEach(function(s, idx) { 
+            presentationData.prevRankMapQc[s.member.id] = idx + 1; 
+        });
+    }
+
+    var prevStartStrFormat = prevStart.getFullYear() + "-" + String(prevStart.getMonth() + 1).padStart(2, '0') + "-" + String(prevStart.getDate()).padStart(2, '0');
+    var prevEndStrFormat = prevEnd.getFullYear() + "-" + String(prevEnd.getMonth() + 1).padStart(2, '0') + "-" + String(prevEnd.getDate()).padStart(2, '0');
+
+    var prevTemp = buildTempTeamStats(prevStartStrFormat, prevEndStrFormat);
+    presentationData.prevTemp = prevTemp;
+
+    presentationData.prevRankMapPerfTemp = {};
+    presentationData.prevRankMapQcTemp = {};
+
+    var setRankToAllKeys = function(targetMap, s, rank) {
+        if (!targetMap || !s) return;
+        var keys = [
+            s.id,
+            s.userCode,
+            s.user,
+            s.fullName,
+            s.member ? s.member.id : null,
+            s.member ? s.member.userCode : null,
+            s.member ? s.member.user : null,
+            s.member ? s.member.fullName : null
+        ];
+        for (var k = 0; k < keys.length; k++) {
+            if (keys[k]) {
+                targetMap[keys[k]] = rank;
+            }
+        }
     };
-}
 
-presentationData.all = buildStatsForTeam(allMembers, currDates);
-
-var startStrFormat = startDate.getFullYear() + "-" + String(startDate.getMonth() + 1).padStart(2, '0') + "-" + String(startDate.getDate()).padStart(2, '0');
-var endStrFormat = endDate.getFullYear() + "-" + String(endDate.getMonth() + 1).padStart(2, '0') + "-" + String(endDate.getDate()).padStart(2, '0');
-presentationData.temp = buildTempTeamStats(startStrFormat, endStrFormat);
-
-var prevAll = buildStatsForTeam(allMembers, prevDates);
-presentationData.prevRankMapPerf = {};
-presentationData.prevRankMapQc = {};
-
-if (prevAll && prevAll.topPerf) {
-    prevAll.topPerf.forEach(function(s, idx) { 
-        presentationData.prevRankMapPerf[s.member.id] = idx + 1; 
-    });
-}
-if (prevAll && prevAll.topQc) {
-    prevAll.topQc.forEach(function(s, idx) { 
-        presentationData.prevRankMapQc[s.member.id] = idx + 1; 
-    });
-}
-
-var prevStartStrFormat = prevStart.getFullYear() + "-" + String(prevStart.getMonth() + 1).padStart(2, '0') + "-" + String(prevStart.getDate()).padStart(2, '0');
-var prevEndStrFormat = prevEnd.getFullYear() + "-" + String(prevEnd.getMonth() + 1).padStart(2, '0') + "-" + String(prevEnd.getDate()).padStart(2, '0');
-
-var prevTemp = buildTempTeamStats(prevStartStrFormat, prevEndStrFormat);
-presentationData.prevTemp = prevTemp;
-
-presentationData.prevRankMapPerfTemp = {};
-presentationData.prevRankMapQcTemp = {};
-
-var setRankToAllKeys = function(targetMap, s, rank) {
-    if (!targetMap || !s) return;
-    var keys = [
-        s.id,
-        s.userCode,
-        s.user,
-        s.fullName,
-        s.member ? s.member.id : null,
-        s.member ? s.member.userCode : null,
-        s.member ? s.member.user : null,
-        s.member ? s.member.fullName : null
-    ];
-    for (var k = 0; k < keys.length; k++) {
-        if (keys[k]) {
-            targetMap[keys[k]] = rank;
+    // ดึงจาก topPerf และ topQc โดยตรง เพื่อให้อันดับตรงกับหน้าจอแสดงผลจริง 100%
+    if (prevTemp) {
+        if (Array.isArray(prevTemp.topPerf)) {
+            prevTemp.topPerf.forEach(function(s, idx) {
+                setRankToAllKeys(presentationData.prevRankMapPerfTemp, s, idx + 1);
+            });
+        }
+        if (Array.isArray(prevTemp.topQc)) {
+            prevTemp.topQc.forEach(function(s, idx) {
+                setRankToAllKeys(presentationData.prevRankMapQcTemp, s, idx + 1);
+            });
         }
     }
-};
-
-// ดึงจาก topPerf และ topQc โดยตรง เพื่อให้อันดับตรงกับหน้าจอแสดงผลจริง 100%
-if (prevTemp) {
-    if (Array.isArray(prevTemp.topPerf)) {
-        prevTemp.topPerf.forEach(function(s, idx) {
-            setRankToAllKeys(presentationData.prevRankMapPerfTemp, s, idx + 1);
-        });
-    }
-    if (Array.isArray(prevTemp.topQc)) {
-        prevTemp.topQc.forEach(function(s, idx) {
-            setRankToAllKeys(presentationData.prevRankMapQcTemp, s, idx + 1);
-        });
-    }
-}
 }
 
 
@@ -3390,7 +3327,6 @@ function getDatesInRange(start, end) {
 
 function buildStatsForTeam(members, dates) {
     let list = [];
-    // เพิ่ม qcAllow เข้าไป (กำหนด Product ID เป็น 9 ตามโครงสร้างระบบ M-Flow ทั่วไป หากไม่ใช่สามารถปรับเปลี่ยนตัวเลขได้ครับ)
     const pIds = { ml:0, mn:1, rcf:2, log:5, txn:3, cctv:8, inq:4, conv:6, qc:7, qcAllow: 9 };
     
     members.forEach(m => {
@@ -3404,7 +3340,6 @@ function buildStatsForTeam(members, dates) {
                 let val = parseFloat(masterData[dKey]);
                 if (!isNaN(val) && val > 0) {
                     sums[key] += val;
-                    // แยกไม่ให้งาน QC และ QC อนุโลม มานับเป็นวันทำงานปกติเดี่ยวๆ
                     if (key !== 'qc' && key !== 'qcAllow') hasWorkToday = true;
                 }
             }
@@ -3415,15 +3350,17 @@ function buildStatsForTeam(members, dates) {
         let avgPerDay = workDays > 0 ? (total / workDays) : 0;
         let otherTasks = sums.log + sums.txn + sums.cctv + sums.inq + sums.conv;
         
-        let totalQc = sums.qc;
-        let totalQcAllow = sums.qcAllow; // ยอดรวม QC อนุโลมของสมาชิกคนนี้
+        let totalQc = sums.qc;                 // ยอดอนุมัติผิดที่ไม่รวมอนุโลม (ใช้เป็นเกณฑ์จัดอันดับ & โชว์ตัวใหญ่สีแดง)
+        let totalQcAllow = sums.qcAllow;          // ยอดอนุมัติผิด (อนุโลม)
+        let totalQcCombined = totalQc + totalQcAllow; // ยอดรวมอนุมัติผิดทั้งหมด
 
         list.push({ 
             member: m, 
             sums, 
             totalTasks: total, 
-            totalQc: totalQc, 
-            totalQcAllow: totalQcAllow, 
+            totalQc: totalQc,             
+            totalQcAllow: totalQcAllow,    
+            totalQcCombined: totalQcCombined, 
             workDays, 
             avgPerDay, 
             otherTasks 
@@ -3431,35 +3368,36 @@ function buildStatsForTeam(members, dates) {
     });
 
     let topPerf = [...list].filter(s => s.totalTasks > 0).sort((a, b) => b.avgPerDay - a.avgPerDay);
-    let topQc = [...list].filter(s => s.totalQc > 0).sort((a, b) => b.totalQc - a.totalQc);
-    let topQcAllow = [...list].filter(s => s.totalQcAllow > 0).sort((a, b) => b.totalQcAllow - a.totalQcAllow);
     
-    return { list, topPerf, topQc, topQcAllow };
+    // ** จุดที่แก้ไข: เปลี่ยนมาใช้ totalQc (ยอดไม่รวมอนุโลม) เป็นเกณฑ์จัดอันดับและกรอง **
+    let topQc = [...list]
+        .filter(s => s.totalQc > 0)
+        .sort((a, b) => b.totalQc - a.totalQc);
+    
+    return { list, topPerf, topQc };
 }
 
-function buildTempTeamStats(startStr, endStr) {
+function buildTempTeamStats(startStr) {
     let statsMap = {};
     let c = new Date(startStr);
-    let end = new Date(endStr);
-    c.setDate(1); 
+    let year = c.getFullYear();
+    let month = c.getMonth(); // ดึงเฉพาะเดือนจาก startStr เดือนเดียวจบ
     
-    while (c <= end) {
-        let year = c.getFullYear();
-        let month = c.getMonth();
-        let members = TEAMS_CONFIG['temp_monthly']?.[`${year}-${month}`] || TEAMS_CONFIG['temp'] || [];
+    let members = TEAMS_CONFIG['temp_monthly']?.[`${year}-${month}`] || TEAMS_CONFIG['temp'] || [];
+    
+    members.exports = members.forEach(m => { // หรือใช้ members.forEach ตามเดิม
+    });
+
+    members.forEach(m => {
+        if (!statsMap[m.id]) statsMap[m.id] = { member: m, workDays: 0, totalApprove: 0, totalQc: 0 };
+        let wKey = `${year}-${month}-${m.id}-temp-workDays`;
+        let aKey = `${year}-${month}-${m.id}-temp-totalApprove`;
+        let qKey = `${year}-${month}-${m.id}-temp-totalQc`;
         
-        members.forEach(m => {
-            if (!statsMap[m.id]) statsMap[m.id] = { member: m, workDays: 0, totalApprove: 0, totalQc: 0 };
-            let wKey = `${year}-${month}-${m.id}-temp-workDays`;
-            let aKey = `${year}-${month}-${m.id}-temp-totalApprove`;
-            let qKey = `${year}-${month}-${m.id}-temp-totalQc`;
-            
-            statsMap[m.id].workDays += parseFloat(masterData[wKey] || 0);
-            statsMap[m.id].totalApprove += parseFloat(masterData[aKey] || 0);
-            statsMap[m.id].totalQc += parseFloat(masterData[qKey] || 0);
-        });
-        c.setMonth(c.getMonth() + 1);
-    }
+        statsMap[m.id].workDays = parseFloat(masterData[wKey] || 0);
+        statsMap[m.id].totalApprove = parseFloat(masterData[aKey] || 0);
+        statsMap[m.id].totalQc = parseFloat(masterData[qKey] || 0);
+    });
 
     let list = Object.values(statsMap).map(s => {
         s.avgApprove = s.workDays > 0 ? s.totalApprove / s.workDays : 0;
@@ -3656,7 +3594,7 @@ else if (slide.type === 'summary_top_perf') {
     </div>`;
 }
 
-// --- หน้าคี่: ตาราง 5 เมตริกหลัก + กราฟผสมรายวัน ---
+// --- หน้าคี่: ตารางเมตริกหลัก + กราฟผสมรายวัน ---
 else if (slide.type === 't7_other_daily') {
     let dataIndex = slide.memberIndex !== undefined ? slide.memberIndex : 0;
     if (slide.memberId) {
@@ -3670,89 +3608,103 @@ else if (slide.type === 't7_other_daily') {
     const targetId = member.id || dataIndex;
     
     let totalInspected = summary.totalChecked || 0;
-    let totalCorrect = summary.correct || 0;
     let totalWrong = summary.wrong || 0;
-    let avgPercent = summary.pctCorrect !== undefined ? summary.pctCorrect : 100.00;
+    let totalWrongAllow = summary.wrongAllow || 0; // ยอดอนุมัติผิด (อนุโลม) จาก t7rwronganu
+    let totalWrongAll = totalWrong + totalWrongAllow; // ยอดรวมอนุมัติผิด
+    let totalCorrect = totalInspected > 0 ? (totalInspected - totalWrongAll) : (summary.correct || 0); // อนุมัติถูกต้อง (จำนวนตรวจสอบ - ยอดรวมผิด)
+    let avgPercent = totalInspected > 0 ? parseFloat((((totalInspected - totalWrongAll) / totalInspected) * 100).toFixed(2)) : (summary.pctCorrect !== undefined ? summary.pctCorrect : 100.00);
     let targetPercent = summary.target || staffTargetMap?.[targetId] || 99.50;
     let isPass = parseFloat(avgPercent) >= targetPercent;
     let nickDisplay = member.nickName ? `(${member.nickName})` : '';
 
     contentBox.innerHTML = `
-    <div class="h-full flex flex-col gap-4 overflow-y-auto p-4 w-full">
-        <!-- การ์ดหลัก: ขยายเต็มจอแบบ Responsive เต็มพื้นที่ -->
-        <div class="bg-white/90 backdrop-blur-md rounded-2xl p-5 border border-slate-200/80 shadow-xl shadow-indigo-500/5 w-full">
+    <div class="h-full flex flex-col gap-3 overflow-y-auto p-3 w-full">
+        <!-- การ์ดหลัก: ปรับให้กระชับขึ้น -->
+        <div class="bg-white/90 backdrop-blur-md rounded-xl p-3.5 border border-slate-200/80 shadow-lg shadow-indigo-500/5 w-full">
             <!-- ส่วนหัวชื่อพนักงาน -->
-            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
-                <h3 class="text-lg font-black text-slate-900 flex items-center gap-3">
-                    <span class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-violet-600 text-white flex items-center justify-center shadow-md text-base">📊</span>
+            <div class="flex justify-between items-center mb-2.5 pb-2 border-b border-slate-100">
+                <h3 class="text-base font-black text-slate-900 flex items-center gap-2.5">
+                    <span class="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-600 via-blue-600 to-violet-600 text-white flex items-center justify-center shadow-md text-sm">📊</span>
                     <span class="bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-800 bg-clip-text text-transparent">${member.fullName || member.name || 'หมวดงาน'} <span class="text-indigo-600 font-bold">${nickDisplay}</span></span>
                 </h3>
             </div>
 
-            <!-- ส่วนเนื้อหาแบ่งซ้าย-ขวา เต็มหน้าจอ (ตาราง 8 ส่วน, ป้ายสถานะ 4 ส่วน) -->
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center w-full">
+            <!-- ส่วนเนื้อหาแบ่งซ้าย-ขวา แบบกระชับ -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center w-full">
                 <!-- ตารางข้อมูล -->
-                <div class="lg:col-span-8 overflow-hidden rounded-xl border border-slate-200/70 shadow-sm bg-white">
-                    <table class="w-full text-sm border-collapse">
-                        <thead class="bg-gradient-to-r from-indigo-50/80 via-blue-50/50 to-slate-50 text-slate-700 font-bold uppercase tracking-wider text-sm">
+                <div class="lg:col-span-8 overflow-hidden rounded-lg border border-slate-200/70 shadow-sm bg-white">
+                    <table class="w-full text-xs border-collapse">
+                        <thead class="bg-gradient-to-r from-indigo-50/80 via-blue-50/50 to-slate-50 text-slate-700 font-bold uppercase tracking-wider">
                             <tr>
-                                <th class="p-3 text-left pl-5 border-b border-slate-200">หัวข้อ</th>
-                                <th class="p-3 text-right pr-5 border-b border-slate-200">จำนวน</th>
+                                <th class="py-2 px-3 text-left pl-4 border-b border-slate-200">หัวข้อ</th>
+                                <th class="py-2 px-3 text-right pr-4 border-b border-slate-200">จำนวน</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 bg-white">
                             <tr class="hover:bg-slate-50/80 transition-colors bg-slate-50/30">
-                                <td class="p-3 pl-5 font-semibold text-slate-600 flex items-center gap-2">
-                                    <span class="w-2 h-2 rounded-full bg-slate-400"></span>จำนวนที่ตรวจสอบ
+                                <td class="py-1.5 pl-4 font-semibold text-slate-600 flex items-center gap-2">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>จำนวนที่ตรวจสอบ
                                 </td>
-                                <td class="p-3 pr-5 text-right font-black text-slate-800 text-base">${totalInspected.toLocaleString()}</td>
+                                <td class="py-1.5 pr-4 text-right font-black text-slate-800 text-sm">${totalInspected.toLocaleString()}</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/80 transition-colors bg-rose-50/10">
+                                <td class="py-1.5 pl-4 font-semibold text-rose-700 flex items-center gap-2">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>อนุมัติผิด
+                                </td>
+                                <td class="py-1.5 pr-4 text-right font-black text-rose-600 text-sm">${totalWrong.toLocaleString()}</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/80 transition-colors bg-amber-50/10">
+                                <td class="py-1.5 pl-4 font-semibold text-amber-700 flex items-center gap-2">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>อนุมัติผิด (อนุโลม)
+                                </td>
+                                <td class="py-1.5 pr-4 text-right font-black text-amber-600 text-sm">${totalWrongAllow.toLocaleString()}</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/80 transition-colors bg-orange-50/20">
+                                <td class="py-1.5 pl-4 font-bold text-orange-800 flex items-center gap-2">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>ยอดรวมอนุมัติผิด
+                                </td>
+                                <td class="py-1.5 pr-4 text-right font-black text-orange-700 text-sm">${totalWrongAll.toLocaleString()}</td>
                             </tr>
                             <tr class="hover:bg-slate-50/80 transition-colors bg-emerald-50/20">
-                                <td class="p-3 pl-5 font-semibold text-emerald-700 flex items-center gap-2">
-                                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>อนุมัติถูกต้อง
+                                <td class="py-1.5 pl-4 font-semibold text-emerald-700 flex items-center gap-2">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>อนุมัติถูกต้อง
                                 </td>
-                                <td class="p-3 pr-5 text-right font-black text-emerald-600 text-base">${totalCorrect.toLocaleString()}</td>
-                            </tr>
-                            <tr class="hover:bg-slate-50/80 transition-colors bg-rose-50/20">
-                                <td class="p-3 pl-5 font-semibold text-rose-700 flex items-center gap-2">
-                                    <span class="w-2 h-2 rounded-full bg-rose-500"></span>อนุมัติผิด
-                                </td>
-                                <td class="p-3 pr-5 text-right font-black text-rose-600 text-base">${totalWrong.toLocaleString()}</td>
+                                <td class="py-1.5 pr-4 text-right font-black text-emerald-600 text-sm">${totalCorrect.toLocaleString()}</td>
                             </tr>
                             <tr class="hover:bg-slate-50/80 transition-colors bg-indigo-50/30">
-                                <td class="p-3 pl-5 font-bold text-indigo-900 flex items-center gap-2">
-                                    <span class="w-2 h-2 rounded-full bg-indigo-500"></span>% อนุมัติถูก
+                                <td class="py-1.5 pl-4 font-bold text-indigo-900 flex items-center gap-2">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>% อนุมัติถูก
                                 </td>
-                                <td class="p-3 pr-5 text-right font-black text-indigo-700 text-base">${avgPercent}%</td>
+                                <td class="py-1.5 pr-4 text-right font-black text-indigo-700 text-sm">${avgPercent}%</td>
                             </tr>
                             <tr class="hover:bg-slate-50/80 transition-colors bg-amber-50/20">
-                                <td class="p-3 pl-5 font-bold text-amber-800 flex items-center gap-2">
-                                    <span class="w-2 h-2 rounded-full bg-amber-500"></span>% Target
+                                <td class="py-1.5 pl-4 font-bold text-amber-800 flex items-center gap-2">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>% Target
                                 </td>
-                                <td class="p-3 pr-5 text-right font-black text-amber-600 text-base">${targetPercent}%</td>
+                                <td class="py-1.5 pr-4 text-right font-black text-amber-600 text-sm">${targetPercent}%</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
 
                 <!-- พื้นที่ว่างด้านขวา: ป้าย PASS / FAIL -->
-                <div class="lg:col-span-4 bg-slate-50/60 rounded-2xl p-6 border border-slate-200/60 flex flex-col items-center justify-center text-center gap-3 h-full">
-                 <div class="px-8 py-4 rounded-2xl border-4 font-black text-3xl tracking-widest uppercase select-none shadow-md ${isPass ? 'border-emerald-600 text-emerald-600 bg-emerald-50/90 rotate-1' : 'border-rose-600 text-rose-600 bg-rose-50/90 -rotate-1'}">
+                <div class="lg:col-span-4 bg-slate-50/60 rounded-xl p-4 border border-slate-200/60 flex flex-col items-center justify-center text-center gap-2 h-full">
+                    <div class="px-6 py-2.5 rounded-xl border-3 font-black text-2xl tracking-widest uppercase select-none shadow-sm ${isPass ? 'border-emerald-600 text-emerald-600 bg-emerald-50/90 rotate-1' : 'border-rose-600 text-rose-600 bg-rose-50/90 -rotate-1'}">
                         ${isPass ? 'PASS' : 'FAIL'}
                     </div>
-                    <p class="text-xs text-slate-500 font-medium mt-1">
+                    <p class="text-[11px] text-slate-500 font-medium">
                         ${isPass ? 'ผลการปฏิบัติงานผ่านเกณฑ์ที่กำหนด' : 'ผลการปฏิบัติงานยังไม่ถึงเกณฑ์ที่กำหนด'}
                     </p>
                 </div>
             </div>
         </div>
 
-        <!-- การ์ดแสดงกราฟ -->
-        <div class="flex-1 bg-white/80 backdrop-blur-md rounded-2xl p-4 border border-slate-200/80 shadow-xl shadow-indigo-500/5 flex flex-col">
-            <h4 class="font-bold text-slate-700 text-sm mb-2 flex items-center gap-2">
+        <!-- การ์ดแสดงกราฟ: ขยายพื้นที่และความสูงให้กว้างขึ้น -->
+        <div class="flex-1 bg-white/80 backdrop-blur-md rounded-xl p-3.5 border border-slate-200/80 shadow-lg shadow-indigo-500/5 flex flex-col min-h-[360px]">
+            <h4 class="font-bold text-slate-700 text-xs mb-2 flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-indigo-600"></span> กราฟแสดงยอดอนุมัติถูกต้อง/ผิด และ % อนุมัติถูกรายวัน
             </h4>
-            <div id="chart-daily-${targetId}" class="w-full flex-1 min-h-[220px]"></div>
+            <div id="chart-daily-${targetId}" class="w-full flex-1 min-h-[320px]"></div>
         </div>
     </div>`;
 
@@ -3777,13 +3729,64 @@ else if (slide.type === 't7_other_monthly') {
     let nickDisplay = member.nickName ? `(${member.nickName})` : '';
     let targetPercent = summary.target || staffTargetMap?.[targetId] || (member.name === 'T+7' || dataIndex === 0 ? 99.50 : 85.00);
 
-    const sampleProducts = months[2]?.products || months[0]?.products || [
+    const sampleProducts = [
         { productName: 'จำนวนที่ตรวจสอบ', productId: 't7rtotal' },
-        { productName: 'อนุมัติถูกต้อง', productId: 't7rcorrect' },
         { productName: 'อนุมัติผิด', productId: 't7rwrong' },
+        { productName: 'อนุมัติผิด (อนุโลม)', productId: 't7rwronganu' },
+        { productName: 'ยอดรวมอนุมัติผิด', productId: 't7rtotalwrong' },
+        { productName: 'อนุมัติถูกต้อง', productId: 't7rcorrect' },
         { productName: '% อนุมัติถูก', productId: 't7rpctcorrect' },
         { productName: '% Target', productId: 't7rpcttagget' }
     ];
+
+    const getCalculatedMonthValues = (monthObj) => {
+        if (!monthObj || !monthObj.products) return { t7rtotal: 0, t7rwrong: 0, t7rwronganu: 0, t7rtotalwrong: 0, t7rcorrect: 0, t7rpctcorrect: 100, t7rpcttagget: targetPercent };
+        const getVal = (id) => {
+            const found = monthObj.products.find(p => p.productId === id);
+            return found ? (parseFloat(String(found.work).replace(/,/g, '')) || 0) : 0;
+        };
+
+        const total = getVal('t7rtotal');
+        const wrong = getVal('t7rwrong');
+        
+        // เพิ่มระบบค้นหายอดอนุโลมแบบยืดหยุ่น (รองรับหลายรูปแบบ ID หรือค้นหาจากชื่อ/คีย์เวิร์ด)
+        const getWrongAnuVal = () => {
+            const possibleIds = ['t7rwronganu', 't7rwrongAllow', 'wrongAllow', 'wrong_allow', 't7wronganu', 't7rwrong_anu', 'wronganu', 't7_wrong_anu', 'wrong_anu'];
+            for (let id of possibleIds) {
+                const found = monthObj.products.find(p => p.productId === id);
+                if (found) {
+                    const val = parseFloat(String(found.work).replace(/,/g, '')) || 0;
+                    if (val > 0) return val;
+                }
+            }
+            // ค้นหาสำรองจากชื่อสินค้าหรือคีย์เวิร์ด
+            const foundByKeyword = monthObj.products.find(p => 
+                (p.productName && p.productName.includes('อนุโลม')) ||
+                (p.productId && (p.productId.toLowerCase().includes('anu') || p.productId.toLowerCase().includes('allow')))
+            );
+            return foundByKeyword ? (parseFloat(String(foundByKeyword.work).replace(/,/g, '')) || 0) : 0;
+        };
+
+        const wrongAllow = getWrongAnuVal();
+        const totalWrong = wrong + wrongAllow;
+        const correct = total > 0 ? (total - totalWrong) : getVal('t7rcorrect');
+        const pct = total > 0 ? parseFloat(((correct / total) * 100).toFixed(2)) : getVal('t7rpctcorrect');
+        const target = getVal('t7rpcttagget') || targetPercent;
+
+        return {
+            t7rtotal: total,
+            t7rwrong: wrong,
+            t7rwronganu: wrongAllow,
+            t7rtotalwrong: totalWrong,
+            t7rcorrect: correct,
+            t7rpctcorrect: pct,
+            t7rpcttagget: target
+        };
+    };
+
+    const m0Vals = getCalculatedMonthValues(months[0]);
+    const m1Vals = getCalculatedMonthValues(months[1]);
+    const m2Vals = getCalculatedMonthValues(months[2]);
 
     const formatTableVal = (val, isPct) => {
         if (isPct) return val;
@@ -3802,22 +3805,23 @@ else if (slide.type === 't7_other_monthly') {
             <div class="overflow-hidden rounded-xl border border-slate-200/70 shadow-sm">
                 <table class="w-full text-sm border-collapse">
                     <thead class="bg-gradient-to-r from-indigo-50/80 via-blue-50/50 to-slate-50 text-slate-700 font-bold uppercase tracking-wider text-sm">
-    <tr>
-        <th class="p-3 text-left pl-5 border-b border-slate-200">หัวข้อ</th>
-        <th class="p-3 text-center border-b border-slate-200">เดือน ${months[0]?.monthName || 'ย้อนหลัง 2 เดือน'}</th>
-        <th class="p-3 text-center border-b border-slate-200">เดือน ${months[1]?.monthName || 'ย้อนหลัง 1 เดือน'}</th>
-        <th class="p-3 text-center border-b border-slate-200 text-indigo-700 bg-indigo-100/50">เดือน ${months[2]?.monthName || 'ปัจจุบัน'}</th>
-    </tr>
-</thead>
+                        <tr>
+                            <th class="p-3 text-left pl-5 border-b border-slate-200">หัวข้อ</th>
+                            <th class="p-3 text-center border-b border-slate-200">เดือน ${months[0]?.monthName || 'ย้อนหลัง 2 เดือน'}</th>
+                            <th class="p-3 text-center border-b border-slate-200">เดือน ${months[1]?.monthName || 'ย้อนหลัง 1 เดือน'}</th>
+                            <th class="p-3 text-center border-b border-slate-200 text-indigo-700 bg-indigo-100/50">เดือน ${months[2]?.monthName || 'ปัจจุบัน'}</th>
+                        </tr>
+                    </thead>
                     <tbody class="divide-y divide-slate-100 bg-white">
-                        ${sampleProducts.map((prod, pIdx) => {
-                            const isPct = prod.productId === 't7rpctcorrect' || prod.productId === 't7rpcttagget';
-                            const val0 = months[0]?.products[pIdx]?.work || 0;
-                            const val1 = months[1]?.products[pIdx]?.work || 0;
-                            const val2 = months[2]?.products[pIdx]?.work || 0;
+                        ${sampleProducts.map((prod) => {
+                            const prodId = prod.productId;
+                            const isPct = prodId === 't7rpctcorrect' || prodId === 't7rpcttagget';
+                            const val0 = m0Vals[prodId] !== undefined ? m0Vals[prodId] : 0;
+                            const val1 = m1Vals[prodId] !== undefined ? m1Vals[prodId] : 0;
+                            const val2 = m2Vals[prodId] !== undefined ? m2Vals[prodId] : 0;
 
                             let extraBadge = '';
-                            if (prod.productId === 't7rwrong') {
+                            if (prodId === 't7rtotalwrong') {
                                 const numPrev = parseFloat(String(val1).replace(/,/g, '')) || 0;
                                 const numCurr = parseFloat(String(val2).replace(/,/g, '')) || 0;
                                 
@@ -3834,16 +3838,17 @@ else if (slide.type === 't7_other_monthly') {
                                 const badgeColor = isIncreased ? 'text-rose-600 bg-rose-50 border border-rose-200' : (numCurr < numPrev ? 'text-emerald-600 bg-emerald-50 border border-emerald-200' : 'text-slate-500 bg-slate-100');
                                 
                                 if (numCurr !== numPrev) {
-                                    extraBadge = `<div class="mt-1.5"><span class="px-2.5 py-1 rounded-md text-xs md:text-sm font-black ${badgeColor} inline-flex items-center gap-1">${arrow} ${absPct}% จากเดือนก่อน</span></div>`;
+                                    extraBadge = `<div class="mt-1.5"><span class="px-2.5 py-1 rounded-md text-xs md:text-sm font-black ${badgeColor} inline-flex items-center gap-1">${arrow}${absPct}% จากเดือนก่อน</span></div>`;
                                 } else {
                                     extraBadge = `<div class="mt-1.5"><span class="px-2.5 py-1 rounded-md text-xs md:text-sm font-black text-slate-500 bg-slate-100 border border-slate-200 inline-flex items-center gap-1">ยอดเท่ากับเดือนที่แล้ว</span></div>`;
                                 }
                             }
 
-                            // เพิ่มสีพื้นหลังเบาๆ แยกตามประเภทแถว
                             let rowBg = 'hover:bg-slate-50/80 transition-colors';
-                            if (prod.productId === 't7rcorrect') rowBg += ' bg-emerald-50/10';
-                            if (prod.productId === 't7rwrong') rowBg += ' bg-rose-50/10';
+                            if (prodId === 't7rcorrect') rowBg += ' bg-emerald-50/10';
+                            if (prodId === 't7rwrong') rowBg += ' bg-rose-50/10';
+                            if (prodId === 't7rwronganu') rowBg += ' bg-amber-50/10';
+                            if (prodId === 't7rtotalwrong') rowBg += ' bg-orange-50/10';
                             if (isPct) rowBg += ' bg-indigo-50/10';
 
                             return `
@@ -4358,11 +4363,23 @@ else if (slide.type === 't7_other_monthly') {
                     mainValue = `<div class="font-black text-rose-600 text-lg">${(s.totalQc || 0).toLocaleString()} รายการ</div>`;
                     subValue = `วันทำงาน ${s.workDays || 0} วัน`;
                 } else if (slide.type === 'all_top_perf') {
-                    mainValue = `<div class="font-black text-indigo-600 text-lg">${(s.avgPerDay || 0).toLocaleString()} งาน/วัน</div>`;
-                    subValue = `รวม ${(s.totalTasks || 0).toLocaleString()} งาน (${s.workDays || 0} วัน)`;
-                } else {
-                    mainValue = `<div class="font-black text-rose-600 text-lg">${(s.totalQc || 0).toLocaleString()} รายการ</div>`;
-                }
+        mainValue = `<div class="font-black text-indigo-600 text-lg">${(s.avgPerDay || 0).toLocaleString()} งาน/วัน</div>`;
+        subValue = `รวม ${(s.totalTasks || 0).toLocaleString()} งาน (${s.workDays || 0} วัน)`;
+    } 
+    else if (slide.type === 'all_top_qc') {
+        let qcError = s.totalQc || 0;                          // ยอดอนุมัติผิดที่ไม่รวมอนุโลม (แสดงตัวใหญ่สีแดง)
+        let qcAllow = s.totalQcAllow || 0;                     // ยอดอนุโลม
+        let qcCombined = s.totalQcCombined || (qcError + qcAllow); // ยอดรวมทั้งหมด
+
+        // 1. ตัวอักษรใหญ่สีแดงด้านบน: แสดงยอดอนุมัติผิดที่ไม่รวมอนุโลม
+        mainValue = `<div class="font-black text-rose-600 text-lg">${qcError.toLocaleString()} รายการ</div>`;
+        
+        // 2. ตัวหนังสือด้านล่าง: บอกยอดอนุโลม และยอดรวมทั้งหมด
+        subValue = `อนุโลม: ${qcAllow.toLocaleString()} | รวมทั้งหมด: ${qcCombined.toLocaleString()} รายการ`;
+    } 
+    else {
+        mainValue = `<div class="font-black text-rose-600 text-lg">${(s.totalQc || 0).toLocaleString()} รายการ</div>`;
+    }
 
                 return `
                 <div class="bg-white rounded-2xl py-4 px-6 flex items-center justify-between border ${isQc ? 'border-rose-100' : 'border-indigo-100'} shadow-sm">
@@ -4695,18 +4712,40 @@ function renderSlideDailyMixedChart(memberId, pData, targetPercent) {
         slideChartInstances.push(chart);
     }
 
-    const dailyList = (pData && Array.isArray(pData.daily) && pData.daily.length > 0) ? pData.daily : [
+    const rawDailyList = (pData && Array.isArray(pData.daily) && pData.daily.length > 0) ? pData.daily : [
         { 
             date: 'รวมทั้งสิ้น', 
+            totalChecked: pData?.summary?.totalChecked || 0,
             correct: pData?.summary?.correct || 0, 
-            wrong: pData?.summary?.wrong || 0, 
+            wrong: pData?.summary?.wrong || 0,
+            wrongAllow: pData?.summary?.wrongAllow || 0,
             percent: parseFloat(pData?.summary?.pctCorrect || 100) 
         }
     ];
 
+    const dailyList = rawDailyList.map(d => {
+        const wrong = d.wrong !== undefined ? d.wrong : 0;
+        const wrongAllow = d.wrongAllow !== undefined ? d.wrongAllow : (d.wrong_allow || d.wrongAnu || 0);
+        const wrongAll = wrong + wrongAllow;
+        
+        const totalChecked = d.totalChecked !== undefined ? d.totalChecked : ((d.correct || 0) + wrongAll);
+        const correct = totalChecked > 0 ? (totalChecked - wrongAll) : (d.correct || 0);
+        const percent = totalChecked > 0 ? parseFloat((((totalChecked - wrongAll) / totalChecked) * 100).toFixed(2)) : (d.percent !== undefined ? d.percent : 100);
+
+        return {
+            ...d,
+            wrong: wrong,           // ยอดผิด
+            wrongAllow: wrongAllow, // ยอดผิด (อนุโลม)
+            wrongAll: wrongAll,     // ยอดรวมอนุมัติผิด
+            correct: correct,
+            totalChecked: totalChecked,
+            percent: percent
+        };
+    });
+
     const days = dailyList.map(d => d.date || '-');
     const correctData = dailyList.map(d => d.correct || 0);
-    const wrongData = dailyList.map(d => d.wrong || 0);
+    const wrongValues = dailyList.map(d => d.wrongAll || 0);
     const percentData = dailyList.map(d => d.percent || 100);
 
     const minVal = Math.min(...percentData);
@@ -4720,11 +4759,11 @@ function renderSlideDailyMixedChart(memberId, pData, targetPercent) {
             value: val,
             symbolSize: isMin || isMax ? 13 : 7,
             itemStyle: {
-                color: isMin ? '#dc2626' : (isMax ? '#059669' : '#3b82f6'),
+                color: isMin ? '#d97706' : (isMax ? '#059669' : '#3b82f6'),
                 borderColor: '#ffffff',
                 borderWidth: isMin || isMax ? 2 : 0,
                 shadowBlur: isMin || isMax ? 6 : 0,
-                shadowColor: isMin ? 'rgba(220, 38, 38, 0.6)' : (isMax ? 'rgba(5, 150, 105, 0.6)' : 'transparent')
+                shadowColor: isMin ? 'rgba(217, 119, 6, 0.6)' : (isMax ? 'rgba(5, 150, 105, 0.6)' : 'transparent')
             },
             label: {
                 show: true,
@@ -4732,7 +4771,7 @@ function renderSlideDailyMixedChart(memberId, pData, targetPercent) {
                 formatter: '{c}%',
                 fontSize: isMin || isMax ? 11 : 10,
                 fontWeight: 'bold',
-                color: isMin ? '#dc2626' : (isMax ? '#059669' : '#475569')
+                color: isMin ? '#000000' : (isMax ? '#047857' : '#475569')
             }
         };
     });
@@ -4743,54 +4782,73 @@ function renderSlideDailyMixedChart(memberId, pData, targetPercent) {
         return clean.includes('t7');
     };
 
+    const checkIsR2toR5 = (val) => {
+        if (!val) return false;
+        const clean = String(val).toLowerCase().replace(/[^a-z0-9]/g, '');
+        return ['r2', 'r3', 'r4', 'r5'].some(r => clean === r || clean.includes(r));
+    };
+
     let minPercent = 10;
     const memberObj = pData?.member || (typeof presentationData !== 'undefined' && presentationData.t7OtherData ? presentationData.t7OtherData.find(item => item?.member?.id === memberId)?.member : null);
     
+    let isR2toR5Target = false;
+
     if (memberObj) {
         if (checkIsT7(memberObj.fullName) || checkIsT7(memberObj.name) || checkIsT7(memberObj.group) || checkIsT7(memberObj.role) || checkIsT7(memberObj.nickName) || checkIsT7(memberObj.id)) {
             minPercent = 97;
         }
+        if (checkIsR2toR5(memberObj.fullName) || checkIsR2toR5(memberObj.name) || checkIsR2toR5(memberObj.id) || checkIsR2toR5(memberObj.nickName)) {
+            isR2toR5Target = true;
+        }
     } else {
         if (typeof presentationData !== 'undefined' && presentationData.t7OtherData) {
             const foundItem = presentationData.t7OtherData.find(item => item?.member?.id === memberId);
-            if (foundItem && foundItem.member && (checkIsT7(foundItem.member.fullName) || checkIsT7(foundItem.member.id))) {
-                minPercent = 97;
-            } else if (presentationData.t7OtherData.length > 0 && presentationData.t7OtherData[0]?.member?.id === memberId) {
-                minPercent = 97;
+            if (foundItem && foundItem.member) {
+                if (checkIsT7(foundItem.member.fullName) || checkIsT7(foundItem.member.id)) {
+                    minPercent = 97;
+                }
+                if (checkIsR2toR5(foundItem.member.fullName) || checkIsR2toR5(foundItem.member.name) || checkIsR2toR5(foundItem.member.id)) {
+                    isR2toR5Target = true;
+                }
             }
         }
         if (checkIsT7(memberId)) {
             minPercent = 97;
         }
+        if (checkIsR2toR5(memberId)) {
+            isR2toR5Target = true;
+        }
     }
 
     const isT7 = (minPercent === 97);
 
-    // คำนวณสัดส่วนความสูงเพื่อเช็กการชนกันของป้ายยอดผิดกับจุดเปอร์เซ็นต์แบบ Real-time รายวัน
-    const maxLeftVal = Math.max(...correctData.map((c, idx) => c + (wrongData[idx] || 0)));
+    const maxLeftVal = Math.max(...correctData.map((c, idx) => c + (wrongValues[idx] || 0)));
     const estimatedAxisMax = Math.ceil(maxLeftVal * 1.2) || 1;
 
-    const formattedWrongData = wrongData.map((val, index) => {
-        const totalBar = correctData[index] + val;
+    const formattedWrongData = wrongValues.map((val, index) => {
+        const correctVal = correctData[index] || 0;
+        const totalBar = correctVal + val;
         const pct = percentData[index];
         
-        // เทียบสัดส่วนตำแหน่งความสูงบนกราฟ (0 ถึง 1) ของทั้ง 2 แกน
         const barHeightRatio = totalBar / estimatedAxisMax;
         const linePosRatio = (pct - minPercent) / (100 - minPercent);
         
-        // ถ้าจุดเปอร์เซ็นต์อยู่ชิดหรือต่ำกว่ายอดแท่งกราฟ และมีระยะห่างน้อยกว่า 12% ให้ถือว่าชน/ทับซ้อนกัน
-        const isColliding = (linePosRatio >= barHeightRatio) && ((linePosRatio - barHeightRatio) < 0.12);
+        const distanceToLine = Math.abs(linePosRatio - barHeightRatio);
+        const isColliding = (linePosRatio >= barHeightRatio && distanceToLine < 0.16) || 
+                            (Math.abs(linePosRatio - barHeightRatio) < 0.09);
+
+        const shouldUseInside = isColliding && (val > 0);
 
         return {
             value: val,
             label: {
                 show: true,
-                position: isColliding ? 'inside' : 'top',
+                position: shouldUseInside ? 'inside' : 'top',
                 fontSize: 10,
                 fontWeight: 'bold',
-                color: isColliding ? '#ffffff' : '#1e293b',
-                textBorderColor: isColliding ? 'rgba(0, 0, 0, 0.7)' : 'transparent',
-                textBorderWidth: isColliding ? 2 : 0,
+                color: shouldUseInside ? '#ffffff' : '#1e293b',
+                textBorderColor: shouldUseInside ? 'rgba(0, 0, 0, 0.7)' : 'transparent',
+                textBorderWidth: shouldUseInside ? 2 : 0,
                 formatter: function(params) {
                     return params.value > 99 ? Number(params.value).toLocaleString() : params.value;
                 }
@@ -4798,13 +4856,193 @@ function renderSlideDailyMixedChart(memberId, pData, targetPercent) {
         };
     });
 
-    chart.setOption({
-        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-        legend: { data: ['ยอดถูกต้อง', 'ยอดผิด', '% อนุมัติถูก', 'Target'], textStyle: { fontSize: 13 } },
-        grid: { top: '18%', bottom: '15%', left: '6%', right: '5%' },
-        xAxis: [{ 
+    let chartOption = {
+        tooltip: { 
+            trigger: 'axis', 
+            axisPointer: { type: 'shadow' },
+            formatter: function(params) {
+                if (!params || params.length === 0) return '';
+                const dataIndex = params[0].dataIndex;
+                const item = dailyList[dataIndex] || {};
+                const dateStr = params[0].axisValue;
+                
+                const correctVal = item.correct || 0;
+                const wrongVal = item.wrong || 0;
+                const wrongAllowVal = item.wrongAllow || 0;
+                const totalWrong = item.wrongAll || 0;
+                const totalChecked = item.totalChecked || (correctVal + totalWrong);
+                const percentVal = item.percent !== undefined ? item.percent : 100;
+
+                let html = `<div style="font-weight: bold; margin-bottom: 6px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; color: #1e293b;">📅 วันที่: ${dateStr}</div>`;
+                html += `<div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 3px;"><span><span style="display:inline-block;margin-right:6px;border-radius:3px;width:10px;height:10px;background-color:#059669;"></span>อนุมัติถูกต้อง:</span><b>${correctVal.toLocaleString()}</b></div>`;
+                html += `<div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 3px;"><span><span style="display:inline-block;margin-right:6px;border-radius:3px;width:10px;height:10px;background-color:#dc2626;"></span>อนุมัติผิด:</span><b>${wrongVal.toLocaleString()}</b></div>`;
+                html += `<div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 3px;"><span><span style="display:inline-block;margin-right:6px;border-radius:3px;width:10px;height:10px;background-color:#10b981;"></span>อนุมัติผิด (อนุโลม):</span><b>${wrongAllowVal.toLocaleString()}</b></div>`;
+                html += `<div style="display: flex; justify-content: space-between; gap: 16px; border-top: 1px dashed #e2e8f0; margin-top: 5px; padding-top: 5px; color: #b91c1c;"><span><b>ยอดรวมอนุมัติผิด:</b></span><b>${totalWrong.toLocaleString()}</b></div>`;
+                html += `<div style="display: flex; justify-content: space-between; gap: 16px; margin-top: 3px; color: #475569;"><span>จำนวนตรวจสอบทั้งหมด:</span><b>${totalChecked.toLocaleString()}</b></div>`;
+                html += `<div style="display: flex; justify-content: space-between; gap: 16px; margin-top: 3px; color: #2563eb;"><span>% อนุมัติถูก:</span><b>${percentVal}%</b></div>`;
+                return html;
+            }
+        },
+        legend: { data: ['ยอดถูกต้อง', 'ยอดผิด', '% อนุมัติถูก', 'Target'], textStyle: { fontSize: 13 } }
+    };
+
+    if (isR2toR5Target) {
+        let calculatedLineMin = Math.max(0, Math.floor(minVal - 10));
+
+        chartOption.grid = [
+            { top: '12%', height: '40%', left: '8%', right: '8%' }, 
+            { top: '55%', bottom: '16%', left: '8%', right: '8%' }  
+        ];
+        chartOption.xAxis = [
+            { 
+                type: 'category', 
+                gridIndex: 0, 
+                data: days, 
+                boundaryGap: true,
+                axisLabel: { show: false }, 
+                axisTick: { show: false },
+                axisLine: { show: false }, 
+                splitLine: { show: false } 
+            },
+            { 
+                type: 'category', 
+                gridIndex: 1, 
+                data: days, 
+                boundaryGap: true,
+                axisLabel: { 
+                    fontSize: 11, 
+                    interval: 0, 
+                    rotate: 30,
+                    formatter: function (value, index) {
+                        const val = percentData[index];
+                        const isMin = hasVariation && (val === minVal);
+                        const isMax = hasVariation && (val === maxVal);
+                        if (isMin) return `{minText|${value}}`;
+                        if (isMax) return `{maxText|${value}}`;
+                        return `{normalText|${value}}`;
+                    },
+                    rich: {
+                        minText: {
+                            color: '#000000',
+                            fontWeight: 'bold',
+                            backgroundColor: '#fef3c7',
+                            borderColor: '#f59e0b',
+                            borderWidth: 1.5,
+                            borderRadius: 4,
+                            padding: [3, 6]
+                        },
+                        maxText: {
+                            color: '#047857',
+                            fontWeight: 'bold',
+                            backgroundColor: '#d1fae5',
+                            borderColor: '#34d399',
+                            borderWidth: 1,
+                            borderRadius: 4,
+                            padding: [3, 5]
+                        },
+                        normalText: {
+                            color: '#334155'
+                        }
+                    }
+                }, 
+                splitLine: { show: false } 
+            }
+        ];
+        chartOption.yAxis = [
+            {
+                type: 'value',
+                gridIndex: 0,
+                name: '% อนุมัติ',
+                min: calculatedLineMin,
+                max: 100,
+                position: 'right',
+                axisLabel: { formatter: '{value}%', showMaxLabel: false },
+                splitLine: { show: false } 
+            },
+            {
+                type: 'value',
+                gridIndex: 1,
+                name: 'จำนวนงาน',
+                position: 'left',
+                max: function (value) { return Math.ceil(value.max * 1.2); },
+                axisLabel: { showMaxLabel: false },
+                splitLine: { show: false }
+            }
+        ];
+        chartOption.series = [
+            { 
+                name: 'ยอดถูกต้อง', 
+                type: 'bar', 
+                xAxisIndex: 1,
+                yAxisIndex: 1,
+                stack: 'total', 
+                data: correctData, 
+                itemStyle: { 
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: '#34d399' },
+                        { offset: 1, color: '#059669' }
+                    ]),
+                    shadowColor: 'rgba(0, 0, 0, 0.15)',
+                    shadowBlur: 5,
+                    shadowOffsetX: 2,
+                    shadowOffsetY: 2
+                }, 
+                label: { 
+                    show: true, 
+                    position: 'inside', 
+                    fontSize: 10, 
+                    color: '#ffffff',
+                    textBorderColor: 'rgba(0, 0, 0, 0.7)',
+                    textBorderWidth: 2,
+                    formatter: function(params) {
+                        return params.value > 99 ? Number(params.value).toLocaleString() : params.value;
+                    } 
+                } 
+            },
+            { 
+                name: 'ยอดผิด', 
+                type: 'bar', 
+                xAxisIndex: 1,
+                yAxisIndex: 1,
+                stack: 'total', 
+                data: formattedWrongData, 
+                barMinHeight: isT7 ? 8 : 4, 
+                itemStyle: { 
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: '#f87171' },
+                        { offset: 1, color: '#dc2626' }
+                    ]),
+                    shadowColor: 'rgba(0, 0, 0, 0.15)',
+                    shadowBlur: 5,
+                    shadowOffsetX: 2,
+                    shadowOffsetY: 2
+                }
+            },
+            { 
+                name: '% อนุมัติถูก', 
+                type: 'line', 
+                xAxisIndex: 0,
+                yAxisIndex: 0, 
+                data: formattedPercentData, 
+                itemStyle: { color: '#3b82f6' }, 
+                lineStyle: { width: 3, shadowColor: 'rgba(59, 130, 246, 0.4)', shadowBlur: 6 }
+            },
+            { 
+                name: 'Target', 
+                type: 'line', 
+                xAxisIndex: 0,
+                yAxisIndex: 0, 
+                data: days.map(() => targetPercent), 
+                lineStyle: { type: 'dashed', color: '#f59e0b', width: 2 }, 
+                symbol: 'none' 
+            }
+        ];
+    } else {
+        chartOption.grid = { top: '15%', bottom: '18%', left: '8%', right: '8%' };
+        chartOption.xAxis = [{ 
             type: 'category', 
             data: days, 
+            boundaryGap: true,
             axisLabel: { 
                 fontSize: 12, 
                 interval: 0, 
@@ -4819,13 +5057,13 @@ function renderSlideDailyMixedChart(memberId, pData, targetPercent) {
                 },
                 rich: {
                     minText: {
-                        color: '#b91c1c',
+                        color: '#000000',
                         fontWeight: 'bold',
-                        backgroundColor: '#fee2e2',
-                        borderColor: '#f87171',
-                        borderWidth: 1,
+                        backgroundColor: '#fef3c7',
+                        borderColor: '#f59e0b',
+                        borderWidth: 1.5,
                         borderRadius: 4,
-                        padding: [3, 5]
+                        padding: [3, 6]
                     },
                     maxText: {
                         color: '#047857',
@@ -4842,15 +5080,13 @@ function renderSlideDailyMixedChart(memberId, pData, targetPercent) {
                 }
             }, 
             splitLine: { show: false } 
-        }],
-        yAxis: [
+        }];
+        chartOption.yAxis = [
             {
                 type: 'value',
                 name: 'จำนวนงาน',
                 position: 'left',
-                max: function (value) {
-                    return Math.ceil(value.max * 1.2); 
-                },
+                max: function (value) { return Math.ceil(value.max * 1.2); },
                 axisLabel: { showMaxLabel: false },
                 splitLine: { show: false }
             },
@@ -4860,14 +5096,11 @@ function renderSlideDailyMixedChart(memberId, pData, targetPercent) {
                 min: minPercent,
                 max: 100,
                 position: 'right',
-                axisLabel: { 
-                    formatter: '{value}%',
-                    showMaxLabel: false 
-                },
+                axisLabel: { formatter: '{value}%', showMaxLabel: false },
                 splitLine: { show: false }
             }
-        ],
-        series: [
+        ];
+        chartOption.series = [
             { 
                 name: 'ยอดถูกต้อง', 
                 type: 'bar', 
@@ -4900,7 +5133,7 @@ function renderSlideDailyMixedChart(memberId, pData, targetPercent) {
                 type: 'bar', 
                 stack: 'total', 
                 data: formattedWrongData, 
-                barMinHeight: isT7 ? 7 : 0, 
+                barMinHeight: isT7 ? 8 : 4, 
                 itemStyle: { 
                     color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                         { offset: 0, color: '#f87171' },
@@ -4928,8 +5161,10 @@ function renderSlideDailyMixedChart(memberId, pData, targetPercent) {
                 lineStyle: { type: 'dashed', color: '#f59e0b', width: 2 }, 
                 symbol: 'none' 
             }
-        ]
-    });
+        ];
+    }
+
+    chart.setOption(chartOption);
 }
 
 function renderSlideMonthlyChartHelper(memberId, months, targetPercent) {
@@ -4943,23 +5178,48 @@ function renderSlideMonthlyChartHelper(memberId, months, targetPercent) {
 
     const monthLabels = months.map(m => `เดือน ${m.monthName}`);
     
-    const correctWorkPerMonth = months.map(m => {
-        if (!m || !Array.isArray(m.products)) return 0;
-        const p = m.products.find(item => item.productId === 't7rcorrect');
-        return p ? parseFloat(String(p.work || 0).replace(/,/g, '')) || 0 : 0;
-    });
+    // ฟังก์ชันช่วยหาค่าข้อมูลและคำนวณต่างๆ ให้ตรงกับตาราง
+    const getCalculatedMonthValues = (monthObj) => {
+        if (!monthObj || !Array.isArray(monthObj.products)) return { correct: 0, totalWrong: 0, pct: 100, target: targetPercent };
+        
+        const getVal = (id) => {
+            const found = monthObj.products.find(p => p.productId === id);
+            return found ? (parseFloat(String(found.work || 0).replace(/,/g, '')) || 0) : 0;
+        };
 
-    const wrongWorkPerMonth = months.map(m => {
-        if (!m || !Array.isArray(m.products)) return 0;
-        const p = m.products.find(item => item.productId === 't7rwrong');
-        return p ? parseFloat(String(p.work || 0).replace(/,/g, '')) || 0 : 0;
-    });
+        const total = getVal('t7rtotal');
+        const wrong = getVal('t7rwrong');
+        
+        // ค้นหายอดอนุโลม
+        const getWrongAnuVal = () => {
+            const possibleIds = ['t7rwronganu', 't7rwrongAllow', 'wrongAllow', 'wrong_allow', 't7wronganu', 't7rwrong_anu', 'wronganu', 't7_wrong_anu', 'wrong_anu'];
+            for (let id of possibleIds) {
+                const found = monthObj.products.find(p => p.productId === id);
+                if (found) {
+                    const val = parseFloat(String(found.work || 0).replace(/,/g, '')) || 0;
+                    if (val > 0) return val;
+                }
+            }
+            const foundByKeyword = monthObj.products.find(p => 
+                (p.productName && p.productName.includes('อนุโลม')) ||
+                (p.productId && (p.productId.toLowerCase().includes('anu') || p.productId.toLowerCase().includes('allow')))
+            );
+            return foundByKeyword ? (parseFloat(String(foundByKeyword.work || 0).replace(/,/g, '')) || 0) : 0;
+        };
 
-    const percentPerMonth = months.map(m => {
-        if (!m || !Array.isArray(m.products)) return 100;
-        const p = m.products.find(item => item.productId === 't7rpctcorrect');
-        return p ? parseFloat(String(p.work || 0).replace(/,/g, '')) || 100 : 100;
-    });
+        const wrongAllow = getWrongAnuVal();
+        const totalWrong = wrong + wrongAllow;
+        const correct = total > 0 ? (total - totalWrong) : getVal('t7rcorrect');
+        const pct = total > 0 ? parseFloat(((correct / total) * 100).toFixed(2)) : getVal('t7rpctcorrect');
+        const target = getVal('t7rpcttagget') || targetPercent;
+
+        return { correct, totalWrong, pct, target };
+    };
+
+    const correctWorkPerMonth = months.map(m => getCalculatedMonthValues(m).correct);
+    const wrongWorkPerMonth = months.map(m => getCalculatedMonthValues(m).totalWrong);
+    const percentPerMonth = months.map(m => getCalculatedMonthValues(m).pct);
+    const targetPerMonth = months.map(m => getCalculatedMonthValues(m).target);
 
     const checkIsT7 = (val) => {
         if (!val) return false;
@@ -4995,17 +5255,71 @@ function renderSlideMonthlyChartHelper(memberId, months, targetPercent) {
     const isT7 = (minPercent === 97);
 
     chart.setOption({
-        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-        legend: { data: ['ยอดถูกต้อง', 'ยอดผิด', '% อนุมัติถูก'], textStyle: { fontSize: 11 } },
-        grid: { top: '18%', bottom: '12%', left: '6%', right: '5%' },
-        xAxis: [{ type: 'category', data: monthLabels, axisLabel: { fontSize: 11, interval: 0, rotate: 30 }, splitLine: { show: false } }],
+        tooltip: { 
+            trigger: 'axis', 
+            axisPointer: { type: 'shadow' },
+            formatter: function(params) {
+                if (!params || params.length === 0) return '';
+                const idx = params[0].dataIndex;
+                const monthName = months[idx]?.monthName || '-';
+                const correct = correctWorkPerMonth[idx] || 0;
+                const totalWrong = wrongWorkPerMonth[idx] || 0;
+                const pct = percentPerMonth[idx] || 0;
+                const target = targetPerMonth[idx] || targetPercent;
+
+                let html = `<div style="font-weight: bold; margin-bottom: 6px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; color: #1e293b;">📅 เดือน ${monthName}</div>`;
+                html += `<div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 3px;"><span><span style="display:inline-block;margin-right:6px;border-radius:3px;width:10px;height:10px;background-color:#059669;"></span>ยอดถูกต้อง:</span><b>${correct.toLocaleString()}</b></div>`;
+                html += `<div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 3px;"><span><span style="display:inline-block;margin-right:6px;border-radius:3px;width:10px;height:10px;background-color:#dc2626;"></span>ยอดรวมอนุมัติผิด:</span><b>${totalWrong.toLocaleString()}</b></div>`;
+
+                // คำนวณเปอร์เซ็นต์เทียบกับเดือนก่อนหน้า โดยใช้ "ยอดรวมอนุมัติผิด" (totalWrong)
+                if (idx > 0) {
+                    const prevTotalWrong = wrongWorkPerMonth[idx - 1] || 0;
+                    if (prevTotalWrong > 0) {
+                        const diffPercent = ((totalWrong - prevTotalWrong) / prevTotalWrong) * 100;
+                        const sign = diffPercent > 0 ? '+' : '';
+                        const color = diffPercent > 0 ? '#dc2626' : '#059669'; // แดงถ้าเพิ่มขึ้น, เขียวถ้าลดลง
+                        html += `<div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 3px; color: ${color};"><span>🔄 เทียบเดือนก่อน (ยอดรวมผิด):</span><b>${sign}${diffPercent.toFixed(2)}%</b></div>`;
+                    } else {
+                        html += `<div style="display: flex; justify-content: space-between; gap: 16px; margin-bottom: 3px; color: #64748b;"><span>🔄 เทียบเดือนก่อน (ยอดรวมผิด):</span><b>N/A</b></div>`;
+                    }
+                }
+
+                html += `<div style="display: flex; justify-content: space-between; gap: 16px; margin-top: 3px; color: #2563eb;"><span>% อนุมัติถูก:</span><b>${pct}%</b></div>`;
+                html += `<div style="display: flex; justify-content: space-between; gap: 16px; margin-top: 3px; color: #d97706;"><span>% Target:</span><b>${target}%</b></div>`;
+                return html;
+            }
+        },
+        legend: { data: ['ยอดถูกต้อง', 'ยอดรวมอนุมัติผิด', '% อนุมัติถูก', '% Target'], textStyle: { fontSize: 11 } },
+        grid: { top: '22%', bottom: '24%', left: '8%', right: '8%' },
+        xAxis: [{ 
+            type: 'category', 
+            data: monthLabels, 
+            boundaryGap: true, 
+            axisLabel: { fontSize: 11, interval: 0, rotate: 30 }, 
+            splitLine: { show: false } 
+        }],
         yAxis: [
             {
                 type: 'value',
                 name: 'จำนวนงาน',
                 position: 'left',
                 max: function (value) {
-                    return Math.ceil(value.max * 1.2); 
+                    const maxBarTotal = Math.max(...months.map((m, i) => correctWorkPerMonth[i] + wrongWorkPerMonth[i]));
+                    const allPercentValues = [...percentPerMonth, ...targetPerMonth].filter(v => !isNaN(v) && v > 0);
+                    const minLineVal = allPercentValues.length > 0 ? Math.min(...allPercentValues) : minPercent;
+                    
+                    const rightMin = minPercent;
+                    const rightMax = 100;
+                    let lineRatio = (minLineVal - rightMin) / (rightMax - rightMin);
+                    
+                    if (isNaN(lineRatio) || lineRatio <= 0.05) {
+                        lineRatio = 0.3;
+                    }
+                    
+                    const calculatedMax = maxBarTotal / (lineRatio * 0.42);
+                    const safeMax = Math.max(calculatedMax, value.max * 1.5);
+                    
+                    return Math.ceil(safeMax);
                 },
                 axisLabel: { showMaxLabel: false },
                 splitLine: { show: false }
@@ -5042,7 +5356,7 @@ function renderSlideMonthlyChartHelper(memberId, months, targetPercent) {
                 label: { 
                     show: true, 
                     position: 'inside', 
-                    fontSize: 16, // ตัวใหญ่เด่นชัดเป็นพิเศษสำหรับหน้ารายเดือนเพราะมีพื้นที่กว้าง
+                    fontSize: 16,
                     fontWeight: 'bold',
                     color: '#ffffff',
                     textBorderColor: 'rgba(0, 0, 0, 0.8)',
@@ -5053,7 +5367,7 @@ function renderSlideMonthlyChartHelper(memberId, months, targetPercent) {
                 } 
             },
             { 
-                name: 'ยอดผิด', 
+                name: 'ยอดรวมอนุมัติผิด', 
                 type: 'bar', 
                 stack: 'total', 
                 data: wrongWorkPerMonth, 
@@ -5087,6 +5401,16 @@ function renderSlideMonthlyChartHelper(memberId, months, targetPercent) {
                 lineStyle: { width: 3, shadowColor: 'rgba(59, 130, 246, 0.4)', shadowBlur: 6 }, 
                 symbolSize: 7, 
                 label: { show: true, position: 'top', formatter: '{c}%', fontSize: 11, fontWeight: 'bold' } 
+            },
+            { 
+                name: '% Target', 
+                type: 'line', 
+                yAxisIndex: 1, 
+                data: targetPerMonth, 
+                itemStyle: { color: '#f59e0b' }, 
+                lineStyle: { width: 2, type: 'dashed', shadowColor: 'rgba(245, 158, 11, 0.3)', shadowBlur: 4 }, 
+                symbolSize: 5, 
+                label: { show: true, position: 'bottom', formatter: '{c}%', fontSize: 10, fontWeight: 'semibold', color: '#d97706' } 
             }
         ]
     });
