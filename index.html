@@ -457,33 +457,260 @@ div:not(.table-wrapper)::-webkit-scrollbar {
         </div>
     </div>
 
+<!-- คอนเทนเนอร์หลักสำหรับจัดการรูป QC (ใส่ id="qcManagerContainer" และคลาส hidden) -->
+<div id="qcManagerContainer" class="p-6 bg-white rounded-xl shadow-sm border border-slate-200 mt-6 max-w-5xl mx-auto hidden">
+    <h2 class="text-xl font-bold text-slate-800 mb-4">📸 จัดการรูปตัวอย่างอนุมัติผิด (QC Examples)</h2>
+    
+    <!-- ตัวเลือกทีม -->
+    <div class="mb-6 flex items-center gap-4">
+        <label class="font-medium text-slate-700">เลือกทีมที่ต้องการจัดการ:</label>
+        <select id="qcTeamSelect" class="border border-slate-300 rounded-lg px-4 py-2 bg-slate-50 focus:border-indigo-500 outline-none">
+            <!-- ถูกเติมด้วย JavaScript -->
+        </select>
+    </div>
+
+    <!-- พื้นที่สำหรับแสดงฟอร์มกรอกข้อมูล 3 รายการ -->
+    <div id="qcFormsContainer" class="flex flex-col gap-6"></div>
+
+    <!-- ปุ่มบันทึก -->
+    <div class="mt-6 flex justify-end">
+        <button onclick="saveQcDataToMemory()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold shadow-md transition">
+            💾 บันทึกข้อมูลชั่วคราว (เพื่อเตรียมออกสไลด์)
+        </button>
+    </div>
+</div>
+
     <script>
 
-let editingMemberId = null;
-let tempGroupDataStore = {}; // เก็บข้อมูลตารางเพื่อส่งไปแสดงใน Popup
+// รายชื่อทีมทั้งหมดที่ต้องการให้มีหน้าตัวอย่างอนุมัติผิด
+const QC_TEAMS_LIST = ['T+7', 'R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9', 'R10'];
 
-        function openTempGroupModal(groupId) {
-            const data = tempGroupDataStore[groupId];
-            if(!data) return;
+// 1. โหลดข้อมูลเดิมจาก LocalStorage หรือสร้างโครงสร้างว่างเริ่มต้น
+let QC_EXAMPLES_DATA = {};
+try {
+    QC_EXAMPLES_DATA = JSON.parse(localStorage.getItem('QC_EXAMPLES_DATA')) || {};
+} catch(e) {
+    QC_EXAMPLES_DATA = {};
+}
 
-            document.getElementById('temp-group-modal-title').innerHTML = data.title;
-            document.getElementById('temp-group-modal-thead').innerHTML = data.thead;
-            document.getElementById('temp-group-modal-tbody').innerHTML = data.tbody;
+QC_TEAMS_LIST.forEach(team => {
+    if (!QC_EXAMPLES_DATA[team] || !Array.isArray(QC_EXAMPLES_DATA[team])) {
+        QC_EXAMPLES_DATA[team] = [
+            { img: '', wrongPlate: '', actualPlate: '' },
+            { img: '', wrongPlate: '', actualPlate: '' },
+            { img: '', wrongPlate: '', actualPlate: '' }
+        ];
+    }
+});
 
-            const modal = document.getElementById('temp-group-modal');
-            const content = document.getElementById('temp-group-modal-content');
-            
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            
-            // Animation effect
-            setTimeout(() => {
-                content.classList.remove('scale-95', 'opacity-0');
-                content.classList.add('scale-100', 'opacity-100');
-            }, 10);
+let currentActiveQcTeam = 'T+7';
+
+// 2. ฟังก์ชันเริ่มต้น: สร้างและโหลดรายชื่อทีมลง Dropdown
+function initQcManager() {
+    const select = document.getElementById('qcTeamSelect');
+    if (!select) return;
+
+    select.innerHTML = '';
+    QC_TEAMS_LIST.forEach(team => {
+        select.innerHTML += `<option value="${team}">${team}</option>`;
+    });
+
+    currentActiveQcTeam = select.value || QC_TEAMS_LIST[0];
+
+    // ผูก Event Listener เมื่อสลับ Dropdown (เซฟทีมเดิมแบบเงียบๆ ก่อนสลับ)
+    select.onchange = function(e) {
+        saveQcDataToMemory(currentActiveQcTeam, true); // true = ไม่ต้องเด้งข้อความแจ้งเตือนตอนสลับทีม
+        currentActiveQcTeam = e.target.value;          // สลับเปิดทีมใหม่
+        renderQcForms(currentActiveQcTeam);
+    };
+
+    renderQcForms(currentActiveQcTeam);
+}
+
+// 3. ฟังก์ชันวาดฟอร์ม 3 ตัวอย่าง (เพิ่มส่วนปุ่มลบรูปภาพ กากบาทมุมขวาบน)
+function renderQcForms(teamName) {
+    const container = document.getElementById('qcFormsContainer');
+    if (!container) return;
+    
+    const teamData = QC_EXAMPLES_DATA[teamName] || [];
+    
+    let html = '';
+    for (let i = 0; i < 3; i++) {
+        const item = teamData[i] || { img: '', wrongPlate: '', actualPlate: '' };
+        html += `
+        <div class="p-4 border border-slate-200 rounded-lg bg-slate-50 relative">
+            <h4 class="font-bold text-indigo-700 mb-3 absolute -top-3 left-4 bg-slate-50 px-2">ตัวอย่างที่ ${i + 1} (${teamName})</h4>
+            <div class="grid grid-cols-12 gap-6 mt-2 items-center">
+                
+                <!-- ฝั่งซ้าย: ปุ่มอัปโหลดรูปภาพ และ กล่องพรีวิวพร้อมปุ่มลบรูป (X) -->
+                <div class="col-span-5 border-r border-slate-200 pr-6 flex flex-col gap-2 justify-center">
+                    <label class="text-xs font-medium text-slate-600">รูปตัวอย่างอนุมัติผิด (รูปสำเร็จรูป):</label>
+                    <input type="file" id="input_file_${teamName}_${i}" accept="image/*" class="w-full text-xs" onchange="handleImageUpload(event, '${teamName}', ${i})">
+                    
+                    <!-- กล่องพรีวิวรูปภาพ + ปุ่มกากบาทลบรูป -->
+                    <div id="preview_wrapper_${teamName}_${i}" class="relative mt-1 inline-block ${item.img ? '' : 'hidden'}">
+                        <img id="preview_img_${teamName}_${i}" src="${item.img || ''}" class="h-28 w-full object-contain bg-white border border-slate-300 rounded p-1">
+                        
+                        <!-- ปุ่มกากบาท (X) สีแดง มุมบนขวา -->
+                        <button type="button" 
+                                onclick="removeImage('${teamName}', ${i})" 
+                                title="ลบรูปภาพนี้"
+                                class="absolute -top-2 -right-2 bg-rose-500 hover:bg-rose-600 text-white rounded-full p-1 shadow-md hover:scale-110 transition-all cursor-pointer flex items-center justify-center">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ฝั่งขวา: กรอกข้อความทะเบียน -->
+                <div class="col-span-7 flex flex-col gap-3 pl-2">
+                    <div>
+                        <label class="text-xs font-medium text-slate-600">ทะเบียนที่อนุมัติผิด:</label>
+                        <input type="text" id="wrongText_${teamName}_${i}" value="${item.wrongPlate || ''}" placeholder="เช่น: 3ตม 64 กรุงเทพมหานคร" class="w-full mt-0.5 border border-slate-300 rounded px-3 py-1.5 text-sm outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-slate-600">ทะเบียนที่ผ่านทางจริง:</label>
+                        <input type="text" id="actualText_${teamName}_${i}" value="${item.actualPlate || ''}" placeholder="เช่น: 3ตม 6425 กรุงเทพมหานคร" class="w-full mt-0.5 border border-slate-300 rounded px-3 py-1.5 text-sm outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+
+            </div>
+        </div>`;
+    }
+    container.innerHTML = html;
+}
+
+// 4. ฟังก์ชันอัปโหลดรูปภาพ Base64
+function handleImageUpload(event, teamName, index) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const base64 = e.target.result;
+        if (!QC_EXAMPLES_DATA[teamName]) QC_EXAMPLES_DATA[teamName] = [];
+        if (!QC_EXAMPLES_DATA[teamName][index]) QC_EXAMPLES_DATA[teamName][index] = {};
+        
+        QC_EXAMPLES_DATA[teamName][index].img = base64;
+        
+        const previewWrapper = document.getElementById(`preview_wrapper_${teamName}_${index}`);
+        const previewImg = document.getElementById(`preview_img_${teamName}_${index}`);
+        
+        if (previewImg && previewWrapper) {
+            previewImg.src = base64;
+            previewWrapper.classList.remove('hidden');
         }
 
-// ฟังก์ชันพื้นฐานสำหรับสร้าง Key จัดเก็บข้อมูล
+        // เซฟลง LocalStorage ทันที
+        localStorage.setItem('QC_EXAMPLES_DATA', JSON.stringify(QC_EXAMPLES_DATA));
+    };
+    reader.readAsDataURL(file);
+}
+
+// 4.1 ฟังก์ชันใหม่: ลบรูปภาพเมื่อกดปุ่มกากบาท (X)
+function removeImage(teamName, index) {
+    if (!QC_EXAMPLES_DATA[teamName] || !QC_EXAMPLES_DATA[teamName][index]) return;
+
+    // 1. ล้างข้อมูลรูปภาพใน Memory
+    QC_EXAMPLES_DATA[teamName][index].img = '';
+
+    // 2. ซ่อน Wrapper ของรูปภาพพรีวิว
+    const previewWrapper = document.getElementById(`preview_wrapper_${teamName}_${index}`);
+    const previewImg = document.getElementById(`preview_img_${teamName}_${index}`);
+    if (previewWrapper) previewWrapper.classList.add('hidden');
+    if (previewImg) previewImg.src = '';
+
+    // 3. รีเซ็ตค่า Input file ให้เป็นว่างเพื่อรองรับการเลือกไฟล์เดิมซ้ำ
+    const fileInput = document.getElementById(`input_file_${teamName}_${index}`);
+    if (fileInput) fileInput.value = '';
+
+    // 4. บันทึกค่าที่อัปเดตลง LocalStorage ทันที
+    localStorage.setItem('QC_EXAMPLES_DATA', JSON.stringify(QC_EXAMPLES_DATA));
+}
+
+// 5. บันทึกข้อความลง Memory + LocalStorage และแจ้งเตือนเมื่อกดบันทึก
+function saveQcDataToMemory(teamName, isSilent = false) {
+    const selectElem = document.getElementById('qcTeamSelect');
+    const targetTeam = teamName || (selectElem ? selectElem.value : currentActiveQcTeam) || 'T+7';
+    
+    if (!targetTeam || !QC_EXAMPLES_DATA[targetTeam]) return;
+
+    for (let i = 0; i < 3; i++) {
+        const wrongInput = document.getElementById(`wrongText_${targetTeam}_${i}`);
+        const actualInput = document.getElementById(`actualText_${targetTeam}_${i}`);
+        
+        if (wrongInput) QC_EXAMPLES_DATA[targetTeam][i].wrongPlate = wrongInput.value;
+        if (actualInput) QC_EXAMPLES_DATA[targetTeam][i].actualPlate = actualInput.value;
+    }
+    
+    // บันทึกลง LocalStorage
+    localStorage.setItem('QC_EXAMPLES_DATA', JSON.stringify(QC_EXAMPLES_DATA));
+
+    // แสดงข้อความแจ้งเตือน (ถ้าไม่ได้สั่งให้แอบเซฟเงียบๆ)
+    if (!isSilent) {
+        if (typeof showToast === 'function') {
+            showToast(`บันทึกข้อมูลรูป QC ของทีม ${targetTeam} เรียบร้อยแล้ว`, "success");
+        } else {
+            alert(`บันทึกข้อมูลของทีม ${targetTeam} เรียบร้อยแล้ว!`);
+        }
+    }
+}
+
+// 6. ซ่อน/แสดง และอัปเดตทีม
+function isQcEligibleTeam(teamName) {
+    if (!teamName) return false;
+    const cleanName = teamName.toString().trim().toUpperCase();
+    return cleanName === 'T+7' || cleanName === 'T7R' || /^R\d+$/.test(cleanName);
+}
+
+function updateQcSectionVisibility(selectedTeam) {
+    const container = document.getElementById('qcManagerContainer');
+    if (!container) return;
+
+    if (isQcEligibleTeam(selectedTeam)) {
+        container.classList.remove('hidden');
+        
+        const select = document.getElementById('qcTeamSelect');
+        if (select) {
+            const targetTeam = (selectedTeam.toUpperCase() === 'T7R') ? 'T+7' : selectedTeam;
+            
+            if (currentActiveQcTeam !== targetTeam) {
+                saveQcDataToMemory(currentActiveQcTeam, true); // แอบเซฟทีมเก่าแบบเงียบๆ
+                currentActiveQcTeam = targetTeam;
+                select.value = targetTeam;
+                renderQcForms(targetTeam);
+            }
+        }
+    } else {
+        container.classList.add('hidden');
+    }
+}
+
+// --- ฟังก์ชันอื่นๆ เดิมของคุณ ---
+let editingMemberId = null;
+let tempGroupDataStore = {};
+
+function openTempGroupModal(groupId) {
+    const data = tempGroupDataStore[groupId];
+    if(!data) return;
+
+    document.getElementById('temp-group-modal-title').innerHTML = data.title;
+    document.getElementById('temp-group-modal-thead').innerHTML = data.thead;
+    document.getElementById('temp-group-modal-tbody').innerHTML = data.tbody;
+
+    const modal = document.getElementById('temp-group-modal');
+    const content = document.getElementById('temp-group-modal-content');
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    
+    setTimeout(() => {
+        content.classList.remove('scale-95', 'opacity-0');
+        content.classList.add('scale-100', 'opacity-100');
+    }, 10);
+}
+
 function getKey(sId, pId, day) {    
     return `${currentYear}-${currentMonth}-${sId}-${pId}-${day}`;    
 }
@@ -492,13 +719,20 @@ function getTempKey(staffId, field) {
     return `${currentYear}-${currentMonth}-${staffId}-temp-${field}`;
 }
 
-// โหลดข้อมูลเมื่อเปิดหน้าเว็บ
+// สั่งโหลด Dropdown ทันทีเมื่อ DOM พร้อม
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initQcManager);
+} else {
+    initQcManager();
+}
+
 window.onload = function() {    
     loadLocalData();
     setupMonthPicker();
     updateLabels();
     renderTeamButtons('main');
     renderSummaryTable();
+    initQcManager();
 };
 
 // ==========================================
@@ -548,7 +782,8 @@ function exportDataToJsonFile() {
     // 1. รวบรวมข้อมูลทั้งหมดที่ต้องการสำรอง
     const exportData = {
         teamsConfig: TEAMS_CONFIG,
-        masterData: masterData
+        masterData: masterData,
+        qcImagesData: QC_EXAMPLES_DATA // 👈 เพิ่มบรรทัดนี้: แนบข้อมูลรูป QC เข้าไปในไฟล์ JSON ด้วย
     };
 
     // 2. แปลงข้อมูลเป็น JSON string
@@ -614,6 +849,17 @@ function handleFileImport(event) {
                         }
                         
                         masterData = result.masterData;
+
+                        // 👇 เพิ่มส่วนนี้: ดึงข้อมูลรูปภาพ QC จากไฟล์ JSON กลับเข้าสู่ระบบ 👇
+                        if (result.qcImagesData) {
+                            QC_EXAMPLES_DATA = result.qcImagesData;
+                            
+                            // สั่งให้หน้าจอตั้งค่ารูปภาพอัปเดตเพื่อแสดงรูปที่เพิ่งดึงเข้ามา
+                            if (typeof initQcManager === 'function') {
+                                initQcManager();
+                            }
+                        }
+                        // 👆 จบส่วนที่เพิ่ม 👆
                         
                         // บันทึกลง LocalStorage ของเบราว์เซอร์
                         saveTeamsConfig();
@@ -930,11 +1176,16 @@ const btnT7R = document.createElement('button');
         }
 
         function selectMainTeam(teamId) {
-            currentTeam = teamId;
-            renderTeamButtons('main');
-            updateLabels();
-            renderSummaryTable();
-        }
+    currentTeam = teamId;
+    renderTeamButtons('main');
+    updateLabels();
+    renderSummaryTable();
+    
+    // 👇 เพิ่มบรรทัดนี้ลงไปเพื่อให้ระบบซ่อน/แสดงส่วนจัดการรูป QC ตามทีมที่เลือก
+    if (typeof updateQcSectionVisibility === 'function') {
+        updateQcSectionVisibility(teamId);
+    }
+}
 
         function selectConfigTeam(teamId) {
     configTeam = teamId;
@@ -3019,21 +3270,48 @@ function generateDynamicSlides() {
     let dynamicSlides = [];
     
     members.forEach((m, index) => {
-        // หน้าคี่ (รายวัน)
+        // 1. จัดการชื่อสำหรับแสดงผลบนหัวสไลด์ (ชื่อจริง ตามด้วย ชื่อเล่น)
+        const displayName = (m.fullName && m.nickName) 
+            ? `${m.fullName} (${m.nickName})` 
+            : (m.fullName || m.nickName || m.id);
+
+        // 2. จัดการ teamKey ให้ตรงกับ Key ใน QC_TEAMS_LIST ('T+7', 'R1' - 'R10')
+        let rawKey = (m.nickName || m.id || '').toString().trim().toUpperCase();
+        
+        // ถ้าระบบใช้ชื่อ T7R ให้ปรับเป็น T+7 เพื่อให้ตรงกับ QC_TEAMS_LIST
+        if (rawKey === 'T7R') {
+            rawKey = 'T+7';
+        }
+        
+        const teamKey = rawKey;
+
+        // -------------------------------------------------------------
+        // 1. หน้าผลการปฏิบัติงานรายวัน
         dynamicSlides.push({
-            title: `ผลการปฏิบัติงานรายวัน: ${m.fullName || m.nickName}`,
+            title: `ผลการปฏิบัติงานรายวัน: ${displayName}`,
             type: 't7_other_daily',
             memberId: m.id,
             memberIndex: index
         });
-        // หน้าคู่ (สถิติย้อนหลัง 3 เดือน)
+
+        // 2. หน้าสถิติย้อนหลัง 3 เดือน
         dynamicSlides.push({
-            title: `สถิติย้อนหลัง 3 เดือน: ${m.fullName || m.nickName}`,
+            title: `สถิติย้อนหลัง 3 เดือน: ${displayName}`,
             type: 't7_other_monthly',
             memberId: m.id,
             memberIndex: index
         });
+
+        // 3. หน้าตัวอย่างอนุมัติผิด (ดึงข้อมูลจาก QC_EXAMPLES_DATA[teamKey])
+        dynamicSlides.push({
+            title: `ตัวอย่างอนุมัติผิด: ${displayName}`,
+            type: 'team_qc_examples',
+            teamName: teamKey, // <--- ตรงนี้จะตรงกับ Key ใน QC_EXAMPLES_DATA แน่นอน
+            memberId: m.id,
+            memberIndex: index
+        });
     });
+
     return dynamicSlides;
 }
 
@@ -3120,114 +3398,139 @@ function prepareAllPresentationData() {
     console.log("masterData status:", typeof masterData !== 'undefined' ? "Loaded" : "Undefined / Missing");
 
     t7rMembers.forEach(function(m, index) {
-        var dailyStats = [];
-        var matchCount = 0;
+    var dailyStats = [];
+    var matchCount = 0;
 
-        for (var d = 1; d <= totalDaysInMonth; d++) {
-            var totalKey = targetYear + "-" + targetMonth + "-" + m.id + "-t7rtotal-" + d;
-            var correctKey = targetYear + "-" + targetMonth + "-" + m.id + "-t7rcorrect-" + d;
-            var wrongKey = targetYear + "-" + targetMonth + "-" + m.id + "-t7rwrong-" + d;
-            var wrongAllowKey = targetYear + "-" + targetMonth + "-" + m.id + "-t7rwronganu-" + d;
+    // ==========================================
+    // [แก้ไขจุดนี้]: กำหนด teamKey ตามลำดับ Index 
+    // Index 0 -> 'T+7', Index 1 -> 'R1', Index 2 -> 'R2' ...
+    // ==========================================
+    var teamKey = (index === 0) ? 'T+7' : ('R' + index);
 
-            var total = (typeof masterData !== 'undefined' && masterData[totalKey]) ? parseFloat(masterData[totalKey]) : 0;
-            var correct = (typeof masterData !== 'undefined' && masterData[correctKey]) ? parseFloat(masterData[correctKey]) : 0;
-            var wrong = (typeof masterData !== 'undefined' && masterData[wrongKey]) ? parseFloat(masterData[wrongKey]) : 0;
-            var wrongAllow = (typeof masterData !== 'undefined') ? (parseFloat(masterData[wrongAllowKey] || masterData[wrongAllowKeyAlt]) || 0) : 0;
+    // ดึงรูป QC โดยค้นจาก 'R1' ก่อน ถ้าไม่เจอค่อยลองค้นจาก ชื่อเล่น/รหัส
+    var currentQcData = null;
+    if (typeof QC_EXAMPLES_DATA !== 'undefined' && QC_EXAMPLES_DATA) {
+        currentQcData = QC_EXAMPLES_DATA[teamKey] 
+                     || QC_EXAMPLES_DATA[m.nickName] 
+                     || QC_EXAMPLES_DATA[m.id] 
+                     || QC_EXAMPLES_DATA[m.fullName];
+    }
 
-            // รวมยอด อนุมัติผิด + อนุมัติผิด(อนุโลม) ก่อนคำนวณ %
-            var totalWrongAll = wrong + wrongAllow;
-            var effectiveTotal = (total > 0) ? total : (correct + totalWrongAll);
-            var percent = effectiveTotal > 0 ? parseFloat(((correct / effectiveTotal) * 100).toFixed(2)) : 100.00;
+    // ถ้ายังไม่มีข้อมูล ให้ใส่ค่าว่างไว้ 3 รายการ
+    if (!currentQcData) {
+        currentQcData = [
+            { img: '', wrongPlate: '', actualPlate: '' },
+            { img: '', wrongPlate: '', actualPlate: '' },
+            { img: '', wrongPlate: '', actualPlate: '' }
+        ];
+    }
+    // ==========================================
 
-            if (total > 0 || correct > 0 || wrong > 0 || wrongAllow > 0) {
-                matchCount++;
-            }
+    for (var d = 1; d <= totalDaysInMonth; d++) {
+        var totalKey = targetYear + "-" + targetMonth + "-" + m.id + "-t7rtotal-" + d;
+        var correctKey = targetYear + "-" + targetMonth + "-" + m.id + "-t7rcorrect-" + d;
+        var wrongKey = targetYear + "-" + targetMonth + "-" + m.id + "-t7rwrong-" + d;
+        var wrongAllowKey = targetYear + "-" + targetMonth + "-" + m.id + "-t7rwronganu-" + d;
 
-            dailyStats.push({
-                date: d + "/" + (targetMonth + 1) + "/" + (targetYear + 543),
-                correct: correct,
-                wrong: wrong,
-                wrongAllow: wrongAllow,
-                total: total,
-                percent: percent
-            });
+        var total = (typeof masterData !== 'undefined' && masterData[totalKey]) ? parseFloat(masterData[totalKey]) : 0;
+        var correct = (typeof masterData !== 'undefined' && masterData[correctKey]) ? parseFloat(masterData[correctKey]) : 0;
+        var wrong = (typeof masterData !== 'undefined' && masterData[wrongKey]) ? parseFloat(masterData[wrongKey]) : 0;
+        var wrongAllow = (typeof masterData !== 'undefined') ? (parseFloat(masterData[wrongAllowKey] || masterData[wrongAllowKeyAlt]) || 0) : 0;
+
+        // รวมยอด อนุมัติผิด + อนุมัติผิด(อนุโลม) ก่อนคำนวณ %
+        var totalWrongAll = wrong + wrongAllow;
+        var effectiveTotal = (total > 0) ? total : (correct + totalWrongAll);
+        var percent = effectiveTotal > 0 ? parseFloat(((correct / effectiveTotal) * 100).toFixed(2)) : 100.00;
+
+        if (total > 0 || correct > 0 || wrong > 0 || wrongAllow > 0) {
+            matchCount++;
         }
 
-        // กำหนด Target: เฉพาะ T+7 ใช้ 99.50% ส่วนชื่ออื่น (R1-R10) ใช้ 85.00%
-        var isT7 = (m.name === 'T+7' || m.fullName === 'T+7' || index === 0);
-        var memberTarget = isT7 ? 99.50 : 85.00;
+        dailyStats.push({
+            date: d + "/" + (targetMonth + 1) + "/" + (targetYear + 543),
+            correct: correct,
+            wrong: wrong,
+            wrongAllow: wrongAllow,
+            total: total,
+            percent: percent
+        });
+    }
 
-        // คำนวณผลรวมทั้งเดือนสำหรับใส่ตารางสรุป
-        var sumTotalWork = dailyStats.reduce(function(sum, item) { return sum + item.total; }, 0);
-        var sumCorrectWork = dailyStats.reduce(function(sum, item) { return sum + item.correct; }, 0);
-        var sumWrongWork = dailyStats.reduce(function(sum, item) { return sum + item.wrong; }, 0);
-        var sumWrongAllowWork = dailyStats.reduce(function(sum, item) { return sum + item.wrongAllow; }, 0);
+    // --- (ส่วนคำนวณ sumTotalWork, avgPct, monthlyStats เดิมของคุณ) ---
+    var isT7 = (m.name === 'T+7' || m.fullName === 'T+7' || index === 0);
+    var memberTarget = isT7 ? 99.50 : 85.00;
+
+    var sumTotalWork = dailyStats.reduce(function(sum, item) { return sum + item.total; }, 0);
+    var sumCorrectWork = dailyStats.reduce(function(sum, item) { return sum + item.correct; }, 0);
+    var sumWrongWork = dailyStats.reduce(function(sum, item) { return sum + item.wrong; }, 0);
+    var sumWrongAllowWork = dailyStats.reduce(function(sum, item) { return sum + item.wrongAllow; }, 0);
+    
+    var sumTotalWrongAll = sumWrongWork + sumWrongAllowWork;
+    var sumEffectiveTotal = (sumTotalWork > 0) ? sumTotalWork : (sumCorrectWork + sumTotalWrongAll);
+    var avgPct = sumEffectiveTotal > 0 ? parseFloat(((sumCorrectWork / sumEffectiveTotal) * 100).toFixed(2)) : 100.00;
+
+    var monthlyStats = [];
+    for (var i = 2; i >= 0; i--) {
+        var targetD = new Date(targetYear, targetMonth - i, 1);
+        var pYear = targetD.getFullYear();
+        var pMonth = targetD.getMonth();
+        var mName = targetD.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
         
-        // รวมยอดผิดทั้งหมด (ผิด + อนุโลม) ก่อนนำไปคิด % สรุปประจำเดือน
-        var sumTotalWrongAll = sumWrongWork + sumWrongAllowWork;
-        var sumEffectiveTotal = (sumTotalWork > 0) ? sumTotalWork : (sumCorrectWork + sumTotalWrongAll);
-        var avgPct = sumEffectiveTotal > 0 ? parseFloat(((sumCorrectWork / sumEffectiveTotal) * 100).toFixed(2)) : 100.00;
+        var daysInMonthCount = new Date(pYear, pMonth + 1, 0).getDate();
+        var pTotal = 0, pCorrect = 0, pWrong = 0, pWrongAllow = 0;
 
-        var monthlyStats = [];
-        for (var i = 2; i >= 0; i--) {
-            // คำนวณปีและเดือนย้อนหลังแต่ละรอบ
-            var targetD = new Date(targetYear, targetMonth - i, 1);
-            var pYear = targetD.getFullYear();
-            var pMonth = targetD.getMonth();
-            var mName = targetD.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
-            
-            // หาจำนวนวันในเดือนนั้นๆ
-            var daysInMonthCount = new Date(pYear, pMonth + 1, 0).getDate();
-            var pTotal = 0, pCorrect = 0, pWrong = 0, pWrongAllow = 0;
+        for (var d = 1; d <= daysInMonthCount; d++) {
+            var totalKey = pYear + "-" + pMonth + "-" + m.id + "-t7rtotal-" + d;
+            var correctKey = pYear + "-" + pMonth + "-" + m.id + "-t7rcorrect-" + d;
+            var wrongKey = pYear + "-" + pMonth + "-" + m.id + "-t7rwrong-" + d;
+            var wrongAllowKey = pYear + "-" + pMonth + "-" + m.id + "-t7rwronganu-" + d;
 
-            // วนลูปดึงข้อมูลจาก masterData ของเดือนนั้นๆ
-            for (var d = 1; d <= daysInMonthCount; d++) {
-                var totalKey = pYear + "-" + pMonth + "-" + m.id + "-t7rtotal-" + d;
-                var correctKey = pYear + "-" + pMonth + "-" + m.id + "-t7rcorrect-" + d;
-                var wrongKey = pYear + "-" + pMonth + "-" + m.id + "-t7rwrong-" + d;
-                var wrongAllowKey = pYear + "-" + pMonth + "-" + m.id + "-t7rwronganu-" + d;
-
-                if (typeof masterData !== 'undefined') {
-                    if (masterData[totalKey]) pTotal += parseFloat(masterData[totalKey]) || 0;
-                    if (masterData[correctKey]) pCorrect += parseFloat(masterData[correctKey]) || 0;
-                    if (masterData[wrongKey]) pWrong += parseFloat(masterData[wrongKey]) || 0;
-                    if (masterData[wrongAllowKey] || masterData[wrongAllowKeyAlt]) {
-                        pWrongAllow += parseFloat(masterData[wrongAllowKey] || masterData[wrongAllowKeyAlt]) || 0;
-                    }
+            if (typeof masterData !== 'undefined') {
+                if (masterData[totalKey]) pTotal += parseFloat(masterData[totalKey]) || 0;
+                if (masterData[correctKey]) pCorrect += parseFloat(masterData[correctKey]) || 0;
+                if (masterData[wrongKey]) pWrong += parseFloat(masterData[wrongKey]) || 0;
+                if (masterData[wrongAllowKey] || masterData[wrongAllowKeyAlt]) {
+                    pWrongAllow += parseFloat(masterData[wrongAllowKey] || masterData[wrongAllowKeyAlt]) || 0;
                 }
             }
-
-            var pTotalWrongAll = pWrong + pWrongAllow;
-            var pEffectiveTotal = (pTotal > 0) ? pTotal : (pCorrect + pTotalWrongAll);
-            var pPct = pEffectiveTotal > 0 ? parseFloat(((pCorrect / pEffectiveTotal) * 100).toFixed(2)) : 100.00;
-
-            monthlyStats.push({
-                monthName: mName,
-                products: [
-                    { productId: 't7rtotal', productName: 'จำนวนที่ตรวจสอบ', work: pTotal },
-                    { productId: 't7rcorrect', productName: 'อนุมัติถูกต้อง', work: pCorrect },
-                    { productId: 't7rwrong', productName: 'อนุมัติผิด', work: pWrong },
-                    { productId: 't7rwrongallow', productName: 'อนุมัติผิด (อนุโลม)', work: pWrongAllow },
-                    { productId: 't7rpctcorrect', productName: '% อนุมัติถูก', work: pPct },
-                    { productId: 't7rpcttagget', productName: '% Target', work: memberTarget }
-                ]
-            });
         }
 
-        presentationData.t7OtherData.push({
-            member: m,
-            summary: {
-                totalChecked: sumTotalWork,
-                correct: sumCorrectWork,
-                wrong: sumWrongWork,
-                wrongAllow: sumWrongAllowWork,
-                pctCorrect: avgPct,
-                target: memberTarget
-            },
-            daily: dailyStats,
-            monthly: monthlyStats
+        var pTotalWrongAll = pWrong + pWrongAllow;
+        var pEffectiveTotal = (pTotal > 0) ? pTotal : (pCorrect + pTotalWrongAll);
+        var pPct = pEffectiveTotal > 0 ? parseFloat(((pCorrect / pEffectiveTotal) * 100).toFixed(2)) : 100.00;
+
+        monthlyStats.push({
+            monthName: mName,
+            products: [
+                { productId: 't7rtotal', productName: 'จำนวนที่ตรวจสอบ', work: pTotal },
+                { productId: 't7rcorrect', productName: 'อนุมัติถูกต้อง', work: pCorrect },
+                { productId: 't7rwrong', productName: 'อนุมัติผิด', work: pWrong },
+                { productId: 't7rwrongallow', productName: 'อนุมัติผิด (อนุโลม)', work: pWrongAllow },
+                { productId: 't7rpctcorrect', productName: '% อนุมัติถูก', work: pPct },
+                { productId: 't7rpcttagget', productName: '% Target', work: memberTarget }
+            ]
         });
+    }
+
+    // ==========================================
+    // [จุดที่ 2 เพิ่มเพิ่ม]: ส่ง teamKey และ qcExamples บรรจุลง presentationData.t7OtherData
+    // ==========================================
+    presentationData.t7OtherData.push({
+        member: m,
+        teamKey: teamKey,          
+        qcExamples: currentQcData,  // <-- แนบรูปและข้อความ QC ออกไป
+        summary: {
+            totalChecked: sumTotalWork,
+            correct: sumCorrectWork,
+            wrong: sumWrongWork,
+            wrongAllow: sumWrongAllowWork,
+            pctCorrect: avgPct,
+            target: memberTarget
+        },
+        daily: dailyStats,
+        monthly: monthlyStats
     });
+});
 
     console.log("Final presentationData.t7OtherData Array:", presentationData.t7OtherData);
     console.groupEnd();
@@ -3881,6 +4184,90 @@ else if (slide.type === 't7_other_monthly') {
     setTimeout(() => {
         renderSlideMonthlyChartHelper(targetId, months, targetPercent);
     }, 300);
+}
+
+else if (slide.type === 'team_qc_examples') {
+    // 1. ค้นหาข้อมูลพนักงานจาก index หรือ memberId
+    const targetData = presentationData?.t7OtherData?.[slide.memberIndex] || {};
+    const member = targetData.member || {};
+    const teamKey = targetData.teamKey || slide.teamName || 'T+7';
+
+    // 2. ดึงข้อมูลรูปภาพ QC
+    const rawExamples = targetData.qcExamples || 
+                        presentationData?.qcExamples?.[teamKey] || 
+                        (typeof QC_EXAMPLES_DATA !== 'undefined' ? QC_EXAMPLES_DATA[teamKey] : null) || [];
+
+    const defaultItem = { img: '', wrongPlate: '', actualPlate: '' };
+    const examples = [
+        ...rawExamples.slice(0, 3),
+        ...Array(Math.max(0, 3 - rawExamples.length)).fill(defaultItem)
+    ];
+
+    // 3. ชื่อ-นามสกุล และชื่อเล่นพนักงาน
+    const fullNameDisplay = member.fullName || member.name || 'หมวดงาน';
+    const nickDisplay = member.nickName ? `(${member.nickName})` : `(${teamKey})`;
+
+    contentBox.innerHTML = `
+    <div class="w-full h-full flex flex-col justify-between p-3 bg-white rounded-2xl shadow-sm border border-slate-100 max-w-6xl mx-auto overflow-hidden">
+        
+        <!-- หัวเรื่อง -->
+        <div class="text-center py-1 shrink-0">
+            <h2 class="text-xl sm:text-2xl font-black text-[#0f2d59] tracking-tight flex items-center justify-center gap-2">
+                <span>ตัวอย่างอนุมัติผิด</span>
+                <span class="text-indigo-600">${fullNameDisplay}</span>
+                <span class="text-orange-500 font-bold">${nickDisplay}</span>
+            </h2>
+        </div>
+
+        <!-- รายการตัวอย่าง 3 แถว -->
+        <div class="grid grid-rows-3 gap-2 flex-1 min-h-0">
+            ${examples.map((item) => `
+                <div class="grid grid-cols-12 gap-3 items-center border-b border-slate-100 last:border-b-0 py-1 h-full">
+                    
+                    <!-- ฝั่งซ้าย: รูปภาพตัวอย่าง (กดแล้วเปิด Modal ขยายใหญ่ + ซูมได้) -->
+                    <div class="col-span-7 flex items-center justify-center h-full">
+                        <div class="group relative w-full max-w-xl h-full max-h-32 sm:max-h-36 bg-slate-900/5 rounded-xl overflow-hidden border-2 ${item.img ? 'border-indigo-500/80 shadow-md ring-2 ring-indigo-100 cursor-pointer hover:border-indigo-600' : 'border-dashed border-slate-300'} flex items-center justify-center p-1 transition-all"
+                             ${item.img ? `onclick="window.openImageModal('${item.img}')"` : ''}>
+                            ${item.img 
+                                ? `
+                                  <img src="${item.img}" class="w-full h-full object-contain rounded-lg drop-shadow-sm group-hover:scale-[1.02] transition-transform duration-200">
+                                  
+                                  <!-- Hover Overlay สัญลักษณ์ขยายรูป -->
+                                  <div class="absolute inset-0 bg-indigo-900/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl backdrop-blur-[1px]">
+                                      <span class="bg-black/75 text-white text-xs px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-md">
+                                          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                                          </svg>
+                                          คลิกเพื่อดูรูปใหญ่
+                                      </span>
+                                  </div>
+                                  ` 
+                                : `<div class="flex flex-col items-center gap-1 text-slate-400">
+                                     <svg class="w-6 h-6 stroke-current" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 002-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                     </svg>
+                                     <span class="text-xs font-semibold">ไม่มีรูปตัวอย่าง</span>
+                                   </div>`}
+                        </div>
+                    </div>
+
+                    <!-- ฝั่งขวา: รายละเอียดทะเบียน -->
+                    <div class="col-span-5 flex flex-col justify-center gap-1.5 pl-1 text-[#0f2d59] font-extrabold">
+                        <div class="flex items-center justify-between bg-rose-50/70 px-3 py-1.5 rounded-lg border border-rose-100">
+                            <span class="shrink-0 text-slate-600 text-xs sm:text-sm font-bold">ทะเบียนที่อนุมัติผิด :</span>
+                            <span class="text-rose-600 font-black text-base sm:text-lg tracking-wider">${item.wrongPlate || '-'}</span>
+                        </div>
+                        <div class="flex items-center justify-between bg-emerald-50/70 px-3 py-1.5 rounded-lg border border-emerald-100">
+                            <span class="shrink-0 text-slate-600 text-xs sm:text-sm font-bold">ทะเบียนที่ผ่านทางจริง :</span>
+                            <span class="text-emerald-700 font-black text-base sm:text-lg tracking-wider">${item.actualPlate || '-'}</span>
+                        </div>
+                    </div>
+
+                </div>
+            `).join('')}
+        </div>
+
+    </div>`;
 }
 
    // 1. หน้าข้อมูลตารางสรุป (ทีม 1-5) -> แสดงผลสำหรับหน้า 1, 3, 5, 7, 9
@@ -5538,6 +5925,128 @@ function updateTempTarget(inputElement) {
         }
     }
 }
+
+// ==========================================
+// 1. ฟังก์ชันเปิด Image Modal พร้อม Zoom (Scroll Wheel)
+// ==========================================
+window.openImageModal = function(imgSrc) {
+    if (!imgSrc) return;
+
+    const existingModal = document.getElementById('qc-image-modal');
+    if (existingModal) existingModal.remove();
+
+    let scale = 1;
+    let pointX = 0;
+    let pointY = 0;
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+
+    const modalHtml = `
+    <div id="qc-image-modal" class="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-sm select-none overflow-hidden flex items-center justify-center">
+        <!-- ปุ่มปิดมุมขวาบน -->
+        <button id="close-qc-modal" class="absolute top-4 right-4 z-50 text-white/80 hover:text-white bg-black/60 hover:bg-black/90 rounded-full p-2.5 transition-all cursor-pointer shadow-lg">
+            <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+
+        <!-- ตัวแสดงระดับการซูม & ปุ่มรีเซ็ต -->
+        <div class="absolute bottom-5 left-1/2 -translate-x-1/2 z-50 bg-black/80 text-white text-xs px-4 py-2 rounded-full backdrop-blur-md flex items-center gap-3 border border-white/20 shadow-xl pointer-events-auto">
+            <span id="zoom-level-text" class="font-semibold">100%</span>
+            <button id="reset-zoom-btn" class="text-indigo-300 hover:text-indigo-100 font-bold underline text-xs cursor-pointer">รีเซ็ต</button>
+        </div>
+
+        <!-- Element สำหรับแสดงรูปภาพ (ไม่มีขอบกล่องครอบ ปรับ Position ได้อิสระ) -->
+        <div id="qc-modal-stage" class="w-full h-full flex items-center justify-center cursor-grab active:cursor-grabbing">
+            <img id="qc-modal-img" src="${imgSrc}" 
+                 class="max-w-[90vw] max-h-[90vh] object-contain transition-transform duration-75 ease-out shadow-2xl pointer-events-none" 
+                 style="transform: translate3d(0px, 0px, 0px) scale(1);" 
+                 alt="Full Screen Preview" />
+        </div>
+    </div>`;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    const modal = document.getElementById('qc-image-modal');
+    const stage = document.getElementById('qc-modal-stage');
+    const img = document.getElementById('qc-modal-img');
+    const zoomText = document.getElementById('zoom-level-text');
+    const resetBtn = document.getElementById('reset-zoom-btn');
+    const closeBtn = document.getElementById('close-qc-modal');
+
+    // ฟังก์ชันอัปเดตตำแหน่งและการซูมรูปภาพ
+    const updateTransform = () => {
+        img.style.transform = `translate3d(${pointX}px, ${pointY}px, 0px) scale(${scale})`;
+        zoomText.textContent = `${Math.round(scale * 100)}%`;
+    };
+
+    // 1. หมุน Scroll Wheel เพื่อซูมเข้า-ออก อิสระ
+    modal.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const zoomFactor = 0.2;
+        if (e.deltaY < 0) {
+            scale = Math.min(scale + zoomFactor, 10); // ซูมได้สูงสุด 10 เท่า (1000%)
+        } else {
+            scale = Math.max(scale - zoomFactor, 0.5); // ซูมออกได้ต่ำสุด 50%
+        }
+        
+        // ถ้ารีเซ็ตกลับมาขนาดเล็ก ให้ดึงรูปเข้ากลางจออัตโนมัติ
+        if (scale <= 1) {
+            pointX = 0;
+            pointY = 0;
+        }
+        updateTransform();
+    }, { passive: false });
+
+    // 2. คลิกลากเพื่อเลื่อนรูปภาพ (Drag & Pan)
+    stage.addEventListener('mousedown', (e) => {
+        if (e.target === closeBtn || closeBtn.contains(e.target) || e.target === resetBtn) return;
+        isDragging = true;
+        startX = e.clientX - pointX;
+        startY = e.clientY - pointY;
+        stage.classList.replace('cursor-grab', 'cursor-grabbing');
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        pointX = e.clientX - startX;
+        pointY = e.clientY - startY;
+        updateTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+        if (isDragging) {
+            isDragging = false;
+            stage.classList.replace('cursor-grabbing', 'cursor-grab');
+        }
+    });
+
+    // 3. ปุ่มรีเซ็ตการซูมและตำแหน่ง
+    resetBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        scale = 1;
+        pointX = 0;
+        pointY = 0;
+        updateTransform();
+    });
+
+    // 4. การปิด Modal
+    const closeModal = () => {
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.remove(), 150);
+        document.removeEventListener('keydown', handleKeyDown);
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    
+    // กด ESC เพื่อปิด
+    const handleKeyDown = (e) => {
+        if (e.key === 'Escape') closeModal();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+};
 
     </script>
 
