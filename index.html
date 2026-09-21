@@ -9,6 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
 
 /* ซ่อน Scrollbar ทั่วไป แต่คงไว้เฉพาะ .table-wrapper ให้แสดงแถบเลื่อนด้านล่าง */
@@ -472,9 +473,18 @@ div:not(.table-wrapper)::-webkit-scrollbar {
     <!-- พื้นที่สำหรับแสดงฟอร์มกรอกข้อมูล 3 รายการ -->
     <div id="qcFormsContainer" class="flex flex-col gap-6"></div>
 
-    <!-- ปุ่มบันทึก -->
-    <div class="mt-6 flex justify-end">
-        <button onclick="saveQcDataToMemory()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold shadow-md transition">
+    <!-- ปุ่มการจัดการ (ล้างข้อมูล & บันทึก) -->
+    <div class="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
+        <!-- ปุ่มล้างข้อมูล -->
+        <button type="button" onclick="clearCurrentQcData()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-4 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-2 text-sm cursor-pointer">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            🗑️ ล้างข้อมูลทีมนี้
+        </button>
+
+        <!-- ปุ่มบันทึก -->
+        <button type="button" onclick="saveQcDataToMemory()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold shadow-md transition cursor-pointer flex items-center gap-2">
             💾 บันทึกข้อมูลชั่วคราว (เพื่อเตรียมออกสไลด์)
         </button>
     </div>
@@ -685,6 +695,84 @@ function updateQcSectionVisibility(selectedTeam) {
     } else {
         container.classList.add('hidden');
     }
+}
+
+// เปลี่ยนเป็น async function เพื่อรองรับ Popup ยืนยันแบบ Custom Modal
+async function clearCurrentQcData() {
+    // 1. ดึงชื่อทีมที่เลือกอยู่ปัจจุบัน
+    const select = document.getElementById('qcTeamSelect');
+    const teamName = select ? select.value : 'T+7';
+
+    // 2. แสดง Popup ยืนยันสไตล์ Custom (SweetAlert2)
+    const result = await Swal.fire({
+        title: 'ยืนยันการล้างข้อมูล',
+        text: `คุณต้องการล้างข้อมูลรูปภาพและทะเบียนทั้งหมดของทีม [${teamName}] ใช่หรือไม่?`,
+        icon: 'warning',
+        iconColor: '#f97316',
+        showCancelButton: true,
+        confirmButtonText: 'ยืนยัน',
+        cancelButtonText: 'ยกเลิก',
+        buttonsStyling: false,
+        customClass: {
+            popup: 'rounded-3xl p-6 shadow-2xl max-w-sm',
+            title: 'text-lg font-bold text-slate-800 mb-2',
+            htmlContainer: 'text-sm text-slate-500 mb-6',
+            confirmButton: 'bg-rose-500 hover:bg-rose-600 text-white font-bold px-6 py-2.5 rounded-xl shadow-md transition ml-2 cursor-pointer',
+            cancelButton: 'bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-6 py-2.5 rounded-xl transition cursor-pointer'
+        }
+    });
+
+    if (!result.isConfirmed) return;
+
+    // 3. รีเซ็ตข้อมูลทีมนั้นในตัวแปร QC_EXAMPLES_DATA ให้กลับเป็นค่าว่างตามโครงสร้างเดิม
+    QC_EXAMPLES_DATA[teamName] = [
+        { img: '', wrongPlate: '', actualPlate: '' },
+        { img: '', wrongPlate: '', actualPlate: '' },
+        { img: '', wrongPlate: '', actualPlate: '' }
+    ];
+
+    // 4. เซฟข้อมูลที่ล้างแล้วลง LocalStorage ทันที
+    try {
+        localStorage.setItem('QC_EXAMPLES_DATA', JSON.stringify(QC_EXAMPLES_DATA));
+    } catch(e) {
+        console.error("Error saving to localStorage:", e);
+    }
+
+    // 5. สั่งรีเฟรชการแสดงผลบนหน้าจอ
+    if (typeof renderQcForms === 'function') {
+        // หากมีฟังก์ชัน Render ให้เรียกใช้วาดหน้าจอใหม่
+        renderQcForms(teamName);
+    } else {
+        // หากไม่มี ให้กวาดล้างค่าตาม Elements บน DOM โดยตรง
+        for (let i = 0; i < 3; i++) {
+            const fileInput = document.getElementById(`input_file_${teamName}_${i}`);
+            if (fileInput) fileInput.value = '';
+
+            const previewImg = document.getElementById(`preview_img_${teamName}_${i}`);
+            if (previewImg) previewImg.src = '';
+
+            const previewWrapper = document.getElementById(`preview_wrapper_${teamName}_${i}`);
+            if (previewWrapper) previewWrapper.classList.add('hidden');
+
+            const wrongInput = document.getElementById(`wrongText_${teamName}_${i}`);
+            if (wrongInput) wrongInput.value = '';
+
+            const actualInput = document.getElementById(`actualText_${teamName}_${i}`);
+            if (actualInput) actualInput.value = '';
+        }
+    }
+
+    // 6. แจ้งเตือนล้างข้อมูลสำเร็จ
+    Swal.fire({
+        icon: 'success',
+        title: 'ล้างข้อมูลเรียบร้อยแล้ว',
+        showConfirmButton: false,
+        timer: 1200,
+        customClass: {
+            popup: 'rounded-2xl p-4',
+            title: 'text-base font-bold text-slate-800'
+        }
+    });
 }
 
 // --- ฟังก์ชันอื่นๆ เดิมของคุณ ---
