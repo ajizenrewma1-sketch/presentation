@@ -5271,34 +5271,223 @@ if (currentSlideIndex === 0) {
     const displayMonth = presentationData.monthName || '';
     const displayYear = presentationData.year || '';
 
+    // SVG รถพ่วงตู้คอนเทนเนอร์ขนาดพอดี + หัวลากสมจริง (ตู้สีน้ำเงิน-หัวลากสีแดง)
+    const containerTruckSVG = `
+        <svg class="h-10 w-auto inline-block filter drop-shadow-[0_3px_5px_rgba(0,0,0,0.4)]" viewBox="0 0 160 45" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- แชสซี/คานเหล็กใต้ท้อง -->
+            <rect x="10" y="32" width="140" height="4" fill="#334155" rx="1"/>
+
+            <!-- ตู้คอนเทนเนอร์ -->
+            <rect x="5" y="6" width="100" height="26" rx="1.5" fill="#1d4ed8" stroke="#1e40af" stroke-width="1"/>
+            <!-- ลอนตู้คอนเทนเนอร์ -->
+            <path d="M 15 6 V 32 M 25 6 V 32 M 35 6 V 32 M 45 6 V 32 M 55 6 V 32 M 65 6 V 32 M 75 6 V 32 M 85 6 V 32 M 95 6 V 32" stroke="#60a5fa" stroke-width="1.2" stroke-linecap="round"/>
+            <!-- ขอบประตูท้าย -->
+            <rect x="5" y="6" width="4" height="26" fill="#1e3a8a" rx="1"/>
+
+            <!-- หัวลาก (Tractor Cab ทรงมาตรฐาน) -->
+            <path d="M 112 33 V 10 C 112 9 113 8 114 8 H 138 C 142 8 147 11 150 16 L 153 22 C 154 24 154 26 154 33 Z" fill="#dc2626"/>
+            <!-- หลังคาสูง/สปอยเลอร์บนหัวลาก -->
+            <path d="M 112 10 L 115 5 H 134 L 138 10 Z" fill="#b91c1c"/>
+            <!-- กระจกหน้าและกระจกข้าง -->
+            <path d="M 124 11 H 137 C 140 11 143 13 145 17 L 146 20 H 124 Z" fill="#38bdf8" opacity="0.9"/>
+            <line x1="135" y1="11" x2="135" y2="20" stroke="#1e293b" stroke-width="1"/>
+            <!-- กระจกมองข้าง -->
+            <rect x="146" y="15" width="2" height="6" fill="#0f172a" rx="0.5"/>
+            <!-- กระจังหน้า & ไฟหน้า -->
+            <rect x="148" y="23" width="6" height="7" fill="#1e293b" rx="1"/>
+            <line x1="149" y1="25" x2="153" y2="25" stroke="#94a3b8" stroke-width="0.8"/>
+            <line x1="149" y1="27" x2="153" y2="27" stroke="#94a3b8" stroke-width="0.8"/>
+            <rect x="149" y="30" width="4" height="2" fill="#fef08a" rx="0.5"/>
+            <!-- กันชนหน้า -->
+            <rect x="147" y="31" width="7" height="3" fill="#475569" rx="0.5"/>
+
+            <!-- ล้อรถ (2 เพลาท้ายพ่วง + 2 เพลาหัวลาก) -->
+            <circle cx="22" cy="36" r="4.5" fill="#0f172a" stroke="#cbd5e1" stroke-width="1.5"/>
+            <circle cx="34" cy="36" r="4.5" fill="#0f172a" stroke="#cbd5e1" stroke-width="1.5"/>
+            <circle cx="120" cy="36" r="4.5" fill="#0f172a" stroke="#cbd5e1" stroke-width="1.5"/>
+            <circle cx="144" cy="36" r="4.5" fill="#0f172a" stroke="#cbd5e1" stroke-width="1.5"/>
+        </svg>
+    `;
+
+    // SVG รถพ่วงตู้คอนเทนเนอร์ (ตู้สีส้ม-หัวลากสีเขียว)
+    const containerTruckSVG2 = `
+        <svg class="h-10 w-auto inline-block filter drop-shadow-[0_3px_5px_rgba(0,0,0,0.4)]" viewBox="0 0 160 45" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="32" width="140" height="4" fill="#334155" rx="1"/>
+            <rect x="5" y="6" width="100" height="26" rx="1.5" fill="#ea580c" stroke="#c2410c" stroke-width="1"/>
+            <path d="M 15 6 V 32 M 25 6 V 32 M 35 6 V 32 M 45 6 V 32 M 55 6 V 32 M 65 6 V 32 M 75 6 V 32 M 85 6 V 32 M 95 6 V 32" stroke="#fdba74" stroke-width="1.2" stroke-linecap="round"/>
+            <rect x="5" y="6" width="4" height="26" fill="#9a3412" rx="1"/>
+
+            <path d="M 112 33 V 10 C 112 9 113 8 114 8 H 138 C 142 8 147 11 150 16 L 153 22 C 154 24 154 26 154 33 Z" fill="#059669"/>
+            <path d="M 112 10 L 115 5 H 134 L 138 10 Z" fill="#047857"/>
+            <path d="M 124 11 H 137 C 140 11 143 13 145 17 L 146 20 H 124 Z" fill="#38bdf8" opacity="0.9"/>
+            <line x1="135" y1="11" x2="135" y2="20" stroke="#1e293b" stroke-width="1"/>
+            <rect x="146" y="15" width="2" height="6" fill="#0f172a" rx="0.5"/>
+            <rect x="148" y="23" width="6" height="7" fill="#1e293b" rx="1"/>
+            <line x1="149" y1="25" x2="153" y2="25" stroke="#94a3b8" stroke-width="0.8"/>
+            <line x1="149" y1="27" x2="153" y2="27" stroke="#94a3b8" stroke-width="0.8"/>
+            <rect x="149" y="30" width="4" height="2" fill="#fef08a" rx="0.5"/>
+            <rect x="147" y="31" width="7" height="3" fill="#475569" rx="0.5"/>
+
+            <circle cx="22" cy="36" r="4.5" fill="#0f172a" stroke="#cbd5e1" stroke-width="1.5"/>
+            <circle cx="34" cy="36" r="4.5" fill="#0f172a" stroke="#cbd5e1" stroke-width="1.5"/>
+            <circle cx="120" cy="36" r="4.5" fill="#0f172a" stroke="#cbd5e1" stroke-width="1.5"/>
+            <circle cx="144" cy="36" r="4.5" fill="#0f172a" stroke="#cbd5e1" stroke-width="1.5"/>
+        </svg>
+    `;
+
+    // โลโก้ M-FLOW แบบออริจินัล (ด้านบนสีแดง ด้านล่างสีน้ำเงินเข้ม ตัวเอียง)
+    const mFlowOfficialLogoSVG = `
+        <svg class="h-6 w-auto inline-block drop-shadow-sm" viewBox="0 0 170 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g transform="skewX(-14) translate(10, 0)">
+                <!-- ส่วนแถบสีแดงด้านบน (Top Red Stripe) -->
+                <g fill="#E62329">
+                    <rect x="0" y="2" width="27" height="6" rx="1.5"/>
+                    <rect x="30" y="2" width="9" height="6" rx="1"/>
+                    <rect x="42" y="2" width="22" height="6" rx="1.5"/>
+                    <rect x="67" y="2" width="8" height="6" rx="1"/>
+                    <rect x="78" y="2" width="25" height="6" rx="1.5"/>
+                    <rect x="106" y="2" width="37" height="6" rx="1.5"/>
+                </g>
+                <!-- ส่วนตัวอักษรสีน้ำเงินด้านล่าง (Bottom Navy Blue Body) -->
+                <g fill="#002855">
+                    <!-- m (3 ขา) -->
+                    <rect x="0" y="9" width="7" height="20" rx="0.5"/>
+                    <rect x="10" y="9" width="7" height="20" rx="0.5"/>
+                    <rect x="20" y="9" width="7" height="20" rx="0.5"/>
+                    <!-- - (dash) -->
+                    <rect x="30" y="14" width="9" height="6" rx="0.5"/>
+                    <!-- F -->
+                    <path d="M 42 9 H 63 V 15 H 50 V 18 H 60 V 23 H 50 V 29 H 42 Z"/>
+                    <!-- L -->
+                    <path d="M 67 9 H 75 V 23 H 87 V 29 H 67 Z"/>
+                    <!-- O -->
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M 78 9 H 103 V 29 H 78 Z M 86 15 H 95 V 23 H 86 Z"/>
+                    <!-- W -->
+                    <path d="M 106 9 H 114 L 118.5 20.5 L 123 9 H 130 L 134.5 20.5 L 139 9 H 147 L 140 29 H 131 L 123 16.5 L 115 29 H 106 Z"/>
+                </g>
+            </g>
+        </svg>
+    `;
+
     contentBox.innerHTML = `
-    <div class="relative flex flex-col items-center justify-center w-full h-full p-8 text-center overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-900 text-white">
-        <!-- แสงตกแต่งพื้นหลัง -->
-        <div class="absolute -top-24 -left-24 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
-        <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="relative flex flex-col items-center justify-center w-full h-full p-8 text-center overflow-hidden animated-bg-light text-slate-900">
+        <div class="absolute -top-32 -left-32 w-[500px] h-[500px] bg-indigo-400/15 rounded-full blur-[120px] pointer-events-none animate-[floatOrb1_8s_ease-in-out_infinite]"></div>
+        <div class="absolute -bottom-32 -right-32 w-[500px] h-[500px] bg-blue-400/15 rounded-full blur-[120px] pointer-events-none animate-[floatOrb2_10s_ease-in-out_infinite]"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-purple-400/10 rounded-full blur-[100px] pointer-events-none"></div>
         
-        <!-- เนื้อหาหน้าปก -->
-        <div class="z-10 mb-16">
-            <h1 class="text-4xl lg:text-6xl font-black tracking-tight mb-4 drop-shadow-lg text-white">
-                ผลประกอบการประจำเดือน ${displayMonth} ${displayYear}
+        <!-- ข้อความส่วนหัว -->
+        <div class="z-10 mb-28 max-w-4xl px-4">
+            <h1 class="text-4xl lg:text-6xl font-black tracking-tight mb-4 drop-shadow-sm leading-tight">
+                <span class="animated-gradient-text-dark">ผลประกอบการประจำเดือน ${displayMonth} ${displayYear}</span>
             </h1>
-            <p class="text-lg text-slate-300 font-medium tracking-wide">รายงานและสรุปผลการปฏิบัติงาน Temp และ TG</p>
+            <p class="text-lg lg:text-xl text-slate-600 font-semibold tracking-wide">
+                รายงานและสรุปผลการปฏิบัติงาน Temp และ TG
+            </p>
         </div>
 
-        <!-- ถนนจำลองและอนิเมชั่นรถวิ่งด้านล่าง -->
-        <div class="absolute bottom-0 left-0 w-full h-24 overflow-hidden border-t-2 border-slate-700/60 bg-slate-950/80 backdrop-blur-md flex items-center shadow-inner">
-            <!-- เส้นประกลางถนน -->
-            <div class="absolute w-full border-b-4 border-dashed border-amber-400/80 top-1/2 -translate-y-1/2"></div>
-            <!-- รถวิ่งอนิเมชั่น -->
-            <div class="absolute text-5xl filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)]" style="animation: carDrive 8s linear infinite;">
-                🚗
+        <!-- ส่วนพื้นถนน 2 เลน + ด่าน M-FLOW -->
+        <div class="absolute bottom-0 left-0 w-full h-36 bg-slate-800 border-t-4 border-slate-600 flex flex-col justify-between overflow-hidden shadow-2xl z-20">
+            <!-- ขอบทางแดง-ขาว บน-ล่าง -->
+            <div class="absolute top-0 left-0 w-full h-1.5 bg-[repeating-linear-gradient(90deg,#ef4444,#ef4444_20px,#ffffff_20px,#ffffff_40px)] opacity-90 z-20"></div>
+            <div class="absolute bottom-0 left-0 w-full h-1.5 bg-[repeating-linear-gradient(90deg,#ef4444,#ef4444_20px,#ffffff_20px,#ffffff_40px)] opacity-90 z-20"></div>
+
+            <!-- เส้นแบ่งเลนกลางถนน (กั้น 2 เลนสวนกัน) -->
+            <div class="absolute w-full border-b-2 border-dashed border-amber-400/80 top-1/2 -translate-y-1/2 z-0"></div>
+
+            <!-- โครงสร้างด่านเก็บค่าผ่านทาง M-FLOW -->
+            <div class="absolute inset-x-0 top-0 bottom-0 pointer-events-none flex justify-center z-10">
+                <div class="relative w-full max-w-xl h-full flex justify-between px-2">
+                    <!-- เสาด่านซ้าย -->
+                    <div class="w-3.5 h-full bg-gradient-to-r from-slate-700 via-slate-600 to-slate-800 shadow-xl border-x border-slate-500 z-20"></div>
+
+                    <!-- คานเหล็กพาดระหว่างเสาซ้าย-ขวา + ป้าย M-Flow ออริจินัล -->
+                    <div class="absolute top-0 left-0 right-0 flex flex-col items-center">
+                        <div class="w-full h-2.5 bg-gradient-to-b from-slate-600 to-slate-800 border-b border-slate-400 shadow-md flex items-center justify-around px-8">
+                            <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
+                            <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse delay-100"></div>
+                            <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse delay-200"></div>
+                            <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse delay-300"></div>
+                        </div>
+
+                        <!-- ป้าย M-Flow สไตล์ป้ายทางด่วนจริงพร้อมโลโก้ออริจินัล -->
+                        <div class="mt-1 bg-white border-2 border-slate-300 rounded-lg shadow-xl px-3 py-1 flex items-center justify-center space-x-1.5">
+                            <span class="text-xs font-black text-slate-700 tracking-wider">ช่องทาง</span>
+                            ${mFlowOfficialLogoSVG}
+                        </div>
+                    </div>
+
+                    <!-- เสาด่านขวา -->
+                    <div class="w-3.5 h-full bg-gradient-to-r from-slate-700 via-slate-600 to-slate-800 shadow-xl border-x border-slate-500 z-20"></div>
+                </div>
+            </div>
+
+            <!-- เลนบน: วิ่งจาก ซ้าย ➔ ขวา (รถยนต์ + รถพ่วงตู้คอนเทนเนอร์) -->
+            <div class="absolute left-0 text-4xl filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.5)] z-20 top-2" style="animation: carDriveRight 8s linear infinite;">
+                <span class="inline-block -scale-x-100">🚗</span>
+            </div>
+            <div class="absolute left-0 z-20 top-1" style="animation: truckDriveRight 11s linear infinite; animation-delay: -5.5s;">
+                ${containerTruckSVG}
+            </div>
+
+            <!-- เลนล่าง: วิ่งสวนจาก ขวา ➔ ซ้าย (รถยนต์ + รถพ่วงตู้คอนเทนเนอร์) -->
+            <div class="absolute right-0 text-4xl filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.5)] z-20 bottom-3" style="animation: carDriveLeft 7s linear infinite;">
+                🚙
+            </div>
+            <div class="absolute right-0 z-20 bottom-0" style="animation: truckDriveLeft 10s linear infinite; animation-delay: -4s;">
+                ${containerTruckSVG2}
             </div>
         </div>
         
         <style>
-            @keyframes carDrive {
-                0% { transform: translateX(-120px) scaleX(-1); }
-                100% { transform: translateX(calc(100vw + 120px)) scaleX(-1); }
+            @keyframes lightGradientShift {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
+            .animated-bg-light {
+                background: linear-gradient(270deg, #f8fafc, #eef2ff, #f3e8ff, #e0f2fe, #f8fafc);
+                background-size: 400% 400%;
+                animation: lightGradientShift 15s ease infinite;
+            }
+            @keyframes gradientShift {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
+            .animated-gradient-text-dark {
+                background: linear-gradient(270deg, #0f172a, #4f46e5, #7c3aed, #0284c7, #0f172a);
+                background-size: 300% 300%;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                animation: gradientShift 6s ease infinite;
+            }
+            @keyframes floatOrb1 {
+                0%, 100% { transform: translate(0px, 0px) scale(1); }
+                50% { transform: translate(40px, -30px) scale(1.15); }
+            }
+            @keyframes floatOrb2 {
+                0%, 100% { transform: translate(0px, 0px) scale(1); }
+                50% { transform: translate(-40px, 30px) scale(1.2); }
+            }
+
+            /* การเคลื่อนที่ของรถยนต์ */
+            @keyframes carDriveRight {
+                0% { transform: translateX(-80px); }
+                100% { transform: translateX(100vw); }
+            }
+            @keyframes carDriveLeft {
+                0% { transform: translateX(80px); }
+                100% { transform: translateX(-100vw); }
+            }
+
+            /* การเคลื่อนที่ของรถพ่วงตู้คอนเทนเนอร์ */
+            @keyframes truckDriveRight {
+                0% { transform: translateX(-180px); }
+                100% { transform: translateX(100vw); }
+            }
+            @keyframes truckDriveLeft {
+                0% { transform: translateX(180px) scaleX(-1); }
+                100% { transform: translateX(-100vw) scaleX(-1); }
             }
         </style>
     </div>`;
@@ -5308,74 +5497,204 @@ if (currentSlideIndex === 0) {
 // --- หน้าผลปฏิบัติงานทีม TG ---
 else if (slide.type === 'tg_performance') {
     contentBox.innerHTML = `
-    <div class="relative flex flex-col items-center justify-center w-full h-full p-8 text-center overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-900 text-white">
-        <!-- แสงตกแต่งพื้นหลัง -->
-        <div class="absolute -top-24 -left-24 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
-        <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="relative flex flex-col items-center justify-center w-full h-full p-8 text-center overflow-hidden animated-bg-light text-slate-900">
+        <div class="absolute -top-32 -left-32 w-[450px] h-[450px] bg-indigo-400/15 rounded-full blur-[120px] pointer-events-none animate-[floatOrb1_8s_ease-in-out_infinite]"></div>
+        <div class="absolute -bottom-32 -right-32 w-[450px] h-[450px] bg-blue-400/15 rounded-full blur-[120px] pointer-events-none animate-[floatOrb2_10s_ease-in-out_infinite]"></div>
         
-        <!-- หัวข้อสไลด์ (อยู่ตรงกลางหน้า) -->
         <div class="z-10">
-            <h2 class="text-4xl lg:text-6xl font-black tracking-tight drop-shadow-lg text-white">
-                📊 ผลปฏิบัติงานทีม TG
+            <div class="inline-block mb-3 px-4 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-extrabold tracking-widest uppercase shadow-sm">
+                Team Overview
+            </div>
+            <h2 class="text-4xl lg:text-6xl font-black tracking-tight drop-shadow-sm">
+                <span class="inline-block mr-2">📊</span>
+                <span class="animated-gradient-text-dark">ผลปฏิบัติงานทีม TG</span>
             </h2>
         </div>
+
+        <style>
+            @keyframes lightGradientShift {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
+            .animated-bg-light {
+                background: linear-gradient(270deg, #f8fafc, #eef2ff, #f3e8ff, #e0f2fe, #f8fafc);
+                background-size: 400% 400%;
+                animation: lightGradientShift 15s ease infinite;
+            }
+            @keyframes gradientShift {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
+            .animated-gradient-text-dark {
+                background: linear-gradient(270deg, #0f172a, #4f46e5, #7c3aed, #0284c7, #0f172a);
+                background-size: 300% 300%;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                animation: gradientShift 6s ease infinite;
+            }
+            @keyframes floatOrb1 {
+                0%, 100% { transform: translate(0px, 0px) scale(1); }
+                50% { transform: translate(40px, -30px) scale(1.15); }
+            }
+            @keyframes floatOrb2 {
+                0%, 100% { transform: translate(0px, 0px) scale(1); }
+                50% { transform: translate(-40px, 30px) scale(1.2); }
+            }
+        </style>
     </div>`;
 }
 
 // --- หน้าผลปฏิบัติงานทีม Temp ---
 else if (slide.type === 'temp_performance') {
     contentBox.innerHTML = `
-    <div class="relative flex flex-col items-center justify-center w-full h-full p-8 text-center overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-900 text-white">
-        <!-- แสงตกแต่งพื้นหลัง -->
-        <div class="absolute -top-24 -left-24 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
-        <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="relative flex flex-col items-center justify-center w-full h-full p-8 text-center overflow-hidden animated-bg-light text-slate-900">
+        <div class="absolute -top-32 -left-32 w-[450px] h-[450px] bg-blue-400/15 rounded-full blur-[120px] pointer-events-none animate-[floatOrb1_8s_ease-in-out_infinite]"></div>
+        <div class="absolute -bottom-32 -right-32 w-[450px] h-[450px] bg-indigo-400/15 rounded-full blur-[120px] pointer-events-none animate-[floatOrb2_10s_ease-in-out_infinite]"></div>
         
-        <!-- หัวข้อสไลด์ (อยู่ตรงกลางหน้า) -->
         <div class="z-10">
-            <h2 class="text-4xl lg:text-6xl font-black tracking-tight drop-shadow-lg text-white">
-                📊 ผลปฏิบัติงานทีม Temp
+            <div class="inline-block mb-3 px-4 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-extrabold tracking-widest uppercase shadow-sm">
+                Team Overview
+            </div>
+            <h2 class="text-4xl lg:text-6xl font-black tracking-tight drop-shadow-sm">
+                <span class="inline-block mr-2">📊</span>
+                <span class="animated-gradient-text-dark">ผลปฏิบัติงานทีม Temp</span>
             </h2>
         </div>
+
+        <style>
+            @keyframes lightGradientShift {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
+            .animated-bg-light {
+                background: linear-gradient(270deg, #f8fafc, #eef2ff, #f3e8ff, #e0f2fe, #f8fafc);
+                background-size: 400% 400%;
+                animation: lightGradientShift 15s ease infinite;
+            }
+            @keyframes gradientShift {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
+            .animated-gradient-text-dark {
+                background: linear-gradient(270deg, #0f172a, #4f46e5, #7c3aed, #0284c7, #0f172a);
+                background-size: 300% 300%;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                animation: gradientShift 6s ease infinite;
+            }
+            @keyframes floatOrb1 {
+                0%, 100% { transform: translate(0px, 0px) scale(1); }
+                50% { transform: translate(40px, -30px) scale(1.15); }
+            }
+            @keyframes floatOrb2 {
+                0%, 100% { transform: translate(0px, 0px) scale(1); }
+                50% { transform: translate(-40px, 30px) scale(1.2); }
+            }
+        </style>
     </div>`;
 }
 
 // --- หน้าผลปฏิบัติงานทีม QC ---
 else if (slide.type === 'qc_performance') {
     contentBox.innerHTML = `
-    <div class="relative flex flex-col items-center justify-center w-full h-full p-8 text-center overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-900 text-white">
-        <!-- แสงตกแต่งพื้นหลัง -->
-        <div class="absolute -top-24 -left-24 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
-        <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="relative flex flex-col items-center justify-center w-full h-full p-8 text-center overflow-hidden animated-bg-light text-slate-900">
+        <div class="absolute -top-32 -left-32 w-[450px] h-[450px] bg-purple-400/15 rounded-full blur-[120px] pointer-events-none animate-[floatOrb1_8s_ease-in-out_infinite]"></div>
+        <div class="absolute -bottom-32 -right-32 w-[450px] h-[450px] bg-indigo-400/15 rounded-full blur-[120px] pointer-events-none animate-[floatOrb2_10s_ease-in-out_infinite]"></div>
         
-        <!-- หัวข้อสไลด์ (อยู่ตรงกลางหน้า) -->
         <div class="z-10">
-            <h2 class="text-4xl lg:text-6xl font-black tracking-tight drop-shadow-lg text-white">
-                📊 ผลปฏิบัติงานทีม QC
+            <div class="inline-block mb-3 px-4 py-1 rounded-full bg-purple-50 border border-purple-200 text-purple-700 text-xs font-extrabold tracking-widest uppercase shadow-sm">
+                Team Overview
+            </div>
+            <h2 class="text-4xl lg:text-6xl font-black tracking-tight drop-shadow-sm">
+                <span class="inline-block mr-2">📊</span>
+                <span class="animated-gradient-text-dark">ผลปฏิบัติงานทีม QC</span>
             </h2>
         </div>
+
+        <style>
+            @keyframes lightGradientShift {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
+            .animated-bg-light {
+                background: linear-gradient(270deg, #f8fafc, #eef2ff, #f3e8ff, #e0f2fe, #f8fafc);
+                background-size: 400% 400%;
+                animation: lightGradientShift 15s ease infinite;
+            }
+            @keyframes gradientShift {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
+            .animated-gradient-text-dark {
+                background: linear-gradient(270deg, #0f172a, #4f46e5, #7c3aed, #0284c7, #0f172a);
+                background-size: 300% 300%;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                animation: gradientShift 6s ease infinite;
+            }
+            @keyframes floatOrb1 {
+                0%, 100% { transform: translate(0px, 0px) scale(1); }
+                50% { transform: translate(40px, -30px) scale(1.15); }
+            }
+            @keyframes floatOrb2 {
+                0%, 100% { transform: translate(0px, 0px) scale(1); }
+                50% { transform: translate(-40px, 30px) scale(1.2); }
+            }
+        </style>
     </div>`;
 }
 
 // --- หน้าสรุปผล Top Performance ---
 else if (slide.type === 'summary_top_perf') {
     contentBox.innerHTML = `
-    <div class="relative flex flex-col items-center justify-center w-full h-full p-8 text-center overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-900 text-white">
-        <!-- แสงตกแต่งพื้นหลัง -->
-        <div class="absolute -top-24 -left-24 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
-        <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="relative flex flex-col items-center justify-center w-full h-full p-8 text-center overflow-hidden animated-bg-light text-slate-900">
+        <div class="absolute -top-24 -left-24 w-96 h-96 bg-indigo-400/15 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-purple-400/15 rounded-full blur-3xl pointer-events-none"></div>
         
-        <!-- หัวข้อสไลด์ (อยู่ตรงกลางหน้า แบบแบ่ง 3 บรรทัด) -->
         <div class="z-10 space-y-4">
-            <h2 class="text-4xl lg:text-6xl font-black tracking-tight drop-shadow-lg text-white">
-                🏆 สรุปผล Top Performance
+            <h2 class="text-3xl lg:text-5xl font-black tracking-tight drop-shadow-sm">
+                <span class="inline-block mr-2">🏆</span>
+                <span class="animated-gradient-text-dark">สรุปผล Top Performance</span>
             </h2>
-            <div class="text-4xl lg:text-6xl font-black tracking-tight drop-shadow-lg text-white">
+            <div class="text-2xl lg:text-3xl font-extrabold tracking-tight text-slate-400">
                 และ
             </div>
-            <h2 class="text-4xl lg:text-6xl font-black tracking-tight drop-shadow-lg text-white">
-                🚨 Top การอนุมัติผิด
+            <h2 class="text-3xl lg:text-5xl font-black tracking-tight drop-shadow-sm">
+                <span class="inline-block mr-2">🚨</span>
+                <span class="animated-gradient-text-dark">Top การอนุมัติผิด</span>
             </h2>
         </div>
+
+        <style>
+            @keyframes lightGradientShift {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
+            .animated-bg-light {
+                background: linear-gradient(270deg, #f8fafc, #eef2ff, #f3e8ff, #e0f2fe, #f8fafc);
+                background-size: 400% 400%;
+                animation: lightGradientShift 15s ease infinite;
+            }
+            @keyframes gradientShift {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
+            .animated-gradient-text-dark {
+                background: linear-gradient(270deg, #0f172a, #4f46e5, #7c3aed, #0284c7, #0f172a);
+                background-size: 300% 300%;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                animation: gradientShift 6s ease infinite;
+            }
+        </style>
     </div>`;
 }
 
@@ -6278,44 +6597,44 @@ else if (slide.type === 'qc_summary_pie') {
     const filtered = presentationData.temp.list.filter(s => s.workDays >= slide.min && s.workDays <= slide.max).sort((a,b) => b.totalPercent - a.totalPercent);
     
     contentBox.innerHTML = `
-    <div class="h-full flex flex-col items-center overflow-y-auto p-6">
-        <div class="w-full max-w-7xl mx-auto flex flex-col pt-6 md:pt-8">
+    <div class="h-full flex flex-col overflow-y-auto px-6 py-3">
+        <div class="w-full flex flex-col pt-2">
             <!-- หัวเรื่องหลัก -->
-            <div class="w-full mb-6">
+            <div class="w-full mb-3">
                 <h3 class="text-2xl font-bold text-indigo-800 flex items-center gap-3">
                     ${slide.badge} กลุ่ม ${slide.min} - ${slide.max} วัน <span class="text-slate-500 text-lg font-medium">(${filtered.length} คน)</span>
                 </h3>
             </div>
             
-            <div class="w-full overflow-hidden border border-slate-200 rounded-3xl shadow-sm bg-white animate-slide delay-100">
-                <table class="w-full text-sm border-collapse">
-                    <thead class="bg-slate-50 text-slate-600 sticky top-0 shadow-sm">
+            <div class="w-full overflow-hidden border border-slate-200 rounded-2xl shadow-sm bg-white animate-slide delay-100 flex-1">
+                <table class="w-full text-base border-collapse">
+                    <thead class="bg-slate-50 text-slate-700 sticky top-0 shadow-sm text-base">
                         <tr>
-                            <th class="${thClass} text-center w-16">ลำดับ</th>
-                            <th class="${thClass} text-left">ชื่อจริง</th>
-                            <th class="${thClass} text-center">วันทำงาน<br>(%)</th>
-                            <th class="${thClass} text-center text-indigo-600">ยอดรวม<br>อนุมัติ</th>
-                            <th class="${thClass} text-center text-indigo-600">ค่าเฉลี่ย/<br>วัน</th>
-                            <th class="${thClass} text-center text-blue-500">อนุมัติ<br>(%)</th>
-                            <th class="${thClass} text-center text-rose-500">ยอดรวม<br>ผิด</th>
-                            <th class="${thClass} text-center text-rose-500">ค่าเฉลี่ย/<br>วัน</th>
-                            <th class="${thClass} text-center text-rose-500">QC<br>(%)</th>
-                            <th class="${thClass} text-center text-emerald-600">% รวม</th>
+                            <th class="${thClass} text-center py-3.5 px-3 w-16">ลำดับ</th>
+                            <th class="${thClass} text-left py-3.5 px-3">ชื่อจริง</th>
+                            <th class="${thClass} text-center py-3.5 px-3">วันทำงาน<br>(%)</th>
+                            <th class="${thClass} text-center text-indigo-600 py-3.5 px-3">ยอดรวม<br>อนุมัติ</th>
+                            <th class="${thClass} text-center text-indigo-600 py-3.5 px-3">ค่าเฉลี่ย/<br>วัน</th>
+                            <th class="${thClass} text-center text-blue-500 py-3.5 px-3">อนุมัติ<br>(%)</th>
+                            <th class="${thClass} text-center text-rose-500 py-3.5 px-3">ยอดรวม<br>ผิด</th>
+                            <th class="${thClass} text-center text-rose-500 py-3.5 px-3">ค่าเฉลี่ย/<br>วัน</th>
+                            <th class="${thClass} text-center text-rose-500 py-3.5 px-3">QC<br>(%)</th>
+                            <th class="${thClass} text-center text-emerald-600 py-3.5 px-3">% รวม</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${filtered.map((s, idx) => `
                         <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-                            <td class="p-3 text-center font-bold text-slate-500">${idx+1}</td>
-                            <td class="p-3 text-left font-bold text-slate-800">${s.member.fullName}</td>
-                            <td class="p-3 text-center"><div class="font-bold">${s.workDays} วัน</div><div class="text-indigo-500 text-xs">(${s.percentWork.toFixed(1)}%)</div></td>
-                            <td class="p-3 text-center font-bold text-indigo-800 text-lg">${s.totalApprove.toLocaleString()}</td>
-                            <td class="p-3 text-center font-bold text-indigo-600">${s.avgApprove.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
-                            <td class="p-3 text-center font-bold text-blue-500">${s.percentApprove.toFixed(1)}%</td>
-                            <td class="p-3 text-center font-bold text-rose-600 text-lg">${s.totalQc.toLocaleString()}</td>
-                            <td class="p-3 text-center font-bold text-rose-500">${s.avgQc.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                            <td class="p-3 text-center font-bold text-rose-400">${s.percentQc.toFixed(1)}%</td>
-                            <td class="p-3 text-center font-black text-emerald-600 text-lg">${s.totalPercent.toFixed(2)}%</td>
+                            <td class="py-3.5 px-3 text-center font-bold text-slate-600 text-base">${idx+1}</td>
+                            <td class="py-3.5 px-3 text-left font-bold text-slate-900 text-base">${s.member.fullName}</td>
+                            <td class="py-3.5 px-3 text-center"><div class="font-bold text-base">${s.workDays} วัน</div><div class="text-indigo-500 text-xs">(${s.percentWork.toFixed(1)}%)</div></td>
+                            <td class="py-3.5 px-3 text-center font-bold text-indigo-800 text-lg">${s.totalApprove.toLocaleString()}</td>
+                            <td class="py-3.5 px-3 text-center font-bold text-indigo-600 text-base">${s.avgApprove.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
+                            <td class="py-3.5 px-3 text-center font-bold text-blue-500 text-base">${s.percentApprove.toFixed(1)}%</td>
+                            <td class="py-3.5 px-3 text-center font-bold text-rose-600 text-lg">${s.totalQc.toLocaleString()}</td>
+                            <td class="py-3.5 px-3 text-center font-bold text-rose-500 text-base">${s.avgQc.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            <td class="py-3.5 px-3 text-center font-bold text-rose-400 text-base">${s.percentQc.toFixed(1)}%</td>
+                            <td class="py-3.5 px-3 text-center font-black text-emerald-600 text-lg">${s.totalPercent.toFixed(2)}%</td>
                         </tr>`).join('')}
                     </tbody>
                 </table>
@@ -6471,9 +6790,9 @@ else if (slide.type === 'all_top_perf') {
     let icon = '🏆';
     let bg = 'bg-indigo-50/50';
 
-    let html = '<div class="h-full flex flex-col gap-4 max-w-5xl mx-auto w-full justify-center">';
+    let html = '<div class="h-full flex flex-col gap-4 w-full max-w-6xl mx-auto px-6 py-6 justify-center">';
     html += '<h3 class="text-2xl font-bold flex items-center gap-3 text-indigo-800 mb-2">' + icon + ' ' + slide.title + '</h3>';
-    html += '<div class="flex flex-col gap-3 overflow-hidden pr-1 animate-slide delay-100">';
+    html += '<div class="flex flex-col gap-2.5 overflow-y-auto pr-1 animate-slide delay-100">';
     
     listData.forEach((s, idx) => {
         let rankNum = idx + 1;
@@ -6484,12 +6803,12 @@ else if (slide.type === 'all_top_perf') {
         let rankBadgeHtml = getRankBadge(rankNum, prevRank, isQc);
         let nickNameStr = s.member && s.member.nickName ? '(' + s.member.nickName + ')' : '';
 
-        html += '<div class="bg-white rounded-2xl py-4 px-6 flex items-center justify-between border border-indigo-100 shadow-sm">';
-        html += '<div class="flex items-center gap-4">';
-        html += '<div class="w-10 h-10 rounded-full ' + bg + ' text-indigo-700 font-black flex items-center justify-center text-sm">' + rankNum + '</div>';
-        html += '<div><div class="font-bold text-slate-800 text-base flex items-center gap-2">' + fullName + ' ' + nickNameStr + ' ' + rankBadgeHtml + '</div></div>';
+        html += '<div class="bg-white rounded-2xl py-3.5 px-8 flex items-center justify-between border border-indigo-100 shadow-sm hover:shadow-md transition-all">';
+        html += '<div class="flex items-center gap-5">';
+        html += '<div class="w-12 h-12 rounded-full ' + bg + ' text-indigo-700 font-black flex items-center justify-center text-lg">' + rankNum + '</div>';
+        html += '<div><div class="font-bold text-slate-900 text-lg flex items-center gap-3">' + fullName + ' ' + nickNameStr + ' ' + rankBadgeHtml + '</div></div>';
         html += '</div>';
-        html += '<div class="text-right"><div class="font-black text-indigo-600 text-lg">' + (s.avgPerDay || 0).toLocaleString() + ' งาน/วัน</div><div class="text-xs text-slate-400 font-medium">รวม ' + (s.totalTasks || 0).toLocaleString() + ' งาน (' + (s.workDays || 0) + ' วัน)</div></div>';
+        html += '<div class="text-right"><div class="font-black text-indigo-600 text-xl">' + (s.avgPerDay || 0).toLocaleString() + ' งาน/วัน</div><div class="text-sm text-slate-400 font-medium">รวม ' + (s.totalTasks || 0).toLocaleString() + ' งาน (' + (s.workDays || 0) + ' วัน)</div></div>';
         html += '</div>';
     });
 
