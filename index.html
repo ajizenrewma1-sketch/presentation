@@ -4740,8 +4740,32 @@ function prepareAllPresentationData() {
     t7rMembers = t7rMembers.slice(0, 11);
 
     // ==========================================
-    // DEBUG: ตรวจสอบข้อมูลตั้งต้นของทีม T+7
+    // ฟังก์ชันช่วยดึงค่าจาก masterData แบบยืดหยุ่น (เผื่อ Key ต่าง Format)
     // ==========================================
+    function getMasterDataValue(y, mIdx, memberId, type, day) {
+        if (typeof masterData === 'undefined' || !masterData) return 0;
+
+        const yearBE = y + 543;
+        const month1Based = mIdx + 1;
+
+        // รายการ Keys ที่เป็นไปได้ทั้งหมด
+        const possibleKeys = [
+            `${y}-${mIdx}-${memberId}-${type}-${day}`,          // ค.ศ. , เดือน 0-11
+            `${y}-${month1Based}-${memberId}-${type}-${day}`,    // ค.ศ. , เดือน 1-12
+            `${yearBE}-${mIdx}-${memberId}-${type}-${day}`,       // พ.ศ. , เดือน 0-11
+            `${yearBE}-${month1Based}-${memberId}-${type}-${day}`, // พ.ศ. , เดือน 1-12
+            `${memberId}-${type}-${y}-${mIdx}-${day}`,
+            `${memberId}-${type}-${y}-${month1Based}-${day}`
+        ];
+
+        for (let k of possibleKeys) {
+            if (masterData[k] !== undefined && masterData[k] !== null && masterData[k] !== '') {
+                return parseFloat(masterData[k]) || 0;
+            }
+        }
+        return 0;
+    }
+
     console.group("=== [DEBUG] T+7 Team Data Extraction ===");
     console.log("Target Year & Month (0-11):", targetYear, targetMonth);
     console.log("Total Days in Month:", totalDaysInMonth);
@@ -4749,168 +4773,150 @@ function prepareAllPresentationData() {
     console.log("masterData status:", typeof masterData !== 'undefined' ? "Loaded" : "Undefined / Missing");
 
     t7rMembers.forEach(function(m, index) {
-    var dailyStats = [];
-    var matchCount = 0;
+        var dailyStats = [];
+        var matchCount = 0;
+        var teamKey = (index === 0) ? 'T+7' : ('R' + index);
 
-    // ==========================================
-    // [แก้ไขจุดนี้]: กำหนด teamKey ตามลำดับ Index 
-    // Index 0 -> 'T+7', Index 1 -> 'R1', Index 2 -> 'R2' ...
-    // ==========================================
-    var teamKey = (index === 0) ? 'T+7' : ('R' + index);
-
-    // ดึงรูป QC โดยค้นจาก 'R1' ก่อน ถ้าไม่เจอค่อยลองค้นจาก ชื่อเล่น/รหัส
-    var currentQcData = null;
-    if (typeof QC_EXAMPLES_DATA !== 'undefined' && QC_EXAMPLES_DATA) {
-        currentQcData = QC_EXAMPLES_DATA[teamKey] 
-                     || QC_EXAMPLES_DATA[m.nickName] 
-                     || QC_EXAMPLES_DATA[m.id] 
-                     || QC_EXAMPLES_DATA[m.fullName];
-    }
-
-    // ถ้ายังไม่มีข้อมูล ให้ใส่ค่าว่างไว้ 3 รายการ
-    if (!currentQcData) {
-        currentQcData = [
-            { img: '', wrongPlate: '', actualPlate: '' },
-            { img: '', wrongPlate: '', actualPlate: '' },
-            { img: '', wrongPlate: '', actualPlate: '' }
-        ];
-    }
-    // ==========================================
-
-    for (var d = 1; d <= totalDaysInMonth; d++) {
-        var totalKey = targetYear + "-" + targetMonth + "-" + m.id + "-t7rtotal-" + d;
-        var correctKey = targetYear + "-" + targetMonth + "-" + m.id + "-t7rcorrect-" + d;
-        var wrongKey = targetYear + "-" + targetMonth + "-" + m.id + "-t7rwrong-" + d;
-        var wrongAllowKey = targetYear + "-" + targetMonth + "-" + m.id + "-t7rwronganu-" + d;
-
-        var total = (typeof masterData !== 'undefined' && masterData[totalKey]) ? parseFloat(masterData[totalKey]) : 0;
-        var correct = (typeof masterData !== 'undefined' && masterData[correctKey]) ? parseFloat(masterData[correctKey]) : 0;
-        var wrong = (typeof masterData !== 'undefined' && masterData[wrongKey]) ? parseFloat(masterData[wrongKey]) : 0;
-        var wrongAllow = (typeof masterData !== 'undefined') ? (parseFloat(masterData[wrongAllowKey] || masterData[wrongAllowKeyAlt]) || 0) : 0;
-
-        // รวมยอด อนุมัติผิด + อนุมัติผิด(อนุโลม) ก่อนคำนวณ %
-        var totalWrongAll = wrong + wrongAllow;
-        var effectiveTotal = (total > 0) ? total : (correct + totalWrongAll);
-        var percent = effectiveTotal > 0 ? parseFloat(((correct / effectiveTotal) * 100).toFixed(2)) : 100.00;
-
-        if (total > 0 || correct > 0 || wrong > 0 || wrongAllow > 0) {
-            matchCount++;
+        var currentQcData = null;
+        if (typeof QC_EXAMPLES_DATA !== 'undefined' && QC_EXAMPLES_DATA) {
+            currentQcData = QC_EXAMPLES_DATA[teamKey] 
+                         || QC_EXAMPLES_DATA[m.nickName] 
+                         || QC_EXAMPLES_DATA[m.id] 
+                         || QC_EXAMPLES_DATA[m.fullName];
         }
 
-        dailyStats.push({
-            date: d + "/" + (targetMonth + 1) + "/" + (targetYear + 543),
-            correct: correct,
-            wrong: wrong,
-            wrongAllow: wrongAllow,
-            total: total,
-            percent: percent
-        });
-    }
+        if (!currentQcData) {
+            currentQcData = [
+                { img: '', wrongPlate: '', actualPlate: '' },
+                { img: '', wrongPlate: '', actualPlate: '' },
+                { img: '', wrongPlate: '', actualPlate: '' }
+            ];
+        }
 
-    // --- (ส่วนคำนวณ sumTotalWork, avgPct, monthlyStats เดิมของคุณ) ---
-    var isT7 = (m.name === 'T+7' || m.fullName === 'T+7' || index === 0);
-    var memberTarget = isT7 ? 99.50 : 85.00;
+        for (var d = 1; d <= totalDaysInMonth; d++) {
+            // ดึงค่าผ่านฟังก์ชันดึงค่าสม่ำเสมอ
+            var total = getMasterDataValue(targetYear, targetMonth, m.id, 't7rtotal', d);
+            var correct = getMasterDataValue(targetYear, targetMonth, m.id, 't7rcorrect', d);
+            var wrong = getMasterDataValue(targetYear, targetMonth, m.id, 't7rwrong', d);
+            var wrongAllow = getMasterDataValue(targetYear, targetMonth, m.id, 't7rwronganu', d) 
+                          || getMasterDataValue(targetYear, targetMonth, m.id, 't7rwrongallow', d);
 
-    var sumTotalWork = dailyStats.reduce(function(sum, item) { return sum + item.total; }, 0);
-    var sumCorrectWork = dailyStats.reduce(function(sum, item) { return sum + item.correct; }, 0);
-    var sumWrongWork = dailyStats.reduce(function(sum, item) { return sum + item.wrong; }, 0);
-    var sumWrongAllowWork = dailyStats.reduce(function(sum, item) { return sum + item.wrongAllow; }, 0);
-    
-    var sumTotalWrongAll = sumWrongWork + sumWrongAllowWork;
-    var sumEffectiveTotal = (sumTotalWork > 0) ? sumTotalWork : (sumCorrectWork + sumTotalWrongAll);
-    var avgPct = sumEffectiveTotal > 0 ? parseFloat(((sumCorrectWork / sumEffectiveTotal) * 100).toFixed(2)) : 100.00;
+            var totalWrongAll = wrong + wrongAllow;
+            var effectiveTotal = (total > 0) ? total : (correct + totalWrongAll);
+            var percent = effectiveTotal > 0 ? parseFloat(((correct / effectiveTotal) * 100).toFixed(2)) : 100.00;
 
-    var monthlyStats = [];
-    for (var i = 2; i >= 0; i--) {
-        var targetD = new Date(targetYear, targetMonth - i, 1);
-        var pYear = targetD.getFullYear();
-        var pMonth = targetD.getMonth();
-        var mName = targetD.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
-        
-        var daysInMonthCount = new Date(pYear, pMonth + 1, 0).getDate();
-        var pTotal = 0, pCorrect = 0, pWrong = 0, pWrongAllow = 0;
-
-        for (var d = 1; d <= daysInMonthCount; d++) {
-            var totalKey = pYear + "-" + pMonth + "-" + m.id + "-t7rtotal-" + d;
-            var correctKey = pYear + "-" + pMonth + "-" + m.id + "-t7rcorrect-" + d;
-            var wrongKey = pYear + "-" + pMonth + "-" + m.id + "-t7rwrong-" + d;
-            var wrongAllowKey = pYear + "-" + pMonth + "-" + m.id + "-t7rwronganu-" + d;
-
-            if (typeof masterData !== 'undefined') {
-                if (masterData[totalKey]) pTotal += parseFloat(masterData[totalKey]) || 0;
-                if (masterData[correctKey]) pCorrect += parseFloat(masterData[correctKey]) || 0;
-                if (masterData[wrongKey]) pWrong += parseFloat(masterData[wrongKey]) || 0;
-                if (masterData[wrongAllowKey] || masterData[wrongAllowKeyAlt]) {
-                    pWrongAllow += parseFloat(masterData[wrongAllowKey] || masterData[wrongAllowKeyAlt]) || 0;
-                }
+            if (total > 0 || correct > 0 || wrong > 0 || wrongAllow > 0) {
+                matchCount++;
             }
+
+            dailyStats.push({
+                date: d + "/" + (targetMonth + 1) + "/" + (targetYear + 543),
+                correct: correct,
+                wrong: wrong,
+                wrongAllow: wrongAllow,
+                total: total,
+                percent: percent
+            });
         }
 
-        var pTotalWrongAll = pWrong + pWrongAllow;
-        var pEffectiveTotal = (pTotal > 0) ? pTotal : (pCorrect + pTotalWrongAll);
-        var pPct = pEffectiveTotal > 0 ? parseFloat(((pCorrect / pEffectiveTotal) * 100).toFixed(2)) : 100.00;
+        var isT7 = (m.name === 'T+7' || m.fullName === 'T+7' || index === 0);
+        var memberTarget = isT7 ? 99.50 : 85.00;
 
-        monthlyStats.push({
-            monthName: mName,
-            products: [
-                { productId: 't7rtotal', productName: 'จำนวนที่ตรวจสอบ', work: pTotal },
-                { productId: 't7rcorrect', productName: 'อนุมัติถูกต้อง', work: pCorrect },
-                { productId: 't7rwrong', productName: 'อนุมัติผิด', work: pWrong },
-                { productId: 't7rwrongallow', productName: 'อนุมัติผิด (อนุโลม)', work: pWrongAllow },
-                { productId: 't7rpctcorrect', productName: '% อนุมัติถูก', work: pPct },
-                { productId: 't7rpcttagget', productName: '% Target', work: memberTarget }
-            ]
+        var sumTotalWork = dailyStats.reduce(function(sum, item) { return sum + item.total; }, 0);
+        var sumCorrectWork = dailyStats.reduce(function(sum, item) { return sum + item.correct; }, 0);
+        var sumWrongWork = dailyStats.reduce(function(sum, item) { return sum + item.wrong; }, 0);
+        var sumWrongAllowWork = dailyStats.reduce(function(sum, item) { return sum + item.wrongAllow; }, 0);
+        
+        var sumTotalWrongAll = sumWrongWork + sumWrongAllowWork;
+        var sumEffectiveTotal = (sumTotalWork > 0) ? sumTotalWork : (sumCorrectWork + sumTotalWrongAll);
+        var avgPct = sumEffectiveTotal > 0 ? parseFloat(((sumCorrectWork / sumEffectiveTotal) * 100).toFixed(2)) : 100.00;
+
+        var monthlyStats = [];
+        for (var i = 2; i >= 0; i--) {
+            var targetD = new Date(targetYear, targetMonth - i, 1);
+            var pYear = targetD.getFullYear();
+            var pMonth = targetD.getMonth();
+            var mName = targetD.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+            
+            var daysInMonthCount = new Date(pYear, pMonth + 1, 0).getDate();
+            var pTotal = 0, pCorrect = 0, pWrong = 0, pWrongAllow = 0;
+
+            for (var d = 1; d <= daysInMonthCount; d++) {
+                pTotal += getMasterDataValue(pYear, pMonth, m.id, 't7rtotal', d);
+                pCorrect += getMasterDataValue(pYear, pMonth, m.id, 't7rcorrect', d);
+                pWrong += getMasterDataValue(pYear, pMonth, m.id, 't7rwrong', d);
+                pWrongAllow += (getMasterDataValue(pYear, pMonth, m.id, 't7rwronganu', d) || getMasterDataValue(pYear, pMonth, m.id, 't7rwrongallow', d));
+            }
+
+            var pTotalWrongAll = pWrong + pWrongAllow;
+            var pEffectiveTotal = (pTotal > 0) ? pTotal : (pCorrect + pTotalWrongAll);
+            var pPct = pEffectiveTotal > 0 ? parseFloat(((pCorrect / pEffectiveTotal) * 100).toFixed(2)) : 100.00;
+
+            monthlyStats.push({
+                monthName: mName,
+                products: [
+                    { productId: 't7rtotal', productName: 'จำนวนที่ตรวจสอบ', work: pTotal },
+                    { productId: 't7rcorrect', productName: 'อนุมัติถูกต้อง', work: pCorrect },
+                    { productId: 't7rwrong', productName: 'อนุมัติผิด', work: pWrong },
+                    { productId: 't7rwrongallow', productName: 'อนุมัติผิด (อนุโลม)', work: pWrongAllow },
+                    { productId: 't7rpctcorrect', productName: '% อนุมัติถูก', work: pPct },
+                    { productId: 't7rpcttagget', productName: '% Target', work: memberTarget }
+                ]
+            });
+        }
+
+        presentationData.t7OtherData.push({
+            member: m,
+            teamKey: teamKey,        
+            qcExamples: currentQcData,
+            summary: {
+                totalChecked: sumTotalWork,
+                correct: sumCorrectWork,
+                wrong: sumWrongWork,
+                wrongAllow: sumWrongAllowWork,
+                pctCorrect: avgPct,
+                target: memberTarget
+            },
+            daily: dailyStats,
+            monthly: monthlyStats
         });
-    }
-
-    // ==========================================
-    // [จุดที่ 2 เพิ่มเพิ่ม]: ส่ง teamKey และ qcExamples บรรจุลง presentationData.t7OtherData
-    // ==========================================
-    presentationData.t7OtherData.push({
-        member: m,
-        teamKey: teamKey,          
-        qcExamples: currentQcData,  // <-- แนบรูปและข้อความ QC ออกไป
-        summary: {
-            totalChecked: sumTotalWork,
-            correct: sumCorrectWork,
-            wrong: sumWrongWork,
-            wrongAllow: sumWrongAllowWork,
-            pctCorrect: avgPct,
-            target: memberTarget
-        },
-        daily: dailyStats,
-        monthly: monthlyStats
     });
-});
 
     console.log("Final presentationData.t7OtherData Array:", presentationData.t7OtherData);
     console.groupEnd();
-    // ==========================================
 
+    // ดึงข้อมูลสำหรับทีม 1-5
     for (var i = 1; i <= 5; i++) {
-        var members = TEAMS_CONFIG[i] || [];
+        var members = (typeof TEAMS_CONFIG !== 'undefined' && TEAMS_CONFIG[i]) ? TEAMS_CONFIG[i] : [];
         allMembers = allMembers.concat(members);
         
-        presentationData.teams[i] = buildStatsForTeam(members, currDates);
+        if (typeof buildStatsForTeam === 'function') {
+            presentationData.teams[i] = buildStatsForTeam(members, currDates);
 
-        var teamStats = presentationData.teams[i];
-        var chartPageNum = (i * 2) + 22;
-        
-        presentationData.chartPairs[chartPageNum] = {
-            mlpr: teamStats.ml || teamStats.ML || 0,
-            mnpr: teamStats.mn || teamStats.MN || 0,
-            reconfirm: teamStats.rcf || teamStats.RCF || 0,
-            qcError: teamStats.qc || teamStats.QC || 0
-        };
+            var teamStats = presentationData.teams[i];
+            var chartPageNum = (i * 2) + 22;
+            
+            presentationData.chartPairs[chartPageNum] = {
+                mlpr: teamStats.ml || teamStats.ML || 0,
+                mnpr: teamStats.mn || teamStats.MN || 0,
+                reconfirm: teamStats.rcf || teamStats.RCF || 0,
+                qcError: teamStats.qc || teamStats.QC || 0
+            };
+        }
     }
 
-    presentationData.all = buildStatsForTeam(allMembers, currDates);
+    if (typeof buildStatsForTeam === 'function') {
+        presentationData.all = buildStatsForTeam(allMembers, currDates);
+    }
 
     var startStrFormat = startDate.getFullYear() + "-" + String(startDate.getMonth() + 1).padStart(2, '0') + "-" + String(startDate.getDate()).padStart(2, '0');
     var endStrFormat = endDate.getFullYear() + "-" + String(endDate.getMonth() + 1).padStart(2, '0') + "-" + String(endDate.getDate()).padStart(2, '0');
-    presentationData.temp = buildTempTeamStats(startStrFormat, endStrFormat);
+    
+    if (typeof buildTempTeamStats === 'function') {
+        presentationData.temp = buildTempTeamStats(startStrFormat, endStrFormat);
+    }
 
-    var prevAll = buildStatsForTeam(allMembers, prevDates);
+    var prevAll = (typeof buildStatsForTeam === 'function') ? buildStatsForTeam(allMembers, prevDates) : null;
     presentationData.prevRankMapPerf = {};
     presentationData.prevRankMapQc = {};
 
@@ -4928,7 +4934,7 @@ function prepareAllPresentationData() {
     var prevStartStrFormat = prevStart.getFullYear() + "-" + String(prevStart.getMonth() + 1).padStart(2, '0') + "-" + String(prevStart.getDate()).padStart(2, '0');
     var prevEndStrFormat = prevEnd.getFullYear() + "-" + String(prevEnd.getMonth() + 1).padStart(2, '0') + "-" + String(prevEnd.getDate()).padStart(2, '0');
 
-    var prevTemp = buildTempTeamStats(prevStartStrFormat, prevEndStrFormat);
+    var prevTemp = (typeof buildTempTeamStats === 'function') ? buildTempTeamStats(prevStartStrFormat, prevEndStrFormat) : null;
     presentationData.prevTemp = prevTemp;
 
     presentationData.prevRankMapPerfTemp = {};
@@ -4937,10 +4943,7 @@ function prepareAllPresentationData() {
     var setRankToAllKeys = function(targetMap, s, rank) {
         if (!targetMap || !s) return;
         var keys = [
-            s.id,
-            s.userCode,
-            s.user,
-            s.fullName,
+            s.id, s.userCode, s.user, s.fullName,
             s.member ? s.member.id : null,
             s.member ? s.member.userCode : null,
             s.member ? s.member.user : null,
@@ -4953,8 +4956,6 @@ function prepareAllPresentationData() {
         }
     };
 
-
-    // ดึงจาก topPerf และ topQc โดยตรง เพื่อให้อันดับตรงกับหน้าจอแสดงผลจริง 100%
     if (prevTemp) {
         if (Array.isArray(prevTemp.topPerf)) {
             prevTemp.topPerf.forEach(function(s, idx) {
@@ -4967,18 +4968,11 @@ function prepareAllPresentationData() {
             });
         }
     }
-// ==========================================
-    // [DEBUG INCLUDED]: ดึงข้อมูลค่าใช้จ่าย QC ประจำเดือน (ม.ค. - เดือนปัจจุบัน)
+
+    // ==========================================
+    // ดึงข้อมูลค่าใช้จ่าย QC ประจำเดือน
     // ==========================================
     console.group("🔍 [DEBUG] QC Expense Data Extraction Process");
-    console.log("📌 Target Year:", targetYear, "| Target Month Index (0-11):", targetMonth);
-    console.log("📌 masterData Status:", typeof masterData !== 'undefined' ? "Loaded ✅" : "Undefined / Missing ❌");
-
-    if (typeof masterData !== 'undefined' && masterData) {
-        var allQcKeys = Object.keys(masterData).filter(function(k) { return k.indexOf('qc_exp') !== -1; });
-        console.log("🔑 All keys in masterData matching 'qc_exp':", allQcKeys);
-    }
-
     var monthNamesShort = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
     var xLabels = [];
     var t7MonthlyData = [];
@@ -4990,19 +4984,13 @@ function prepareAllPresentationData() {
         var keyR1R7 = targetYear + "-qc_exp-" + m + "-r1_r7";
         var keySla = targetYear + "-qc_exp-" + m + "-sla";
 
-        var rawT7 = (typeof masterData !== 'undefined') ? masterData[keyT7] : undefined;
-        var rawR1R7 = (typeof masterData !== 'undefined') ? masterData[keyR1R7] : undefined;
-        var rawSla = (typeof masterData !== 'undefined') ? masterData[keySla] : undefined;
+        var rawT7 = (typeof masterData !== 'undefined' && masterData) ? masterData[keyT7] : undefined;
+        var rawR1R7 = (typeof masterData !== 'undefined' && masterData) ? masterData[keyR1R7] : undefined;
+        var rawSla = (typeof masterData !== 'undefined' && masterData) ? masterData[keySla] : undefined;
 
-        var valT7 = rawT7 ? parseFloat(rawT7) : 0;
-        var valR1R7 = rawR1R7 ? parseFloat(rawR1R7) : 0;
-        var valSla = rawSla ? parseFloat(rawSla) : 0;
-
-        console.groupCollapsed("📅 Month Index " + m + " (" + monthNamesShort[m] + ")");
-        console.log("  Key T7   : \"" + keyT7 + "\" => Raw:", rawT7, "=> Parsed:", valT7);
-        console.log("  Key R1R7 : \"" + keyR1R7 + "\" => Raw:", rawR1R7, "=> Parsed:", valR1R7);
-        console.log("  Key SLA  : \"" + keySla + "\" => Raw:", rawSla, "=> Parsed:", valSla);
-        console.groupEnd();
+        var valT7 = rawT7 !== undefined ? parseFloat(rawT7) : 0;
+        var valR1R7 = rawR1R7 !== undefined ? parseFloat(rawR1R7) : 0;
+        var valSla = rawSla !== undefined ? parseFloat(rawSla) : 0;
 
         xLabels.push(monthNamesShort[m]);
         t7MonthlyData.push(valT7);
@@ -5016,63 +5004,80 @@ function prepareAllPresentationData() {
         r1_r7: r1r7MonthlyData,
         sla: slaMonthlyData
     };
-
-    console.log("📊 [FINAL RESULT] presentationData.qcExpenseSummary:", presentationData.qcExpenseSummary);
     console.groupEnd();
 
-// ==========================================
-// 🌟 เตรียมข้อมูลสำหรับสไลด์ type: 'qc_summary_pie'
-// ==========================================
-console.group("📊 [DEBUG] QC Team Data Extraction Process");
+    // ==========================================
+    // 🌟 เตรียมข้อมูลสำหรับสไลด์ QC Summary Pie + ตารางทีม QC (พร้อมระบบค้นหา Key ยืดหยุ่น)
+    // ==========================================
+    console.group("📊 [DEBUG] QC Team Data Extraction Process");
 
-const qcMembers = (TEAMS_CONFIG && TEAMS_CONFIG['qc'] && TEAMS_CONFIG['qc'].length > 0) 
-                  ? TEAMS_CONFIG['qc'] 
-                  : DEFAULT_QC_MEMBERS;
+    const qcMembers = (typeof TEAMS_CONFIG !== 'undefined' && TEAMS_CONFIG && TEAMS_CONFIG['qc'] && TEAMS_CONFIG['qc'].length > 0) 
+                      ? TEAMS_CONFIG['qc'] 
+                      : ((typeof DEFAULT_QC_MEMBERS !== 'undefined') ? DEFAULT_QC_MEMBERS : []);
 
-let totalTeamProdDay = 0;
+    let totalTeamProdDay = 0;
 
-const qcList = qcMembers.map(m => {
-    // ดึงค่าจาก masterData แบบยืดหยุ่น (ลองเรียกแบบ 3 พารามิเตอร์ และแบบตรง ค.ศ./เดือน)
-    const valT7 = parseFloat(masterData[getKey(m.id, 'qc_t7', 1)]) || 
-                  parseFloat(masterData[getKey(m.id, 'qc_t7', 1, targetMonth, targetYear)]) || 0;
-                  
-    const valR1R10 = parseFloat(masterData[getKey(m.id, 'qc_r1_r10', 1)]) || 
-                    parseFloat(masterData[getKey(m.id, 'qc_r1_r10', 1, targetMonth, targetYear)]) || 0;
-                    
-    const valWrong = parseFloat(masterData[getKey(m.id, 'qc_wrong', 1)]) || 
-                     parseFloat(masterData[getKey(m.id, 'qc_wrong', 1, targetMonth, targetYear)]) || 0;
-                     
-    const valDays = parseFloat(masterData[getKey(m.id, 'qc_workdays', 1)]) || 
-                    parseFloat(masterData[getKey(m.id, 'qc_workdays', 1, targetMonth, targetYear)]) || 0;
+    // ฟังก์ชันช่วยค้นหา Key แบบยืดหยุ่น ป้องกันชื่อ Key ไม่ตรงกันใน masterData
+    function getQcValueFlexible(y, mIdx, memberId, type) {
+        if (typeof masterData === 'undefined' || !masterData) return 0;
+        
+        const m1Based = mIdx + 1;
+        const yBE = y + 543;
 
-    const valTotal = valT7 + valR1R10;
-    const prodDay = valDays > 0 ? (valTotal / valDays) : 0;
-    totalTeamProdDay += prodDay;
+        const keysToTry = [
+            `${y}-qc_${type}-${mIdx}-${memberId}`,
+            `${y}-qc_${type}-${m1Based}-${memberId}`,
+            `${y}-${mIdx}-${memberId}-qc_${type}`,
+            `${y}-${m1Based}-${memberId}-qc_${type}`,
+            `${yBE}-qc_${type}-${mIdx}-${memberId}`,
+            `${yBE}-qc_${type}-${m1Based}-${memberId}`,
+            `${memberId}-qc_${type}-${y}-${mIdx}`,
+            `${memberId}-qc_${type}-${y}-${m1Based}`,
+            (typeof getKey === 'function') ? getKey(memberId, `qc_${type}`, 1, mIdx, y) : null,
+            (typeof getKey === 'function') ? getKey(memberId, `qc_${type}`, 1, m1Based, y) : null
+        ].filter(Boolean);
 
-    return {
-        member: m,
-        valT7,
-        valR1R10,
-        valTotal,
-        valWrong,
-        valDays,
-        prodDay
+        for (let k of keysToTry) {
+            if (masterData[k] !== undefined && masterData[k] !== null && masterData[k] !== '') {
+                console.log(`  👉 [QC Match] Key: "${k}" => Value: ${masterData[k]}`);
+                return parseFloat(masterData[k]) || 0;
+            }
+        }
+        return 0;
+    }
+
+    const qcList = qcMembers.map(m => {
+        const valT7 = getQcValueFlexible(targetYear, targetMonth, m.id, 't7');
+        const valR1R10 = getQcValueFlexible(targetYear, targetMonth, m.id, 'r1_r10');
+        const valWrong = getQcValueFlexible(targetYear, targetMonth, m.id, 'wrong');
+        const valDays = getQcValueFlexible(targetYear, targetMonth, m.id, 'workdays');
+
+        const valTotal = valT7 + valR1R10;
+        const prodDay = valDays > 0 ? (valTotal / valDays) : 0;
+        totalTeamProdDay += prodDay;
+
+        return {
+            member: m,
+            valT7,
+            valR1R10,
+            valTotal,
+            valWrong,
+            valDays,
+            prodDay
+        };
+    });
+
+    qcList.forEach(item => {
+        item.prodPct = totalTeamProdDay > 0 ? ((item.prodDay / totalTeamProdDay) * 100) : 0;
+    });
+
+    presentationData.qcSummaryData = {
+        members: qcList,
+        totalTeamProdDay: totalTeamProdDay
     };
-});
 
-// คำนวณเปอร์เซ็นต์ส่วนแบ่ง Product/Day
-qcList.forEach(item => {
-    item.prodPct = totalTeamProdDay > 0 ? ((item.prodDay / totalTeamProdDay) * 100) : 0;
-});
-
-// บันทึกลง presentationData
-presentationData.qcSummaryData = {
-    members: qcList,
-    totalTeamProdDay: totalTeamProdDay
-};
-
-console.log("✅ [FINAL RESULT] presentationData.qcSummaryData:", presentationData.qcSummaryData);
-console.groupEnd();
+    console.log("✅ [FINAL RESULT] presentationData.qcSummaryData:", presentationData.qcSummaryData);
+    console.groupEnd();
 }
 
 
@@ -5988,15 +5993,38 @@ else if (slide.type === 't7_other_monthly') {
 }
 
 else if (slide.type === 'team_qc_examples') {
-    // 1. ค้นหาข้อมูลพนักงานจาก index หรือ memberId
-    const targetData = presentationData?.t7OtherData?.[slide.memberIndex] || {};
+    // 1. ค้นหาข้อมูลพนักงานด้วย Fallback จากหลายเงื่อนไข
+    let targetData = {};
+    const t7DataList = presentationData?.t7OtherData || [];
+
+    if (slide.memberIndex !== undefined && t7DataList[slide.memberIndex]) {
+        targetData = t7DataList[slide.memberIndex];
+    } else if (slide.teamName) {
+        targetData = t7DataList.find(d => 
+            d.teamKey === slide.teamName || 
+            d.member?.id === slide.teamName || 
+            d.member?.fullName === slide.teamName || 
+            d.member?.nickName === slide.teamName
+        ) || {};
+    } else if (slide.memberId) {
+        targetData = t7DataList.find(d => d.member?.id === slide.memberId) || {};
+    }
+
     const member = targetData.member || {};
     const teamKey = targetData.teamKey || slide.teamName || 'T+7';
+    const summary = targetData.summary || {};
 
-    // 2. ดึงข้อมูลรูปภาพ QC
-    const rawExamples = targetData.qcExamples || 
-                        presentationData?.qcExamples?.[teamKey] || 
-                        (typeof QC_EXAMPLES_DATA !== 'undefined' ? QC_EXAMPLES_DATA[teamKey] : null) || [];
+    // 2. ดึงข้อมูลรูปภาพ QC (รองรับการค้นหา Key ทุกรูปแบบ)
+    let rawExamples = targetData.qcExamples;
+    if (!rawExamples || rawExamples.length === 0) {
+        if (typeof QC_EXAMPLES_DATA !== 'undefined' && QC_EXAMPLES_DATA) {
+            rawExamples = QC_EXAMPLES_DATA[teamKey] || 
+                          QC_EXAMPLES_DATA[member.id] || 
+                          QC_EXAMPLES_DATA[member.nickName] || 
+                          QC_EXAMPLES_DATA[member.fullName] || [];
+        }
+    }
+    if (!Array.isArray(rawExamples)) rawExamples = [];
 
     const defaultItem = { img: '', wrongPlate: '', actualPlate: '' };
     const examples = [
@@ -6004,31 +6032,54 @@ else if (slide.type === 'team_qc_examples') {
         ...Array(Math.max(0, 3 - rawExamples.length)).fill(defaultItem)
     ];
 
-    // 3. ชื่อ-นามสกุล และชื่อเล่นพนักงาน
-    const fullNameDisplay = member.fullName || member.name || 'หมวดงาน';
+    // 3. ชื่อ-นามสกุล ชื่อเล่น และยอดสรุปประจำเดือน
+    const fullNameDisplay = member.fullName || member.name || teamKey;
     const nickDisplay = member.nickName ? `(${member.nickName})` : `(${teamKey})`;
+    
+    // ยอดสรุปผล QC ประจำเดือน
+    const totalWrong = summary.wrong || 0;
+    const totalWrongAllow = summary.wrongAllow || 0;
 
     contentBox.innerHTML = `
     <div class="w-full h-full flex flex-col justify-between p-3 sm:p-4 bg-white rounded-2xl shadow-sm border border-slate-100 max-w-7xl mx-auto overflow-hidden">
         
-        <!-- หัวเรื่อง -->
-        <div class="text-center py-1 shrink-0">
-            <h2 class="text-xl sm:text-2xl font-black text-[#0f2d59] tracking-tight flex items-center justify-center gap-2">
+        <!-- หัวเรื่อง + สรุปยอด -->
+        <div class="flex items-center justify-between py-1 px-2 border-b border-slate-100 shrink-0">
+            <h2 class="text-xl sm:text-2xl font-black text-[#0f2d59] tracking-tight flex items-center gap-2">
                 <span>ตัวอย่างอนุมัติผิด</span>
                 <span class="text-indigo-600">${fullNameDisplay}</span>
                 <span class="text-orange-500 font-bold">${nickDisplay}</span>
             </h2>
+            <div class="flex items-center gap-2 text-xs sm:text-sm font-bold">
+                <span class="bg-rose-100 text-rose-700 px-3 py-1 rounded-full border border-rose-200">
+                    อนุมัติผิด: <strong class="text-base">${totalWrong}</strong> รายการ
+                </span>
+                <span class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full border border-amber-200">
+                    อนุโลม: <strong class="text-base">${totalWrongAllow}</strong> รายการ
+                </span>
+            </div>
         </div>
 
         <!-- รายการตัวอย่าง 3 แถว -->
         <div class="grid grid-rows-3 gap-3 flex-1 min-h-0 py-1">
             ${examples.map((item) => {
-                const { wrongHTML, actualHTML } = highlightPlateDiff(item.wrongPlate, item.actualPlate);
+                // เรียกใช้ highlightDiff ป้องกันกรณีไม่มีฟังก์ชัน
+                const wrongPlateStr = item.wrongPlate || '-';
+                const actualPlateStr = item.actualPlate || '-';
+                
+                let wrongHTML = wrongPlateStr;
+                let actualHTML = actualPlateStr;
+                
+                if (typeof highlightPlateDiff === 'function' && item.wrongPlate && item.actualPlate) {
+                    const diff = highlightPlateDiff(item.wrongPlate, item.actualPlate);
+                    wrongHTML = diff.wrongHTML;
+                    actualHTML = diff.actualHTML;
+                }
 
                 return `
                 <div class="grid grid-cols-12 gap-4 items-center border-b border-slate-100 last:border-b-0 py-1 h-full">
                     
-                    <!-- ฝั่งซ้าย: รูปภาพตัวอย่าง (ขยับเป็น 6 ส่วน) -->
+                    <!-- ฝั่งซ้าย: รูปภาพตัวอย่าง -->
                     <div class="col-span-6 flex items-center justify-center h-full">
                         <div class="group relative ${item.img ? 'w-fit max-w-full' : 'w-full max-w-xl'} h-full max-h-52 sm:max-h-60 bg-slate-900/5 rounded-xl overflow-hidden border-2 ${item.img ? 'border-indigo-500/80 shadow-md ring-2 ring-indigo-100 cursor-pointer hover:border-indigo-600' : 'border-dashed border-slate-300'} flex items-center justify-center p-1 transition-all mx-auto"
                              ${item.img ? `onclick="window.openImageModal('${item.img}')"` : ''}>
@@ -6054,7 +6105,7 @@ else if (slide.type === 'team_qc_examples') {
                         </div>
                     </div>
 
-                    <!-- ฝั่งขวา: รายละเอียดทะเบียน (ปรับเป็น 6 ส่วน + เพิ่มขนาดกรอบ + ขยายฟอนต์ใหญ่ชัดเจน) -->
+                    <!-- ฝั่งขวา: รายละเอียดทะเบียน -->
                     <div class="col-span-6 flex flex-col justify-center gap-3 px-2 text-[#0f2d59] font-extrabold h-full">
                         <div class="flex items-center justify-between bg-rose-50/80 px-4 py-3 sm:py-3.5 rounded-xl border-2 border-rose-200/80 shadow-sm">
                             <span class="shrink-0 text-slate-700 text-sm sm:text-base md:text-lg font-bold whitespace-nowrap">ทะเบียนที่อนุมัติผิด :</span>
